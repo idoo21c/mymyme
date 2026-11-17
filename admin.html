@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>MyMyMe 관리자</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F7F5F0;--ink:#1E2140;--muted:#5A5D72;--line:#E6E2D9;--acc:#4B3FC7;--acc-l:#ECEAFB;--coral:#E07A5F;--ok:#1F6B4A;--ok-l:#E3F2EA}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans KR',system-ui,sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:24px 20px 60px;display:flex;flex-direction:column;gap:20px}
+h1{font-family:'Noto Serif KR',serif;font-size:24px;margin:0}h2{font-size:17px;margin:0 0 12px}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi .v{font-size:28px;font-weight:700;margin-top:4px}.kpi .l{font-size:13px;color:var(--muted)}.kpi .s{font-size:12px;color:var(--muted);margin-top:2px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
+.row{display:flex;align-items:center;gap:10px}.between{justify-content:space-between}
+.bar{height:10px;border-radius:5px;background:#F0ECE4;flex:1}.bar>div{height:10px;border-radius:5px;background:var(--acc)}
+.dist .row{font-size:14px;margin-bottom:8px}.dist .n{width:52px;text-align:right;font-weight:700}.dist .k{width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chart{display:flex;align-items:flex-end;gap:4px;height:160px;border-bottom:1px solid var(--line);padding-top:10px}
+.chart>div{flex:1;display:flex;align-items:flex-end;justify-content:center;gap:1px;height:100%;position:relative}
+.chart span.b{width:45%;border-radius:3px 3px 0 0}
+.xl{display:flex;gap:4px;font-size:10px;color:var(--muted)}.xl>span{flex:1;text-align:center}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:8px}.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+input{height:48px;border:1px solid #D9D5CC;border-radius:12px;padding:0 14px;font-size:16px;font-family:inherit;min-width:0;flex:1}
+button{font-family:inherit;cursor:pointer;border-radius:12px;font-weight:700;font-size:15px;min-height:44px;padding:0 16px;border:0;background:var(--acc);color:#fff}
+button.sec{background:#fff;color:var(--ink);border:1px solid #D9D5CC;font-weight:500;font-size:13px;min-height:36px}
+.sec-item{border-top:1px solid #F0ECE4;padding:12px 0;display:flex;gap:12px;align-items:flex-start}
+.tag{font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px;white-space:nowrap}
+.muted{color:var(--muted)}.small{font-size:13px}
+.err{color:#B3261E;font-size:14px}
+code{background:#F0ECE4;padding:2px 6px;border-radius:6px;font-size:13px}
+ol li{margin-bottom:6px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+var ENDPOINT = "";
+var KEY = ''; try { KEY = sessionStorage.getItem('mm_admin') || ''; } catch (e) {}
+var app = document.getElementById('app'), DATA = null, FILTER = 'all';
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function pct(a, b) { return b ? Math.round(a / b * 100) + '%' : '–'; }
+var STEM_READ = { 甲: '갑목', 乙: '을목', 丙: '병화', 丁: '정화', 戊: '무토', 己: '기토', 庚: '경금', 辛: '신금', 壬: '임수', 癸: '계수' };
+var GENDER = { f: '여성', m: '남성', none: '선택 안 함' };
+
+function setup() {
+  app.innerHTML = '<h1>MyMyMe 관리자</h1><div class="card"><h2>데이터 수집이 아직 연결되지 않았어요</h2><ol class="small">' +
+    '<li>구글 시트 <b>MyMyMe 운영 데이터</b>를 열고 <b>확장 프로그램 → Apps Script</b>를 눌러요.</li>' +
+    '<li><code>backend/Code.gs</code> 내용을 붙여넣고, 맨 위 <code>ADMIN_KEY</code>를 관리자 비밀번호로 바꿔 저장해요.</li>' +
+    '<li><b>배포 → 새 배포 → 웹 앱</b>, 실행 사용자 <b>나</b>, 액세스 <b>모든 사용자</b>로 배포해요.</li>' +
+    '<li>나온 웹 앱 URL을 Claude에게 알려주면 이 페이지와 사이트에 연결돼요.</li></ol></div>';
+}
+function login(msg) {
+  app.innerHTML = '<h1>MyMyMe 관리자</h1><form class="card" id="f" style="display:flex;flex-direction:column;gap:12px;max-width:420px"><label for="k" class="small" style="font-weight:500">관리자 비밀번호</label>' +
+    '<div class="row"><input id="k" type="password" autocomplete="current-password"><button type="submit">들어가기</button></div>' + (msg ? '<p class="err" role="alert">' + esc(msg) + '</p>' : '') + '</form>';
+  document.getElementById('f').addEventListener('submit', function (e) { e.preventDefault(); KEY = document.getElementById('k').value; try { sessionStorage.setItem('mm_admin', KEY); } catch (er) {} load(); });
+}
+function load() {
+  app.innerHTML = '<h1>MyMyMe 관리자</h1><p class="muted">불러오는 중…</p>';
+  fetch(ENDPOINT + '?action=stats&key=' + encodeURIComponent(KEY)).then(function (r) { return r.json(); }).then(function (j) {
+    if (!j.ok) { try { sessionStorage.removeItem('mm_admin'); } catch (e) {} login(j.reason === 'auth' ? '비밀번호가 맞지 않거나, 스크립트의 ADMIN_KEY가 아직 기본값이에요.' : '데이터를 불러오지 못했어요.'); return; }
+    DATA = j; render();
+  }).catch(function () { login('서버에 연결하지 못했어요. 웹 앱 URL과 배포 설정(액세스: 모든 사용자)을 확인해 주세요.'); });
+}
+function kpi(l, v, s) { return '<div class="card kpi"><div class="l">' + l + '</div><div class="v">' + v + '</div>' + (s ? '<div class="s">' + s + '</div>' : '') + '</div>'; }
+function dist(title, obj, map, top) {
+  var arr = Object.keys(obj).map(function (k) { return [k, obj[k]]; }).sort(function (a, b) { return b[1] - a[1]; }).slice(0, top || 12);
+  var max = arr.length ? arr[0][1] : 1, sum = arr.reduce(function (a, b) { return a + b[1]; }, 0);
+  return '<div class="card dist"><h2>' + title + '</h2>' + (arr.length ? arr.map(function (x) {
+    return '<div class="row"><span class="k" title="' + esc(x[0]) + '">' + esc(map ? (map[x[0]] || x[0]) + (map[x[0]] ? ' ' + x[0] : '') : x[0]) + '</span><div class="bar"><div style="width:' + (x[1] / max * 100) + '%"></div></div><span class="n">' + x[1] + '</span><span class="small muted" style="width:40px">' + pct(x[1], sum) + '</span></div>';
+  }).join('') : '<p class="small muted">아직 데이터가 없어요</p>') + '</div>';
+}
+function render() {
+  var t = DATA.totals, d = DATA.daily, max = Math.max.apply(null, d.map(function (x) { return Math.max(x.visit, x.start, x.finish); }).concat([1]));
+  var funnel = [['방문', t.visit], ['참여 시작', t.start], ['성향 60문항 완료', t.likert_done], ['상황 12문항 완료', t.scenario_done], ['결과 확인', t.finish], ['심층 리포트 열람', t.report]];
+  var secrets = DATA.secrets.filter(function (s) { return FILTER === 'all' || (FILTER === 'hidden' ? s.hidden : !s.hidden); });
+  app.innerHTML = '<div class="row between" style="flex-wrap:wrap"><h1>MyMyMe 관리자</h1><div class="row"><span class="small muted">갱신 ' + new Date(DATA.updated).toLocaleString('ko-KR') + '</span><button class="sec" id="re">새로고침</button><button class="sec" id="out">로그아웃</button></div></div>' +
+    '<div class="kpis">' + kpi('방문자', t.visit, '고유 방문 기준') + kpi('참여 시작', t.start, '방문 대비 ' + pct(t.start, t.visit)) + kpi('결과 확인', t.finish, '완주율 ' + pct(t.finish, t.start)) +
+    kpi('심층 리포트 열람', t.report, '결과 대비 ' + pct(t.report, t.finish)) + kpi('결과 공유', t.share, '결과 대비 ' + pct(t.share, t.finish)) + kpi('궁합 코드 복사', t.mycode, '궁합 이용 ' + t.compat + '명 · 심층 ' + t.deepCompat + '회') +
+    kpi('평균 참여 시간', DATA.avgMinutes != null ? DATA.avgMinutes + '분' : '–', '목표 11~15분') + kpi('대나무숲', t.secretTotal + '개', '날려 보냄 ' + t.secretReleased + '회') + '</div>' +
+    '<div class="grid2"><div class="card"><h2>참여 단계별 이탈</h2>' + funnel.map(function (f) {
+      return '<div class="row small" style="margin-bottom:9px"><span style="width:130px">' + f[0] + '</span><div class="bar"><div style="width:' + (t.visit ? f[1] / Math.max(t.visit, 1) * 100 : 0) + '%;background:var(--coral)"></div></div><b style="width:44px;text-align:right">' + f[1] + '</b><span class="muted" style="width:40px">' + pct(f[1], t.visit) + '</span></div>';
+    }).join('') + '</div>' +
+    '<div class="card"><h2>일별 추이 (최근 30일)</h2>' + (d.length ? '<div class="chart">' + d.map(function (x) {
+      return '<div title="' + x.date + ' 방문 ' + x.visit + ' · 시작 ' + x.start + ' · 완료 ' + x.finish + '"><span class="b" style="height:' + (x.visit / max * 100) + '%;background:#C9C5EE"></span><span class="b" style="height:' + (x.finish / max * 100) + '%;background:var(--acc)"></span></div>';
+    }).join('') + '</div><div class="xl">' + d.map(function (x) { return '<span>' + x.date.slice(5).replace('-', '/') + '</span>'; }).join('') + '</div>' +
+      '<div class="legend"><span><i style="background:#C9C5EE"></i>방문</span><span><i style="background:var(--acc)"></i>결과 확인</span></div>' : '<p class="small muted">아직 데이터가 없어요</p>') + '</div></div>' +
+    '<div class="grid2">' + dist('인기 유형 이름 TOP 12', DATA.dist.name) + dist('4글자 성격 코드', DATA.dist.code, null, 16) + dist('일간 분포', DATA.dist.dayStem, STEM_READ) +
+    dist('혈액형', DATA.dist.blood, { '': '미선택' }) + dist('성별', DATA.dist.gender, GENDER) + '</div>' +
+    '<div class="card"><div class="row between" style="flex-wrap:wrap;margin-bottom:6px"><h2 style="margin:0">대나무숲 관리</h2><div class="row">' +
+    [['all', '전체'], ['visible', '공개 중'], ['hidden', '숨김']].map(function (f) { return '<button class="sec" data-filter="' + f[0] + '" style="' + (FILTER === f[0] ? 'border-color:var(--ink);font-weight:700' : '') + '">' + f[1] + '</button>'; }).join('') + '</div></div>' +
+    '<p class="small muted">위기 단어가 들어간 글과 신고 3회 이상 글은 자동으로 숨겨져요. 숨김/공개를 직접 바꿀 수 있어요.</p>' +
+    (secrets.length ? secrets.map(function (s) {
+      return '<div class="sec-item"><div style="flex:1"><p style="margin:0 0 6px;white-space:pre-wrap;line-height:1.6">' + esc(s.text) + '</p><div class="row small muted" style="flex-wrap:wrap"><span>' + esc(s.date) + '</span><span>공감 ' + s.empathy + '</span><span>신고 ' + s.reports + '</span>' +
+        (s.hidden ? '<span class="tag" style="background:#FBE9E3;color:#8A3520">숨김</span>' : '<span class="tag" style="background:var(--ok-l);color:var(--ok)">공개</span>') + (s.memo ? '<span>' + esc(s.memo) + '</span>' : '') + '</div></div>' +
+        '<button class="sec" data-mod="' + (s.hidden ? 'unhide' : 'hide') + '" data-id="' + esc(s.id) + '">' + (s.hidden ? '공개하기' : '숨기기') + '</button></div>';
+    }).join('') : '<p class="small muted">해당하는 글이 없어요</p>') + '</div>' +
+    '<p class="small muted">원본 데이터는 구글 시트 "MyMyMe 운영 데이터"의 events, secrets 탭에서 볼 수 있어요. 생년월일·이름·연락처는 수집하지 않아요.</p>';
+}
+document.addEventListener('click', function (e) {
+  var b = e.target.closest('button'); if (!b) return;
+  if (b.id === 're') load();
+  else if (b.id === 'out') { KEY = ''; try { sessionStorage.removeItem('mm_admin'); } catch (er) {} login(); }
+  else if (b.dataset.filter) { FILTER = b.dataset.filter; render(); }
+  else if (b.dataset.mod) {
+    b.disabled = true;
+    fetch(ENDPOINT + '?action=' + b.dataset.mod + '&id=' + encodeURIComponent(b.dataset.id) + '&key=' + encodeURIComponent(KEY)).then(function () { load(); });
+  }
+});
+if (!ENDPOINT) setup(); else if (!KEY) login(); else load();
+</script>
+</body>
+</html>
