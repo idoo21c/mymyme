@@ -39,7 +39,7 @@ ol li{margin-bottom:6px;line-height:1.6}
 <script>
 var ENDPOINT = "https://script.google.com/macros/s/AKfycbwfOTKpZVQ9BLWjyZyJdcJxnDytxYnDL2OQc1_pzgswamB3Eb6kHuGUT0OfJkhHx9YE/exec";
 var KEY = ''; try { KEY = sessionStorage.getItem('mm_admin') || ''; } catch (e) {}
-var app = document.getElementById('app'), DATA = null, FILTER = 'all';
+var app = document.getElementById('app'), DATA = null, FILTER = 'all', CONS = [], CFILTER = 'open';
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 function pct(a, b) { return b ? Math.round(a / b * 100) + '%' : '–'; }
 var STEM_READ = { 甲: '갑목', 乙: '을목', 丙: '병화', 丁: '정화', 戊: '무토', 己: '기토', 庚: '경금', 辛: '신금', 壬: '임수', 癸: '계수' };
@@ -61,7 +61,8 @@ function load() {
   app.innerHTML = '<h1>MyMyMe 관리자</h1><p class="muted">불러오는 중…</p>';
   fetch(ENDPOINT + '?action=stats&key=' + encodeURIComponent(KEY)).then(function (r) { return r.json(); }).then(function (j) {
     if (!j.ok) { try { sessionStorage.removeItem('mm_admin'); } catch (e) {} login(j.reason === 'auth' ? '비밀번호가 맞지 않거나, 스크립트의 ADMIN_KEY가 아직 기본값이에요.' : '데이터를 불러오지 못했어요.'); return; }
-    DATA = j; render();
+    DATA = j;
+    return fetch(ENDPOINT + '?action=consults&key=' + encodeURIComponent(KEY)).then(function (r) { return r.json(); }).then(function (c) { CONS = (c && c.items) || []; render(); });
   }).catch(function () { login('서버에 연결하지 못했어요. 웹 앱 URL과 배포 설정(액세스: 모든 사용자)을 확인해 주세요.'); });
 }
 function kpi(l, v, s) { return '<div class="card kpi"><div class="l">' + l + '</div><div class="v">' + v + '</div>' + (s ? '<div class="s">' + s + '</div>' : '') + '</div>'; }
@@ -72,6 +73,24 @@ function dist(title, obj, map, top) {
     return '<div class="row"><span class="k" title="' + esc(x[0]) + '">' + esc(map ? (map[x[0]] || x[0]) + (map[x[0]] ? ' ' + x[0] : '') : x[0]) + '</span><div class="bar"><div style="width:' + (x[1] / max * 100) + '%"></div></div><span class="n">' + x[1] + '</span><span class="small muted" style="width:40px">' + pct(x[1], sum) + '</span></div>';
   }).join('') : '<p class="small muted">아직 데이터가 없어요</p>') + '</div>';
 }
+var WHO = { user: '상담자', ai: 'AI 답변', admin: '운영자(나)' };
+function consultBox() {
+  var list = CONS.filter(function (c) { return CFILTER === 'all' || c.status !== '답변 완료'; });
+  return '<div class="card"><div class="row between" style="flex-wrap:wrap;margin-bottom:6px"><h2 style="margin:0">상담함</h2><div class="row">' +
+    [['open', '답변 필요'], ['all', '전체']].map(function (f) { return '<button class="sec" data-cfilter="' + f[0] + '" style="' + (CFILTER === f[0] ? 'border-color:var(--ink);font-weight:700' : '') + '">' + f[1] + '</button>'; }).join('') + '</div></div>' +
+    '<p class="small muted">위기 단어가 있는 상담이 맨 위에 와요. AI가 1차 답변을 했더라도, 운영자 답변을 남기면 상담자 화면에 댓글로 보여요.</p>' +
+    (list.length ? list.map(function (c) {
+      var x = c.ctx || {}, chips = [x.name, x.code, x.dayMaster && (x.dayMaster + '(' + x.dayStem + ') 일간'), x.variant, x.blood && (x.blood + '형')].filter(Boolean);
+      var st = c.status === '답변 완료' ? ['var(--ok-l)', 'var(--ok)'] : c.status === 'AI 답변' ? ['var(--acc-l)', 'var(--acc)'] : ['#FBE9E3', '#8A3520'];
+      return '<div class="sec-item" style="flex-direction:column;gap:10px"><div class="row" style="flex-wrap:wrap;gap:6px"><b>상담 ' + esc(c.id) + '</b><span class="small muted">' + esc(c.date) + '</span>' +
+        '<span class="tag" style="background:' + st[0] + ';color:' + st[1] + '">' + esc(c.status) + '</span>' + (c.crisis ? '<span class="tag" style="background:#B3261E;color:#fff">위기 신호 · 109 안내 확인</span>' : '') +
+        chips.map(function (t) { return '<span class="tag" style="background:#F0ECE4;color:#33364F">' + esc(t) + '</span>'; }).join('') + '</div>' +
+        c.thread.map(function (m) { return '<div style="border-left:3px solid ' + (m.who === 'user' ? 'var(--acc)' : m.who === 'ai' ? '#4C8F66' : 'var(--coral)') + ';padding:4px 0 4px 12px"><div class="small muted"><b>' + WHO[m.who] + '</b> · ' + esc(m.date) + '</div><p style="margin:4px 0 0;white-space:pre-wrap;line-height:1.6">' + esc(m.text) + '</p></div>'; }).join('') +
+        '<label class="small" for="r_' + esc(c.id) + '" style="font-weight:500">운영자 답변</label><textarea id="r_' + esc(c.id) + '" style="width:100%;min-height:90px;border:1px solid #D9D5CC;border-radius:12px;padding:10px;font-family:inherit;font-size:14px"></textarea>' +
+        '<div class="row"><button data-reply="' + esc(c.id) + '">답변 등록</button>' + (c.status !== '답변 완료' ? '<button class="sec" data-cdone="' + esc(c.id) + '">답변 없이 완료 처리</button>' : '<button class="sec" data-creopen="' + esc(c.id) + '">다시 열기</button>') + '</div></div>';
+    }).join('') : '<p class="small muted">' + (CFILTER === 'open' ? '답변이 필요한 상담이 없어요' : '아직 상담이 없어요') + '</p>') + '</div>';
+}
+function apost(body) { body.key = KEY; return fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(body) }).then(function (r) { return r.json(); }); }
 function render() {
   var t = DATA.totals, d = DATA.daily, max = Math.max.apply(null, d.map(function (x) { return Math.max(x.visit, x.start, x.finish); }).concat([1]));
   var funnel = [['방문', t.visit], ['참여 시작', t.start], ['성향 60문항 완료', t.likert_done], ['상황 12문항 완료', t.scenario_done], ['결과 확인', t.finish], ['심층 리포트 열람', t.report]];
@@ -79,7 +98,9 @@ function render() {
   app.innerHTML = '<div class="row between" style="flex-wrap:wrap"><h1>MyMyMe 관리자</h1><div class="row"><span class="small muted">갱신 ' + new Date(DATA.updated).toLocaleString('ko-KR') + '</span><button class="sec" id="re">새로고침</button><button class="sec" id="out">로그아웃</button></div></div>' +
     '<div class="kpis">' + kpi('방문자', t.visit, '고유 방문 기준') + kpi('참여 시작', t.start, '방문 대비 ' + pct(t.start, t.visit)) + kpi('결과 확인', t.finish, '완주율 ' + pct(t.finish, t.start)) +
     kpi('심층 리포트 열람', t.report, '결과 대비 ' + pct(t.report, t.finish)) + kpi('결과 공유', t.share, '결과 대비 ' + pct(t.share, t.finish)) + kpi('궁합 코드 복사', t.mycode, '궁합 이용 ' + t.compat + '명 · 심층 ' + t.deepCompat + '회') +
-    kpi('평균 참여 시간', DATA.avgMinutes != null ? DATA.avgMinutes + '분' : '–', '목표 11~15분') + kpi('대나무숲', t.secretTotal + '개', '날려 보냄 ' + t.secretReleased + '회') + '</div>' +
+    kpi('평균 참여 시간', DATA.avgMinutes != null ? DATA.avgMinutes + '분' : '–', '목표 11~15분') + kpi('대나무숲', t.secretTotal + '개', '날려 보냄 ' + t.secretReleased + '회') +
+    kpi('고민 상담', (DATA.consults ? DATA.consults.total : 0) + '건', '답변 필요 ' + CONS.filter(function (c) { return c.status !== '답변 완료'; }).length + '건 · 위기 ' + (DATA.consults ? DATA.consults.crisis : 0)) + '</div>' +
+    consultBox() +
     '<div class="grid2"><div class="card"><h2>참여 단계별 이탈</h2>' + funnel.map(function (f) {
       return '<div class="row small" style="margin-bottom:9px"><span style="width:130px">' + f[0] + '</span><div class="bar"><div style="width:' + (t.visit ? f[1] / Math.max(t.visit, 1) * 100 : 0) + '%;background:var(--coral)"></div></div><b style="width:44px;text-align:right">' + f[1] + '</b><span class="muted" style="width:40px">' + pct(f[1], t.visit) + '</span></div>';
     }).join('') + '</div>' +
@@ -104,6 +125,13 @@ document.addEventListener('click', function (e) {
   if (b.id === 're') load();
   else if (b.id === 'out') { KEY = ''; try { sessionStorage.removeItem('mm_admin'); } catch (er) {} login(); }
   else if (b.dataset.filter) { FILTER = b.dataset.filter; render(); }
+  else if (b.dataset.cfilter) { CFILTER = b.dataset.cfilter; render(); }
+  else if (b.dataset.reply) {
+    var ta = document.getElementById('r_' + b.dataset.reply), t = ta ? ta.value.trim() : '';
+    if (!t) { ta && ta.focus(); return; }
+    b.disabled = true; b.textContent = '등록 중…'; apost({ kind: 'admin_reply', id: b.dataset.reply, text: t }).then(load, load);
+  }
+  else if (b.dataset.cdone || b.dataset.creopen) { b.disabled = true; apost({ kind: 'admin_status', id: b.dataset.cdone || b.dataset.creopen, status: b.dataset.cdone ? '답변 완료' : '대기' }).then(load, load); }
   else if (b.dataset.mod) {
     b.disabled = true;
     fetch(ENDPOINT + '?action=' + b.dataset.mod + '&id=' + encodeURIComponent(b.dataset.id) + '&key=' + encodeURIComponent(KEY)).then(function () { load(); });

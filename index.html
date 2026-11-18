@@ -8839,6 +8839,9 @@ var SID = (function () { try { var v = localStorage.getItem('mymyme_sid'); if (!
 function post(body) { if (!ENDPOINT) return Promise.resolve(null); body.sid = SID; return fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(body) }).then(function (r) { return r.json(); }).catch(function () { return null; }); }
 function track(type, data) { post({ kind: 'event', type: type, data: data || {} }); }
 var FOREST = { phase: 'write', text: '', note: '' }, FEED = { items: null, loading: false, mine: {} };
+var FOREST_MODE = 'shout', CONSULT = { view: 'home', cur: null, busy: false, err: '' }, FREE_CONSULTS = 3;
+function myConsults() { try { return JSON.parse(localStorage.getItem('mymyme_consults') || '[]'); } catch (e) { return []; } }
+function saveConsults(list) { try { localStorage.setItem('mymyme_consults', JSON.stringify(list)); } catch (e) {} }
 var CRISIS_WORDS = ['죽고 싶', '죽고싶', '자살', '자해', '사라지고 싶', '사라지고싶', '살기 싫', '살기싫', '끝내고 싶', '극단적 선택'];
 var Q = CONTENT.questions, TY = CONTENT.types, SJ = CONTENT.saju, EX = CONTENT.extras;
 var TODAY = (function () { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })();
@@ -9150,7 +9153,7 @@ function axisBars(pct, dark) {
 V.result = function () {
   var r = S.result, sj = r.saju, dm = SJ.dayMasters[sj.dayStem], ty = TY.types[r.per.code], vr = TY.variants[r.per.variant];
   var nsal = r.sal.length, bc = bloodCompare(), today = EX.tarot.cards[r.tarot.today];
-  var locked = [['인생 그래프 · 10년 대운', '내 인생의 전성기는 몇 살일까'], ['나의 신살', nsal ? '당신의 사주에 특별한 신살 ' + nsal + '개가 있어요' : '도화살 · 역마살 · 천을귀인 확인'], ['사주 원국 ' + sj.total + '글자 풀이', '타고난 오행의 균형과 나의 강점'], ['연애 스타일과 끌리는 사람', '잘 맞는 유형 · 부딪히는 유형'], ['돈이 모이는 방식 · 직업', '재물의 기운 · 일하는 방식'], ['타로 인생 카드 · ' + YEAR + '년 카드', '생년월일로 정해진 나만의 두 장'], [YEAR + '년 월별 흐름', '좋은 달과 조심할 달'], ['숨은 성향 · 행운 요소', '타고난 나 vs 살아온 나 · 나를 채우는 색과 숫자'], ['친구와 심층 궁합', '둘 다 리포트가 있으면 열려요'], ['대나무숲', '아무도 모르는 비밀을 외치고 숲의 대답 듣기']];
+  var locked = [['인생 그래프 · 10년 대운', '내 인생의 전성기는 몇 살일까'], ['나의 신살', nsal ? '당신의 사주에 특별한 신살 ' + nsal + '개가 있어요' : '도화살 · 역마살 · 천을귀인 확인'], ['사주 원국 ' + sj.total + '글자 풀이', '타고난 오행의 균형과 나의 강점'], ['연애 스타일과 끌리는 사람', '잘 맞는 유형 · 부딪히는 유형'], ['돈이 모이는 방식 · 직업', '재물의 기운 · 일하는 방식'], ['타로 인생 카드 · ' + YEAR + '년 카드', '생년월일로 정해진 나만의 두 장'], [YEAR + '년 월별 흐름', '좋은 달과 조심할 달'], ['숨은 성향 · 행운 요소', '타고난 나 vs 살아온 나 · 나를 채우는 색과 숫자'], ['친구와 심층 궁합', '둘 다 리포트가 있으면 열려요'], ['대나무숲 · 고민 상담', '비밀 외치기 · 유형 맞춤 고민 상담 무료 3회']];
   return '<div class="screen"><div class="row between"><span class="serif" style="font-weight:700;font-size:18px">나의 결과</span><button class="btn btn-ghost" style="min-height:40px" data-go="home">처음으로</button></div>' +
     '<div class="hero"><span class="small" style="color:#C9C7E8">당신의 유형</span><h1 style="font-size:30px">' + esc(r.name) + '</h1>' +
     '<div class="row" style="flex-wrap:wrap"><span class="tag">' + dm.read + '(' + sj.dayStem + ') 일간</span><span class="tag" style="background:rgba(224,122,95,.28);color:#FFE3D9">' + vr.label + ' ' + esc(ty.name) + '</span><span class="tag" style="font-weight:700;letter-spacing:1px">' + r.per.code + '</span></div>' +
@@ -9188,7 +9191,10 @@ var BAMBOO_SVG = '<svg width="100%" height="86" viewBox="0 0 360 86" preserveAsp
       '<path d="M' + (x + w) + ' ' + (top + 24) + ' q14 -6 22 -16" stroke="#6FAE84" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
   }).join('') + '</svg>';
 function forestTab(sj) {
-  var B = EX.bamboo, out = '<div style="background:#E7F1EA;border-radius:18px;overflow:hidden"><div style="padding:18px 18px 6px" class="col"><span class="xs" style="font-weight:700;color:#2E6B4A">' + esc(B.lead) + '</span><h2 style="color:#1F4A33">' + esc(B.title) + '</h2><p class="small" style="color:#2F4F3C;margin-top:4px">' + esc(B.intro) + '</p></div>' + BAMBOO_SVG + '</div>';
+  var B = EX.bamboo, seg = '<div class="seg" role="tablist" aria-label="대나무숲 메뉴"><button role="tab" aria-selected="' + (FOREST_MODE === 'shout') + '" class="' + (FOREST_MODE === 'shout' ? 'on' : '') + '" data-fmode="shout">비밀 외치기</button><button role="tab" aria-selected="' + (FOREST_MODE === 'consult') + '" class="' + (FOREST_MODE === 'consult' ? 'on' : '') + '" data-fmode="consult">고민 상담 받기</button></div>';
+  var hero = '<div style="background:#E7F1EA;border-radius:18px;overflow:hidden"><div style="padding:18px 18px 6px" class="col"><span class="xs" style="font-weight:700;color:#2E6B4A">' + esc(B.lead) + '</span><h2 style="color:#1F4A33">' + esc(B.title) + '</h2><p class="small" style="color:#2F4F3C;margin-top:4px">' + esc(FOREST_MODE === 'consult' ? C_TXT.intro : B.intro) + '</p></div>' + BAMBOO_SVG + '</div>';
+  if (FOREST_MODE === 'consult') return hero + seg + consultView(sj);
+  var out = hero + seg;
   if (FOREST.phase === 'flying') {
     out += '<div class="card col" style="align-items:center;gap:12px;padding:28px 18px"><p class="serif" style="font-size:17px;text-align:center;color:#2F4F3C;opacity:.55;filter:blur(1px)">' + esc(FOREST.text.slice(0, 60)) + (FOREST.text.length > 60 ? '…' : '') + '</p><p class="small muted">' + esc(B.flying) + '</p></div>';
   } else if (FOREST.phase === 'crisis') {
@@ -9215,6 +9221,62 @@ function forestTab(sj) {
       '<button class="chip" style="flex:none;padding:0 10px;min-height:36px;font-size:12px;color:var(--muted)" data-report="' + esc(it.id) + '"' + (mine.report ? ' disabled' : '') + '>' + (mine.report ? '신고됨' : esc(B.report)) + '</button></div></div></div>';
   }).join('');
   return out + '</div>';
+}
+var C_TXT = {
+  intro: '혼자 끙끙 앓던 고민을 털어놓으세요. AI 상담 파트너가 당신의 유형에 맞춰 먼저 답하고, MyMyMe 운영자가 직접 이어서 답해요.',
+  consent: '고민 내용과 나의 유형 정보(유형 이름·일간·성향 점수)가 상담을 위해 운영자에게 전달되고, AI 답변 생성에 쓰이는 것에 동의해요. 이름·연락처는 쓰지 말아주세요.',
+  note: '고민 상담은 의학적 진단이나 치료를 대신하지 않아요. 위급한 상황이면 109(자살예방상담) · 112 · 119에 바로 연락하세요.'
+};
+function bubble(m) {
+  var me = m.who === 'user', name = me ? '나' : m.who === 'ai' ? 'AI 상담 파트너' : 'MyMyMe 운영자';
+  var bg = me ? 'background:var(--acc-ll);border-color:#D8D3F7;margin-left:28px' : m.who === 'admin' ? 'background:#FFF8F4;border-color:#F3D3C2;margin-right:28px' : 'background:#F4FAF6;border-color:#CFE3D6;margin-right:28px';
+  return '<div class="card col" style="gap:6px;' + bg + '"><div class="row between"><b class="xs" style="color:' + (me ? 'var(--acc-d)' : m.who === 'admin' ? 'var(--coral-d)' : '#1F4A33') + '">' + name + '</b><span class="xs muted">' + esc(m.date || '') + '</span></div><p style="font-size:15px;color:#33364F;white-space:pre-wrap">' + esc(m.text) + '</p></div>';
+}
+function consultView(sj) {
+  var list = myConsults(), left = Math.max(0, FREE_CONSULTS - list.length), c = CONSULT, out = '';
+  if (!ENDPOINT) return out + '<div class="card"><p class="small muted">고민 상담은 공개 사이트에서 이용할 수 있어요.</p></div>';
+  if (c.view === 'thread' && c.cur) {
+    var th = c.cur.thread || [], hasAi = th.some(function (m) { return m.who !== 'user'; }), crisis = th.some(function (m) { return m.who === 'user' && CRISIS_WORDS.some(function (w) { return m.text.indexOf(w) >= 0; }); });
+    out += '<div class="row between"><button class="btn btn-ghost" style="margin-left:-10px" data-act="cBack">' + ICON.back + ' 내 상담 목록</button><button class="btn btn-ghost" data-act="cRefresh">새로고침</button></div>' +
+      '<div class="card row between" style="gap:10px"><div class="col"><span class="xs muted">상담 번호 (다른 기기에서 불러올 때 필요해요)</span><b style="letter-spacing:1px">' + c.cur.id + '-' + c.cur.pin + '</b></div><button class="chip" style="flex:none;padding:0 12px" data-act="cCopy">복사</button></div>' +
+      (crisis ? '<div class="card col" style="gap:8px;border:1.5px solid #2E6B4A"><b>' + esc(EX.bamboo.crisisTitle) + '</b><a class="btn btn-pri" href="tel:109" style="background:#2E6B4A">' + esc(EX.bamboo.crisisLine) + '</a><p class="xs muted">전화번호: 109 · ' + esc(EX.bamboo.crisisSns) + '</p></div>' : '') +
+      th.map(bubble).join('') +
+      (!hasAi ? '<div class="card"><p class="small muted">고민을 잘 받았어요. 운영자가 읽고 직접 답변을 남길게요. 이 화면에서 새로고침하면 답변을 볼 수 있어요.</p></div>' : '') +
+      '<div class="col" style="gap:8px"><label class="small" for="ccomment" style="font-weight:500;color:var(--sub)">댓글로 이어서 이야기하기</label><textarea id="ccomment" class="inp" maxlength="1000" placeholder="더 하고 싶은 이야기나 궁금한 점을 적어주세요" style="height:90px;padding:12px;font-size:15px"></textarea>' +
+      '<p class="xs muted">댓글에는 운영자가 직접 답해요.</p><p id="cerr2" class="small" style="color:#B3261E" role="alert">' + esc(c.err) + '</p><button class="btn btn-sec" data-act="cComment"' + (c.busy ? ' disabled' : '') + '>' + (c.busy ? '보내는 중…' : '댓글 남기기') + '</button></div>';
+    return out;
+  }
+  if (c.view === 'new') {
+    out += '<div class="col" style="gap:10px"><label class="small" for="cbody" style="font-weight:500;color:var(--sub)">어떤 고민이 있나요?</label><textarea id="cbody" class="inp" maxlength="1000" placeholder="상황을 편하게 적어주세요. 자세할수록 도움이 되는 답을 드릴 수 있어요. (최대 1,000자)" style="height:180px;padding:14px;font-size:16px;line-height:1.6"></textarea>' +
+      '<label class="row small" style="gap:10px;align-items:flex-start;line-height:1.6"><input type="checkbox" id="cagree" style="width:20px;height:20px;margin-top:2px;flex-shrink:0"><span>' + esc(C_TXT.consent) + '</span></label>' +
+      '<p id="cerr" class="small" style="color:#B3261E" role="alert">' + esc(c.err) + '</p>' +
+      '<button class="btn btn-pri" style="background:#2E6B4A" data-act="cSend"' + (c.busy ? ' disabled' : '') + '>' + (c.busy ? 'AI 상담 파트너가 답변을 쓰는 중…' : (left > 0 ? '상담 요청하기 · 무료 ' + left + '회 남음' : '상담 요청하기 · 베타 기간 무료')) + '</button>' +
+      (left === 0 ? '<p class="xs muted" style="text-align:center">무료 3회를 모두 썼어요. 베타 기간에는 계속 무료이고, 정식 출시 후에는 4회차부터 유료로 바뀌어요.</p>' : '') +
+      '<button class="btn btn-ghost" data-act="cBack">취소</button><p class="xs muted">' + esc(C_TXT.note) + '</p></div>';
+    return out;
+  }
+  out += '<div class="card col" style="gap:10px;border:1.5px solid #2E6B4A"><div class="row between"><b>고민 상담 받기</b><span class="pill" style="background:#D7EBDD;color:#1F4A33">' + (left > 0 ? '무료 ' + left + '회 남음' : '베타 기간 무료') + '</span></div>' +
+    '<p class="small" style="color:#33364F">1. 고민을 남기면 AI 상담 파트너가 당신의 유형에 맞춰 바로 답해요.<br>2. MyMyMe 운영자가 읽고 직접 답변을 더해요.<br>3. 댓글로 계속 이야기를 이어갈 수 있어요.</p>' +
+    '<button class="btn btn-pri" style="background:#2E6B4A" data-act="cNew">새 상담 시작하기</button></div>';
+  if (list.length) out += '<h2 style="font-size:17px">내 상담</h2>' + list.slice().reverse().map(function (it) {
+    return '<button class="card col" style="gap:4px;text-align:left;width:100%;cursor:pointer" data-copen="' + esc(it.id + '-' + it.pin) + '"><div class="row between"><b class="small">상담 ' + esc(it.id) + '</b><span class="xs muted">' + esc(it.date) + '</span></div><span class="small muted">' + esc(it.preview) + '</span></button>';
+  }).join('');
+  out += '<div class="card col" style="gap:8px"><label class="small" for="cnum" style="font-weight:500;color:var(--sub)">상담 번호로 불러오기</label><div class="row"><input id="cnum" class="inp" placeholder="예: 7F3K2A-4821" style="font-size:15px"><button class="btn btn-sec" style="min-height:52px;flex:none" data-act="cLoad">열기</button></div><p id="cerr3" class="small" style="color:#B3261E" role="alert">' + esc(c.err) + '</p></div>' +
+    '<p class="xs muted">' + esc(C_TXT.note) + '</p>';
+  return out;
+}
+function consultCtx() {
+  var r = S.result; return { name: r.name, code: r.per.code, typeName: TY.types[r.per.code].name, dayStem: r.saju.dayStem, dayMaster: SJ.dayMasters[r.saju.dayStem].read, pct: r.per.pct, blood: S.birth.blood || '', variant: TY.variants[r.per.variant].label };
+}
+function openConsult(id, pin) {
+  CONSULT.busy = true; CONSULT.err = ''; render();
+  fetch(ENDPOINT + '?action=consult&id=' + encodeURIComponent(id) + '&pin=' + encodeURIComponent(pin)).then(function (r) { return r.json(); }).then(function (j) {
+    CONSULT.busy = false;
+    if (!j || !j.ok) { CONSULT.err = '상담을 찾지 못했어요. 상담 번호를 확인해 주세요.'; render(); return; }
+    CONSULT.cur = { id: id, pin: pin, thread: j.thread, status: j.status }; CONSULT.view = 'thread';
+    var list = myConsults(); if (!list.some(function (x) { return x.id === id; })) { list.push({ id: id, pin: pin, date: TODAY, preview: (j.thread[0] && j.thread[0].text || '').slice(0, 40) }); saveConsults(list); }
+    render();
+  }).catch(function () { CONSULT.busy = false; CONSULT.err = '연결이 불안정해요. 잠시 후 다시 시도해 주세요.'; render(); });
 }
 function loadFeed() {
   if (FEED.loading || !ENDPOINT) return; FEED.loading = true;
@@ -9336,7 +9398,7 @@ V.report = function () {
   return '<div class="screen"><div class="row between"><div class="row" style="gap:4px"><button class="iconbtn" data-go="result" aria-label="결과로">' + ICON.back + '</button><span class="serif" style="font-weight:700;font-size:18px">심층 리포트</span></div>' +
     '<span class="xs" style="font-weight:700;color:var(--ok);background:var(--ok-l);padding:5px 10px;border-radius:12px">' + (PUBLIC ? '베타 무료' : '결제 완료') + '</span></div>' +
     '<div class="card" style="background:var(--ink);color:var(--bg);border:0"><span class="xs" style="color:#C9C7E8">' + esc(r.name) + '</span></div>' +
-    (S.tab !== 'forest' ? '<button class="card row" data-tab="forest" style="gap:12px;cursor:pointer;background:#E7F1EA;border-color:#CFE3D6;text-align:left;width:100%"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect x="6" y="4" width="5" height="28" rx="2" fill="#4C8F66"/><rect x="15" y="9" width="5" height="23" rx="2" fill="#4C8F66"/><rect x="24" y="2" width="5" height="30" rx="2" fill="#4C8F66"/></svg><span class="col" style="flex:1"><b style="color:#1F4A33">대나무숲에서 비밀 외치기</b><span class="xs" style="color:#2F4F3C">아무도 모르게 털어놓고, 숲의 대답을 들어보세요</span></span></button>' : '') +
+    (S.tab !== 'forest' ? '<button class="card row" data-tab="forest" style="gap:12px;cursor:pointer;background:#E7F1EA;border-color:#CFE3D6;text-align:left;width:100%"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect x="6" y="4" width="5" height="28" rx="2" fill="#4C8F66"/><rect x="15" y="9" width="5" height="23" rx="2" fill="#4C8F66"/><rect x="24" y="2" width="5" height="30" rx="2" fill="#4C8F66"/></svg><span class="col" style="flex:1"><b style="color:#1F4A33">대나무숲 · 비밀 외치기와 고민 상담</b><span class="xs" style="color:#2F4F3C">아무도 모르게 털어놓고, 유형 맞춤 상담도 받아보세요 (무료 3회)</span></span></button>' : '') +
     '<div class="tabs" role="tablist" aria-label="리포트 목차">' + TABS.map(function (t) { return '<button class="tab' + (S.tab === t[0] ? ' on' : '') + '" role="tab" aria-selected="' + (S.tab === t[0]) + '" data-tab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
     '<div class="col" style="gap:14px">' + body + '</div>' +
     '<button class="btn btn-soft" data-act="compat">' + ICON.people + ' 친구와 궁합 보기</button><p class="xs muted" style="text-align:center">' + esc(SJ.disclaimer) + '</p></div>';
@@ -9403,7 +9465,7 @@ function payModal(step) {
 }
 var LEGAL = {
   terms: ['이용약관 (초안)', '<p>본 약관은 ㈜칼렛바이오(이하 "회사")가 제공하는 MyMyMe 서비스의 이용 조건을 정합니다.</p><h3>제1조 서비스 내용</h3><p>회사는 사주(명리학)와 성향 심리 이론에 기반한 자기이해 콘텐츠를 제공합니다. 모든 결과는 재미와 자기이해를 위한 해석이며, 의학·법률·재무 등 전문적 판단을 대신하지 않습니다.</p><h3>제2조 유료 콘텐츠</h3><p>심층 리포트는 건당 990원(부가세 포함)이며, 결제 전 가격과 제공 범위를 첫 화면과 결제 화면에 표시합니다. 자동 갱신·정기결제는 없습니다.</p><h3>제3조 이용 제한</h3><p>타인의 정보를 무단으로 입력하거나 서비스를 부정한 목적으로 이용할 수 없습니다.</p><h3>제4조 미성년자</h3><p>만 19세 미만 이용자의 유료 결제는 법정대리인의 동의가 필요하며, 동의 없는 결제는 취소할 수 있습니다.</p>'],
-  privacy: ['개인정보처리방침 (초안)', '<h3>수집 항목</h3><p>생년월일, 태어난 시간(선택), 성별(선택), 문항 응답. 결제 시 결제대행사(PG)를 통한 결제 정보.</p><h3>이용 목적</h3><p>결과 및 리포트 생성, 결제 확인, 다시 보기 제공.</p><h3>보관 기간</h3><p>생년월일과 문항 응답은 이용자의 기기(브라우저)에만 저장하며 서버로 보내지 않습니다. 서비스 개선을 위해 이름·연락처·생년월일이 없는 익명 이용 기록(진행 단계, 결과 유형, 선택한 혈액형·성별, 공유 여부)만 수집합니다.</p><h3>대나무숲</h3><p>\'바람에 날려 보내기\'를 고른 글은 어디에도 저장되지 않습니다. \'숲에 익명으로 남기기\'를 고른 글만 작성자 정보 없이 저장되어 다른 이용자에게 보이며, 신고가 쌓이거나 부적절한 글은 숨겨집니다. 삭제를 원하면 고객센터로 요청할 수 있습니다.</p><h3>제3자 제공</h3><p>법령에 따른 경우를 제외하고 제3자에게 제공하지 않습니다.</p>'],
+  privacy: ['개인정보처리방침 (초안)', '<h3>수집 항목</h3><p>생년월일, 태어난 시간(선택), 성별(선택), 문항 응답. 결제 시 결제대행사(PG)를 통한 결제 정보.</p><h3>이용 목적</h3><p>결과 및 리포트 생성, 결제 확인, 다시 보기 제공.</p><h3>보관 기간</h3><p>생년월일과 문항 응답은 이용자의 기기(브라우저)에만 저장하며 서버로 보내지 않습니다. 서비스 개선을 위해 이름·연락처·생년월일이 없는 익명 이용 기록(진행 단계, 결과 유형, 선택한 혈액형·성별, 공유 여부)만 수집합니다.</p><h3>대나무숲</h3><p>\'바람에 날려 보내기\'를 고른 글은 어디에도 저장되지 않습니다. \'숲에 익명으로 남기기\'를 고른 글만 작성자 정보 없이 저장되어 다른 이용자에게 보이며, 신고가 쌓이거나 부적절한 글은 숨겨집니다. 삭제를 원하면 고객센터로 요청할 수 있습니다.</p><h3>고민 상담</h3><p>고민 상담은 동의한 경우에만 고민 내용과 유형 정보(유형 이름·일간·성향 점수·선택한 혈액형)를 저장해 운영자가 답변하는 데 쓰며, AI 1차 답변 생성을 위해 AI 서비스 제공자(Anthropic)에게 전달됩니다. 상담 번호를 아는 사람만 내용을 볼 수 있습니다.</p><h3>제3자 제공</h3><p>법령에 따른 경우를 제외하고 제3자에게 제공하지 않습니다.</p>'],
   refund: ['환불 규정 (초안)', '<p>심층 리포트는 결제 즉시 제공되는 디지털콘텐츠입니다.</p><ul><li>결제 후 리포트를 열람하기 전에는 7일 이내 전액 환불됩니다.</li><li>리포트를 열람(제공 개시)한 뒤에는 「전자상거래법」 제17조에 따라 청약철회가 제한될 수 있으며, 회사는 결제 전 이를 고지하고 동의를 받습니다.</li><li>시스템 오류 등으로 리포트가 정상 제공되지 않은 경우에는 열람 여부와 관계없이 전액 환불됩니다.</li></ul><p>환불 문의: [고객센터 이메일]</p>']
 };
 function legalModal(k) { openModal('<div class="row between"><h2>' + LEGAL[k][0] + '</h2><button class="btn btn-ghost" data-act="closeModal">닫기</button></div><div class="legal col" style="gap:6px">' + LEGAL[k][1] + '</div><p class="xs muted">법률 검토 전 초안이에요.</p>'); }
@@ -9460,6 +9522,8 @@ document.addEventListener('click', function (ev) {
   if (d.gender) { if (S.view === 'birth') readBirth(); S.birth.gender = d.gender; if (S.result) S.result.dy = null; save(); render(); return; }
   if (d.blood !== undefined) { readBirth(); S.birth.blood = d.blood; save(); render(); return; }
   if (d.tab) { S.tab = d.tab; save(); render(); return; }
+  if (d.fmode) { FOREST_MODE = d.fmode; CONSULT.err = ''; render(); return; }
+  if (d.copen) { var pp = d.copen.split('-'); openConsult(pp[0], pp[1]); return; }
   if (d.metoo) { FEED.mine[d.metoo] = Object.assign(FEED.mine[d.metoo] || {}, { empathy: true }); post({ kind: 'empathy', id: d.metoo }); render(); return; }
   if (d.report) { FEED.mine[d.report] = Object.assign(FEED.mine[d.report] || {}, { report: true }); post({ kind: 'report', id: d.report }); toast('신고했어요. 검토 후 숨겨질 수 있어요'); render(); return; }
   if (d.paym !== undefined) { document.querySelectorAll('[data-paym]').forEach(function (b) { b.classList.remove('on'); }); el.classList.add('on'); return; }
@@ -9522,6 +9586,35 @@ document.addEventListener('click', function (ev) {
       break;
     case 'inviteCompat':
       try { var inv = readCode(S.invite); track('compat', { mode: 'invite', deep: S.paid && inv.paid }); compatModal({ friend: inv }); } catch (e) { toast('초대 정보를 읽지 못했어요'); }
+      break;
+    case 'cNew': CONSULT.view = 'new'; CONSULT.err = ''; render(); break;
+    case 'cBack': CONSULT.view = 'home'; CONSULT.err = ''; render(); break;
+    case 'cRefresh': openConsult(CONSULT.cur.id, CONSULT.cur.pin); break;
+    case 'cCopy': try { navigator.clipboard.writeText(CONSULT.cur.id + '-' + CONSULT.cur.pin).then(function () { toast('상담 번호를 복사했어요'); }, function () { toast(CONSULT.cur.id + '-' + CONSULT.cur.pin); }); } catch (e) { toast(CONSULT.cur.id + '-' + CONSULT.cur.pin); } break;
+    case 'cLoad':
+      var raw = (document.getElementById('cnum').value || '').trim().toUpperCase().replace(/\s/g, ''), mm = raw.match(/^([A-Z0-9]{6})-?(\d{4})$/);
+      if (!mm) { CONSULT.err = '상담 번호 형식이 맞지 않아요. 예: 7F3K2A-4821'; render(); break; }
+      openConsult(mm[1], mm[2]); break;
+    case 'cSend':
+      var body = (document.getElementById('cbody').value || '').trim();
+      if (body.length < 5) { CONSULT.err = '고민을 조금만 더 적어주세요.'; document.getElementById('cerr').textContent = CONSULT.err; break; }
+      if (!document.getElementById('cagree').checked) { CONSULT.err = '동의 항목을 확인해 주세요.'; document.getElementById('cerr').textContent = CONSULT.err; break; }
+      var pin = String(1000 + Math.floor(Math.random() * 9000)), prior = myConsults().length;
+      CONSULT.busy = true; CONSULT.err = ''; var keep = body; render(); var ta2 = document.getElementById('cbody'); if (ta2) ta2.value = keep;
+      track('consult', { n: prior + 1, paidTier: prior >= FREE_CONSULTS });
+      post({ kind: 'consult', text: body, pin: pin, ctx: consultCtx() }).then(function (j) {
+        CONSULT.busy = false;
+        if (!j || !j.ok) { CONSULT.err = j && j.reason === 'limit' ? '오늘은 상담을 더 남길 수 없어요. 내일 다시 찾아주세요.' : '상담을 보내지 못했어요. 잠시 후 다시 시도해 주세요.'; render(); var t3 = document.getElementById('cbody'); if (t3) t3.value = keep; return; }
+        var list = myConsults(); list.push({ id: j.id, pin: pin, date: TODAY, preview: body.slice(0, 40) }); saveConsults(list);
+        CONSULT.cur = { id: j.id, pin: pin, thread: j.thread }; CONSULT.view = 'thread'; render();
+      });
+      break;
+    case 'cComment':
+      var cm = (document.getElementById('ccomment').value || '').trim(); if (cm.length < 2) break;
+      CONSULT.busy = true; render();
+      post({ kind: 'consult_comment', id: CONSULT.cur.id, pin: CONSULT.cur.pin, text: cm }).then(function (j) {
+        CONSULT.busy = false; if (j && j.ok) { CONSULT.cur.thread = j.thread; CONSULT.err = ''; } else CONSULT.err = '댓글을 보내지 못했어요.'; render();
+      });
       break;
     case 'forestRelease': forestShout('release'); break;
     case 'forestPost': forestShout('post'); break;
