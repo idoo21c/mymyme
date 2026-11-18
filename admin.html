@@ -37,7 +37,7 @@ ol li{margin-bottom:6px;line-height:1.6}
 <body>
 <div class="wrap" id="app"></div>
 <script>
-var ENDPOINT = "";
+var ENDPOINT = "https://script.google.com/macros/s/AKfycbwfOTKpZVQ9BLWjyZyJdcJxnDytxYnDL2OQc1_pzgswamB3Eb6kHuGUT0OfJkhHx9YE/exec";
 var KEY = ''; try { KEY = sessionStorage.getItem('mm_admin') || ''; } catch (e) {}
 var app = document.getElementById('app'), DATA = null, FILTER = 'all';
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
