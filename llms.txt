@@ -1,0 +1,49 @@
+# MyMyMe
+
+> 동양의 명리학(사주)과 서양의 성향 심리학, 두 개의 렌즈로 보는 나. 82문항 약 13분, 320가지 유형 이름과 4글자 성격 코드(ENFP 등), 혈액형 비교, 오늘의 타로까지 무료로 확인하세요.
+
+운영: ㈜칼렛바이오 (서울 영등포구)
+
+## 서비스
+- [MyMyMe 테스트](https://idoo21c.github.io/mymyme/): 사주 × 성향 82문항, 약 13분, 기본 결과 무료
+
+## 자주 묻는 질문
+- MyMyMe는 무료인가요? 참여와 기본 결과(유형 이름, 4글자 성격 코드, 성향 그래프, 혈액형 비교, 오늘의 타로)는 무료예요. 베타 기간에는 심층 리포트도 무료로 열 수 있고, 정식 출시 후 심층 리포트 가격은 990원이에요.
+- 테스트는 얼마나 걸리나요? 모두 82문항으로 약 13분 걸려요. 성향 문항 60개, 상황 판단 12개, 오행 체감 10개로 이루어져 있고, 중간에 나가도 이어서 할 수 있어요.
+- 사주는 어떻게 계산하나요? 생년월일과 태어난 시간으로 절기 기준 네 기둥(8글자)을 계산해요. 음력과 윤달 입력을 지원하고, 태어난 시간을 모르면 연·월·일 6글자로 풀이해요.
+- MBTI처럼 4글자 성격 코드도 나오나요? 네. 에너지·인식·판단·생활 4개 축의 결과를 ENFP 같은 4글자 코드로 알려드리고, '자유로운 탐험가'처럼 MyMyMe만의 유형 이름도 함께 보여드려요.
+- 결과 유형은 몇 가지인가요? 사주의 일간 10가지, 성향 16가지, 마음의 결(단단함·섬세함) 2가지를 조합해 320가지 결과가 나와요. 예: 갑목 일간 + 자유로운 탐험가 = '새벽 숲의 탐험가'.
+- 심층 리포트에는 무엇이 있나요? 사주 원국 8글자 풀이, 10년 대운 인생 그래프, 도화살·역마살 같은 신살, 연애·재물·직업, 올해 월별 흐름, 타로 인생 카드, 행운 요소, 대나무숲, 친구와의 심층 궁합이 담겨 있어요.
+- 친구와 궁합은 어떻게 보나요? 결과 화면에서 '카카오톡으로 보내기'를 누르면 궁합 링크가 만들어져요. 친구가 그 링크로 참여를 마치면 두 사람의 궁합이 바로 열려요.
+- 생년월일 같은 개인정보가 저장되나요? 생년월일과 문항 응답은 이용자의 기기(브라우저)에만 저장되고 서버로 보내지 않아요. 서비스 개선을 위한 익명 통계만 수집해요.
+- 결과는 과학적으로 정확한가요? 명리학과 성향 심리 이론에 기반한 해석으로, 재미와 자기이해를 위한 콘텐츠예요. 혈액형 성격설은 과학적 근거가 부족해 '혈액형 이미지와 실제 나'를 비교하는 방식으로만 보여드려요.
+
+## 16가지 성격 유형
+- [ISTJ 성실한 관리자](https://idoo21c.github.io/mymyme/types/istj.html): 한 번 한 약속은 반드시 지키는 사람
+- [ISFJ 다정한 보호자](https://idoo21c.github.io/mymyme/types/isfj.html): 곁에 있는 사람을 조용히 지켜주는 사람
+- [INFJ 깊은 통찰가](https://idoo21c.github.io/mymyme/types/infj.html): 사람의 마음 너머를 보는 사람
+- [INTJ 고독한 전략가](https://idoo21c.github.io/mymyme/types/intj.html): 열 수 앞을 내다보는 사람
+- [ISTP 침착한 장인](https://idoo21c.github.io/mymyme/types/istp.html): 문제를 손으로 해결하는 사람
+- [ISFP 조용한 예술가](https://idoo21c.github.io/mymyme/types/isfp.html): 지금 이 순간의 아름다움을 아는 사람
+- [INFP 꿈꾸는 이상가](https://idoo21c.github.io/mymyme/types/infp.html): 마음속에 자기만의 세계를 가진 사람
+- [INTP 호기심 많은 사색가](https://idoo21c.github.io/mymyme/types/intp.html): 세상의 원리를 궁금해하는 사람
+- [ESTP 대담한 도전자](https://idoo21c.github.io/mymyme/types/estp.html): 일단 부딪혀 보는 사람
+- [ESFP 빛나는 연출가](https://idoo21c.github.io/mymyme/types/esfp.html): 어디서든 무대를 만드는 사람
+- [ENFP 자유로운 탐험가](https://idoo21c.github.io/mymyme/types/enfp.html): 가능성을 가장 먼저 보는 사람
+- [ENTP 재치 있는 발명가](https://idoo21c.github.io/mymyme/types/entp.html): 당연한 것에 질문을 던지는 사람
+- [ESTJ 단단한 지휘자](https://idoo21c.github.io/mymyme/types/estj.html): 일이 되게 만드는 사람
+- [ESFJ 따뜻한 조율가](https://idoo21c.github.io/mymyme/types/esfj.html): 모두를 챙기는 사람
+- [ENFJ 이끄는 멘토](https://idoo21c.github.io/mymyme/types/enfj.html): 사람의 가능성을 키우는 사람
+- [ENTJ 결단하는 개척자](https://idoo21c.github.io/mymyme/types/entj.html): 목표를 향해 길을 내는 사람
+
+## 10가지 일간
+- [갑목(甲) 일간](https://idoo21c.github.io/mymyme/saju/gapmok.html): 곧게 자라는 큰 나무
+- [을목(乙) 일간](https://idoo21c.github.io/mymyme/saju/eulmok.html): 어디서든 뿌리내리는 풀꽃과 덩굴
+- [병화(丙) 일간](https://idoo21c.github.io/mymyme/saju/byeonghwa.html): 모두를 비추는 태양
+- [정화(丁) 일간](https://idoo21c.github.io/mymyme/saju/jeonghwa.html): 어둠 속의 촛불
+- [무토(戊) 일간](https://idoo21c.github.io/mymyme/saju/mutto.html): 흔들리지 않는 큰 산
+- [기토(己) 일간](https://idoo21c.github.io/mymyme/saju/gito.html): 생명을 길러내는 논밭
+- [경금(庚) 일간](https://idoo21c.github.io/mymyme/saju/gyeonggeum.html): 불에 단련된 강철
+- [신금(辛) 일간](https://idoo21c.github.io/mymyme/saju/singeum.html): 섬세하게 다듬어진 보석
+- [임수(壬) 일간](https://idoo21c.github.io/mymyme/saju/imsu.html): 모든 것을 품는 바다
+- [계수(癸) 일간](https://idoo21c.github.io/mymyme/saju/gyesu.html): 만물을 적시는 비와 이슬
