@@ -84,6 +84,7 @@ function consultBox() {
       var st = c.status === '답변 완료' ? ['var(--ok-l)', 'var(--ok)'] : c.status === 'AI 답변' ? ['var(--acc-l)', 'var(--acc)'] : ['#FBE9E3', '#8A3520'];
       return '<div class="sec-item" style="flex-direction:column;gap:10px"><div class="row" style="flex-wrap:wrap;gap:6px"><b>상담 ' + esc(c.id) + '</b><span class="small muted">' + esc(c.date) + '</span>' +
         '<span class="tag" style="background:' + st[0] + ';color:' + st[1] + '">' + esc(c.status) + '</span>' + (c.crisis ? '<span class="tag" style="background:#B3261E;color:#fff">위기 신호 · 109 안내 확인</span>' : '') +
+        (c.memo ? '<span class="tag" style="background:#FFF4D6;color:#7A5A00" title="' + esc(c.memo) + '">' + esc(String(c.memo).slice(0, 60)) + '</span>' : '') +
         chips.map(function (t) { return '<span class="tag" style="background:#F0ECE4;color:#33364F">' + esc(t) + '</span>'; }).join('') + '</div>' +
         c.thread.map(function (m) { return '<div style="border-left:3px solid ' + (m.who === 'user' ? 'var(--acc)' : m.who === 'ai' ? '#4C8F66' : 'var(--coral)') + ';padding:4px 0 4px 12px"><div class="small muted"><b>' + WHO[m.who] + '</b> · ' + esc(m.date) + '</div><p style="margin:4px 0 0;white-space:pre-wrap;line-height:1.6">' + esc(m.text) + '</p></div>'; }).join('') +
         '<label class="small" for="r_' + esc(c.id) + '" style="font-weight:500">운영자 답변</label><textarea id="r_' + esc(c.id) + '" style="width:100%;min-height:90px;border:1px solid #D9D5CC;border-radius:12px;padding:10px;font-family:inherit;font-size:14px"></textarea>' +
