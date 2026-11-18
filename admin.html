@@ -107,10 +107,10 @@ function lineChart(id, title, unit, dates, series) {
   CHARTS[id] = { dates: dates, series: series, unit: unit };
   var W = 760, H = 260, L = 44, R = 92, T = 16, B = 30, n = dates.length;
   var maxV = Math.max(1, Math.max.apply(null, series.map(function (s) { return Math.max.apply(null, s.values.map(function (v) { return v == null ? 0 : v; })); })));
-  if (unit === '%') maxV = Math.min(100, Math.max(20, Math.ceil(maxV / 20) * 20)); else maxV = Math.max(4, Math.ceil(maxV * 1.1 / 4) * 4);
+  if (unit === '%') maxV = Math.min(100, Math.max(20, Math.ceil(maxV / 20) * 20)); else { var raw = Math.max(1, maxV * 1.05 / 4), mag = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / mag, nice = f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10; maxV = Math.max(4, nice * mag * 4); }
   var x = function (i) { return L + (n <= 1 ? (W - L - R) / 2 : i * (W - L - R) / (n - 1)); }, y = function (v) { return T + (H - T - B) * (1 - v / maxV); };
   var grid = '', ticks = 4;
-  for (var g = 0; g <= ticks; g++) { var gv = maxV * g / ticks, gy = y(gv); grid += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + gy + '" y2="' + gy + '" stroke="#ECE8E0"/><text x="' + (L - 8) + '" y="' + (gy + 4) + '" text-anchor="end" font-size="11" fill="#5A5D72">' + (unit === '%' ? Math.round(gv) + '%' : Math.round(gv)) + '</text>'; }
+  for (var g = 0; g <= ticks; g++) { var gv = maxV * g / ticks, gy = y(gv); grid += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + gy + '" y2="' + gy + '" stroke="#ECE8E0"/><text x="' + (L - 8) + '" y="' + (gy + 4) + '" text-anchor="end" font-size="11" fill="#5A5D72">' + (unit === '%' ? Math.round(gv) + '%' : Math.round(gv).toLocaleString('ko-KR')) + '</text>'; }
   var step = Math.max(1, Math.ceil(n / 8)), xl = '';
   dates.forEach(function (d, i) { if (i % step === 0 || i === n - 1) xl += '<text x="' + x(i) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="11" fill="#5A5D72">' + fmtDate(d) + '</text>'; });
   var lines = series.map(function (s, si) {
@@ -163,6 +163,26 @@ function trendsTab() {
     lineChart('c_rate', '전환율 (%/일)', '%', dates, [{ name: '참여율', color: SERIES[0], values: d.map(function (x) { return rate(x.start, x.visit); }) }, { name: '완주율', color: SERIES[1], values: d.map(function (x) { return rate(x.finish, x.start); }) }, { name: '리포트 열람률', color: SERIES[2], values: d.map(function (x) { return rate(x.report, x.finish); }) }, { name: '공유율', color: SERIES[3], values: d.map(function (x) { return rate(x.share, x.finish); }) }]) +
     lineChart('c_forest', '대나무숲 · 상담 (건/일)', '건', dates, [{ name: '숲에 남긴 비밀', color: SERIES[0], values: col('secretsSaved') }, { name: '날려 보낸 사람', color: SERIES[1], values: col('secret_release') }, { name: '고민 상담', color: SERIES[2], values: col('consultsSaved') }]) +
     lineChart('c_viral', '공유 · 궁합 (명/일)', '명', dates, [{ name: '결과 공유', color: SERIES[0], values: col('share') }, { name: '궁합 이용', color: SERIES[1], values: col('compat') }, { name: '초대 링크로 방문', color: SERIES[2], values: col('invite_open') }]);
+}
+/* Claude Haiku 5.5 단가 (USD / 100만 토큰, 프롬프트 10만 토큰 이하) */
+var PRICE_IN = 0.10, PRICE_OUT = 0.50;
+function usd(v) { return !v ? '$0' : v >= 1 ? '$' + v.toFixed(2) : v >= 0.01 ? '$' + v.toFixed(3) : '$' + v.toFixed(4); }
+function num(v) { return Math.round(v).toLocaleString('ko-KR'); }
+function aiTab() {
+  var days = (DATA.daily || []).slice(-RANGE).map(function (x) { return x.date; });
+  var map = {}; (DATA.ai || []).forEach(function (a) { map[a.date] = a; });
+  if (!DATA.ai) return '<div class="card"><p class="small muted">Code.gs를 최신 버전으로 배포하면 이 날부터 AI 사용량이 쌓여요.</p></div>';
+  var rows = days.map(function (d) { var a = map[d] || { calls: 0, fail: 0, in: 0, out: 0 }; return { date: d, calls: a.calls, fail: a.fail, in: a.in, out: a.out, cost: a.in / 1e6 * PRICE_IN + a.out / 1e6 * PRICE_OUT }; });
+  var S_ = function (k) { return rows.reduce(function (t, r) { return t + r[k]; }, 0); };
+  var calls = S_('calls'), cost = S_('cost');
+  var picker = '<div class="row" style="flex-wrap:wrap;gap:8px"><span class="small muted">기간</span>' + [[7, '7일'], [14, '14일'], [30, '30일'], [90, '90일']].map(function (r) { return '<button class="sec" data-range="' + r[0] + '" style="' + (RANGE === r[0] ? 'border-color:var(--ink);font-weight:700' : '') + '">' + r[1] + '</button>'; }).join('') + (days.length ? '<span class="small muted">· ' + days[0] + ' ~ ' + days[days.length - 1] + '</span>' : '') + '</div>';
+  var table = '<div class="card"><h2>일자별 상세</h2><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>날짜</th><th>AI 답변</th><th>실패</th><th>입력 토큰</th><th>출력 토큰</th><th>예상 비용</th></tr></thead><tbody>' +
+    rows.slice().reverse().map(function (r) { return '<tr><td>' + r.date + '</td><td>' + r.calls + '</td><td>' + r.fail + '</td><td>' + num(r.in) + '</td><td>' + num(r.out) + '</td><td>' + usd(r.cost) + '</td></tr>'; }).join('') + '</tbody></table></div></div>';
+  return picker +
+    '<div class="kpis">' + kpi('AI 답변', calls, '실패 ' + S_('fail') + '건') + kpi('입력 토큰', num(S_('in')), '답변당 ' + (calls ? num(S_('in') / calls) : '–')) +
+    kpi('출력 토큰', num(S_('out')), '답변당 ' + (calls ? num(S_('out') / calls) : '–')) + kpi('예상 비용', usd(cost), '답변당 ' + (calls ? usd(cost / calls) : '–')) + '</div>' +
+    lineChart('c_tokens', 'AI 토큰 사용량 (토큰/일)', '토큰', days, [{ name: '입력 토큰', color: SERIES[0], values: rows.map(function (r) { return r.in; }) }, { name: '출력 토큰', color: SERIES[1], values: rows.map(function (r) { return r.out; }) }]) +
+    table + '<p class="small muted">예상 비용은 Claude Haiku 5.5 공시 단가(입력 $0.10 · 출력 $0.50 / 100만 토큰)로 계산했어요. 실제 청구액은 Anthropic 콘솔(console.anthropic.com)의 Usage에서 확인하세요.</p>';
 }
 function peopleRows() {
   var q = PQ.trim().toLowerCase();
@@ -222,8 +242,8 @@ function forestTab() {
 function render() {
   CHARTS = {};
   var waiting = CONS.filter(function (c) { return c.status !== '답변 완료'; }).length;
-  var tabs = [['overview', '개요'], ['trends', '일자별 추이'], ['people', '참여자'], ['results', '결과 분포'], ['forest', '대나무숲 · 상담' + (waiting ? ' (' + waiting + ')' : '')]];
-  var body = TAB === 'trends' ? trendsTab() : TAB === 'people' ? peopleTab() : TAB === 'results' ? resultsTab() : TAB === 'forest' ? forestTab() : overviewTab();
+  var tabs = [['overview', '개요'], ['trends', '일자별 추이'], ['ai', 'AI 사용량'], ['people', '참여자'], ['results', '결과 분포'], ['forest', '대나무숲 · 상담' + (waiting ? ' (' + waiting + ')' : '')]];
+  var body = TAB === 'trends' ? trendsTab() : TAB === 'ai' ? aiTab() : TAB === 'people' ? peopleTab() : TAB === 'results' ? resultsTab() : TAB === 'forest' ? forestTab() : overviewTab();
   app.innerHTML = '<div class="row between" style="flex-wrap:wrap"><h1>MyMyMe 관리자</h1><div class="row"><span class="small muted">갱신 ' + new Date(DATA.updated).toLocaleString('ko-KR') + '</span><button class="sec" id="re">새로고침</button><button class="sec" id="out">로그아웃</button></div></div>' +
     '<nav class="tabs" role="tablist">' + tabs.map(function (t) { return '<button role="tab" aria-selected="' + (TAB === t[0]) + '" class="tabb' + (TAB === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</nav>' +
     body + '<p class="small muted">원본 데이터는 구글 시트 "MyMyMe 운영 데이터"에서 볼 수 있어요. 생년월일·이름·연락처는 수집하지 않아요.</p>';
