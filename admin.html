@@ -258,16 +258,33 @@ function brainTab() {
     hist + dom + types + items + '<p class="small muted">한 사람이 여러 번 풀면 마지막 결과만 셌어요. "상위 몇 %"는 참여자가 충분히 쌓인 뒤 이용자 화면에 보여줄 예정이에요.</p>';
 }
 var ITEMN = { ny2027: '2027 신년운세', group: '그룹 관계 지도', consult: '추가 고민 상담', brainx: '두뇌 퍼즐 해설' };
+function giftTo(sids, amt, memo) {
+  sids = (sids || []).filter(Boolean); if (!sids.length) { alert('받을 사람의 익명번호를 넣어 주세요.'); return; }
+  if (!amt) { var a = prompt(sids.length + '명에게 줄 마마미코인 개수 (1~1000)', '10'); if (a === null) return; amt = +a; }
+  if (!(amt >= 1 && amt <= 1000)) { alert('1~1000 사이 숫자로 넣어 주세요.'); return; }
+  if (memo == null) { memo = prompt('받는 사람 화면에 함께 보일 한마디 (선택, 60자)', '베타 참여 감사 선물'); if (memo === null) return; }
+  if (!confirm(sids.length + '명에게 ' + amt + '코인씩 보낼까요? 받는 사람이 다음에 사이트를 열면 자동으로 지갑에 들어가요.')) return;
+  apost({ kind: 'admin_edit', op: 'coin_grant', sids: sids, amt: amt, memo: memo || '' }).then(function (j) { if (j && j.ok) alert(j.count + '명에게 선물을 보냈어요.'); else alert('보내지 못했어요. Code.gs 최신 버전 배포 여부를 확인해 주세요.'); load(); }, load);
+}
+function giftHtml() {
+  var gr = DATA.grants;
+  return '<div class="card"><h2>코인 선물하기 (마스터)</h2><p class="small muted">참여자 탭의 익명번호(또는 이용자 지갑 화면의 \'내 번호\')를 넣으면 그 기기로 코인이 가요. 여러 명은 쉼표나 줄바꿈으로 나눠 넣어요. 참여자 탭에서 사람을 골라 바로 보낼 수도 있어요.</p>' +
+    '<div class="col" style="gap:8px;margin-top:8px"><textarea id="gsids" placeholder="익명번호 (예: uhio7ofqpf)" style="height:60px;padding:8px;font-size:14px;width:100%;display:block"></textarea>' +
+    '<div class="row" style="gap:8px;flex-wrap:wrap"><input id="gamt" type="number" min="1" max="1000" value="10" style="height:40px;width:110px;font-size:14px"><span class="small" style="align-self:center">코인</span><input id="gmemo" placeholder="받는 사람에게 보일 한마디 (선택)" maxlength="60" style="height:40px;flex:1;min-width:200px;font-size:14px"><button class="sec" id="gsend" style="border-color:var(--ink);font-weight:700">보내기</button></div></div></div>' +
+    '<div class="card"><h2>보낸 선물</h2>' + (!gr ? '<p class="small muted">Code.gs를 최신 버전으로 배포하면 보여요.</p>' : !gr.length ? '<p class="small muted">아직 보낸 선물이 없어요.</p>' :
+      '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>보낸 시각</th><th>받는 사람</th><th>코인</th><th>한마디</th><th>상태</th><th></th></tr></thead><tbody>' + gr.map(function (g) {
+        return '<tr><td>' + esc(g.date) + '</td><td>' + esc(g.sid) + '</td><td>' + g.amt + '</td><td>' + esc(g.memo) + '</td><td>' + esc(g.status) + (g.claimed ? '<br><span class="xs muted">' + esc(g.claimed) + '</span>' : '') + '</td><td>' + (g.status === '대기' ? '<button class="sec" data-gcancel="' + esc(g.id) + '">취소</button>' : '') + '</td></tr>'; }).join('') + '</tbody></table></div>') + '</div>';
+}
 function coinTab() {
   var c = DATA.coin;
-  if (!c) return '<div class="card"><p class="small muted">Code.gs를 최신 버전으로 배포하면 이 날부터 마마미코인 기록이 쌓여요.</p></div>';
+  if (!c) return giftHtml() + '<div class="card"><p class="small muted">Code.gs를 최신 버전으로 배포하면 이 날부터 마마미코인 기록이 쌓여요.</p></div>';
   var items = c.items || [];
   var table = '<div class="card"><h2>상품별 수요</h2><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>상품</th><th>구매</th><th>구매자</th><th>사용 코인</th><th>코인 부족으로 못 산 횟수</th><th>못 산 사람</th></tr></thead><tbody>' +
     (items.length ? items.map(function (x) { return '<tr><td>' + (ITEMN[x.item] || x.item) + '</td><td>' + x.spend + '</td><td>' + x.users + '</td><td>' + x.coins + '</td><td>' + x.short + '</td><td>' + x.shortUsers + '</td></tr>'; }).join('') : '<tr><td colspan="6" class="muted">데이터 없음</td></tr>') + '</tbody></table></div>' +
     '<p class="small muted">\'못 산 횟수\'는 코인이 모자라 열지 못한 시도예요. 베타에는 충전이 없으니, 이 숫자가 큰 상품이 정식 출시 때 가장 먼저 팔릴 후보예요.</p></div>';
   var daily = '<div class="card"><h2>일자별</h2><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>날짜</th><th>구매</th><th>사용 코인</th><th>코인 부족</th></tr></thead><tbody>' +
     ((c.daily || []).length ? c.daily.slice().reverse().map(function (d) { return '<tr><td>' + d.date + '</td><td>' + d.spend + '</td><td>' + d.coins + '</td><td>' + d.short + '</td></tr>'; }).join('') : '<tr><td colspan="4" class="muted">데이터 없음</td></tr>') + '</tbody></table></div></div>';
-  return '<div class="kpis">' + kpi('지급한 코인', num(c.granted), '받은 사람 ' + c.grantUsers + '명') + kpi('사용한 코인', num(c.spent), '사용한 사람 ' + c.spenders + '명') +
+  return giftHtml() + '<div class="kpis">' + kpi('지급한 코인', num(c.granted), '받은 사람 ' + c.grantUsers + '명' + (c.gifted ? ' · 운영자 선물 ' + num(c.gifted) : '')) + kpi('사용한 코인', num(c.spent), '사용한 사람 ' + c.spenders + '명') +
     kpi('사용률', c.grantUsers ? Math.round(c.spenders / c.grantUsers * 100) + '%' : '–', '받은 사람 중 한 번이라도 쓴 비율') + '</div>' + table + daily +
     '<p class="small muted">마마미코인은 베타 체험용(실제 돈 아님)이에요. 지갑은 이용자 기기에 저장되고, 여기에는 지급·사용·부족 기록만 모여요.</p>';
 }
@@ -342,12 +359,12 @@ function peopleTab() {
   var consented = all.filter(function (p) { return p.result && p.result.research; }).length;
   return '<div class="card"><div class="row between" style="flex-wrap:wrap;gap:10px;margin-bottom:10px"><h2 style="margin:0">참여자 ' + rows.length + '명 <span class="small muted">/ 전체 ' + all.length + '명 · 통계 연구 동의 ' + consented + '명</span></h2>' +
     '<div class="row" style="flex-wrap:wrap;gap:8px">' + [['finished', '결과 확인'], ['research', '연구 동의'], ['dropped', '중도 이탈'], ['all', '전체']].map(function (f) { return '<button class="sec" data-pfilter="' + f[0] + '" style="' + (PFILTER === f[0] ? 'border-color:var(--ink);font-weight:700' : '') + '">' + f[1] + '</button>'; }).join('') +
-    '<input id="pq" placeholder="이름·유형·코드·일간·간지·혈액형 검색" value="' + esc(PQ) + '" style="height:40px;font-size:14px;min-width:220px"><button class="sec" id="csv">CSV 받기 (전체 속성)</button>' + (Object.keys(PSEL).length ? delBtn('id="pdelsel"', '선택한 ' + Object.keys(PSEL).length + '명 삭제') : '') + '</div></div>' +
+    '<input id="pq" placeholder="이름·유형·코드·일간·간지·혈액형 검색" value="' + esc(PQ) + '" style="height:40px;font-size:14px;min-width:220px"><button class="sec" id="csv">CSV 받기 (전체 속성)</button>' + (Object.keys(PSEL).length ? '<button class="sec" id="pgiftsel">🪙 선택한 ' + Object.keys(PSEL).length + '명에게 코인 선물</button>' + delBtn('id="pdelsel"', '선택한 ' + Object.keys(PSEL).length + '명 삭제') : '') + '</div></div>' +
     '<p class="small muted">이름·생년월일·태어난 시간은 참여자가 "사주 통계 연구"에 동의한 경우에만 기록돼요. 사주 간지·십성·12운성·오행·성향 점수는 모든 참여자가 익명으로 기록돼요(이 기능을 배포한 뒤 참여한 사람부터). 같은 사람이라도 다른 기기에서 하면 다른 번호로 보여요.</p>' +
     '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th><input type="checkbox" id="pall" title="보이는 참여자 모두 선택"' + (rows.length && rows.slice(0, 500).every(function (p) { return PSEL[p.sid]; }) ? ' checked' : '') + '></th><th>결과 확인 시각</th><th>이름 (동의)</th><th>생년월일시 (동의)</th><th>사주 간지 (연·월·일·시)</th><th>일간</th><th>오행</th><th>십성 (천간/지지)</th><th>유형 · 코드</th><th>성향 E/S/T/J/안정 %</th><th>혈액형</th><th>성별</th><th>신살</th><th>언어</th><th>참여 시간</th><th>리포트</th><th>공유</th><th>궁합</th><th>상담</th><th>익명 번호</th><th></th></tr></thead><tbody>' +
     (rows.length ? rows.slice(0, 500).map(function (p) {
       var r = p.result || {};
-      return '<tr><td><input type="checkbox" data-psel="' + esc(p.sid) + '"' + (PSEL[p.sid] ? ' checked' : '') + '></td><td style="white-space:nowrap">' + esc(p.finished || ('시작 ' + (p.started || ''))) + '</td>' +
+      return '<tr><td><input type="checkbox" data-psel="' + esc(p.sid) + '"' + (PSEL[p.sid] ? ' checked' : '') + '></td><td style="white-space:nowrap">' + esc(p.finished || ('시작 ' + (p.started || ''))) + '<br><span class="xs muted" title="익명번호">' + esc(p.sid) + '</span></td>' +
         '<td>' + (r.person ? '<b>' + esc(r.person) + '</b>' : r.research ? '<span class="muted">(이름 없음)</span>' : '<span class="muted">–</span>') + '</td>' +
         '<td style="white-space:nowrap">' + (r.birth ? esc(birthStr(r)) + (r.lunar && r.cal === 'solar' ? '<br><span class="xs muted">음력 ' + esc(r.lunar) + '</span>' : r.solar && r.cal !== 'solar' ? '<br><span class="xs muted">양력 ' + esc(r.solar) + '</span>' : '') : '<span class="muted">–</span>') + '</td>' +
         '<td style="white-space:nowrap;font-size:15px;letter-spacing:1px">' + esc(r.pillars || '') + '</td>' +
@@ -356,7 +373,7 @@ function peopleTab() {
         '<td class="xs" style="white-space:nowrap">' + esc(tgList(r).join(' · ')) + '</td>' +
         '<td>' + (r.name ? '<b>' + esc(r.name) + '</b><br><span class="xs muted">' + esc(r.code || '') + '</span>' : '<span class="muted">중도 이탈</span>') + '</td>' +
         '<td class="xs">' + esc(r.pct || '') + '</td><td>' + esc(r.blood || '') + '</td><td>' + esc(GENDER[r.gender] || '') + '</td><td class="xs">' + esc(r.sal || '') + '</td><td class="xs">' + esc(r.lang || '') + '</td>' +
-        '<td>' + (r.minutes != null ? r.minutes + '분' : '') + '</td><td>' + yn(p.report, '열람') + '</td><td>' + (p.share || '<span class="muted">–</span>') + '</td><td>' + (p.compat || '<span class="muted">–</span>') + '</td><td>' + (p.consult || '<span class="muted">–</span>') + '</td><td><code class="xs">' + esc(p.sid) + '</code></td><td>' + delBtn('data-pdel="' + esc(p.sid) + '"', '', true) + '</td></tr>';
+        '<td>' + (r.minutes != null ? r.minutes + '분' : '') + '</td><td>' + yn(p.report, '열람') + '</td><td>' + (p.share || '<span class="muted">–</span>') + '</td><td>' + (p.compat || '<span class="muted">–</span>') + '</td><td>' + (p.consult || '<span class="muted">–</span>') + '</td><td><code class="xs">' + esc(p.sid) + '</code></td><td>' + '<button class="sec" title="코인 선물" style="padding:0 8px;margin-right:4px" data-cgift="' + esc(p.sid) + '">🪙</button>' + delBtn('data-pdel="' + esc(p.sid) + '"', '', true) + '</td></tr>';
     }).join('') : '<tr><td colspan="21" class="muted">해당하는 참여자가 없어요</td></tr>') + '</tbody></table></div>' + (rows.length > 500 ? '<p class="small muted">최근 500명만 표시해요. 전체는 CSV로 받아보세요.</p>' : '') + '</div>';
 }
 function downloadCsv() {
@@ -405,13 +422,63 @@ function forestTab() {
         '<div class="col" style="gap:6px"><button class="sec" data-mod="' + (s.hidden ? 'unhide' : 'hide') + '" data-id="' + esc(s.id) + '">' + (s.hidden ? '공개하기' : '숨기기') + '</button>' + (sed ? '' : edBtn('data-edit="' + skey + '"')) + delBtn('data-sdel="' + esc(s.id) + '"') + '</div></div>';
     }).join('') : '<p class="small muted">해당하는 글이 없어요</p>') + '</div>';
 }
+/* ---------- 서비스별 관리자 ----------
+ * 새 서비스를 붙일 때: 앱에서 track('서비스_이벤트', {...})로 기록하고, 아래 SERVICES에 { id, name, tab } 한 줄을 더한다.
+ * 이벤트는 서버가 종류별 횟수·사람 수·세부(via/mode/op)별로 자동 집계해 DATA.events / DATA.eventDays로 내려준다 */
+function EVN(t) { return (DATA.events || {})[t] || { n: 0, users: 0, sub: {} }; }
+function subTable(title, t, names) {
+  var e = EVN(t), keys = Object.keys(names).filter(function (k) { return e.sub[k]; }), max = Math.max.apply(null, keys.map(function (k) { return e.sub[k]; }).concat([1]));
+  return '<div class="card"><h2>' + title + '</h2>' + (keys.length ? keys.map(function (k) { return hbar(names[k], e.sub[k], max, e.sub[k] + '회'); }).join('') : '<p class="small muted">데이터 없음</p>') + '</div>';
+}
+function evDaily(title, cols) {
+  var rows = (DATA.eventDays || []).slice(-14).reverse();
+  return '<div class="card"><h2>' + title + ' · 최근 14일</h2><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>날짜</th>' + cols.map(function (c) { return '<th>' + c[1] + '</th>'; }).join('') + '</tr></thead><tbody>' +
+    (rows.length ? rows.map(function (r) { return '<tr><td>' + r.date + '</td>' + cols.map(function (c) { return '<td>' + (r[c[0]] || 0) + '</td>'; }).join('') + '</tr>'; }).join('') : '<tr><td colspan="9" class="muted">데이터 없음</td></tr>') + '</tbody></table></div></div>';
+}
+function coinItem(k) { return ((DATA.coin || {}).items || []).filter(function (x) { return x.item === k; })[0] || { spend: 0, users: 0, coins: 0, short: 0, shortUsers: 0 }; }
+function needDeploy() { return !DATA.events ? '<div class="card"><p class="small muted">Code.gs를 최신 버전으로 배포하면 서비스별 집계가 보여요.</p></div>' : ''; }
+var SAJU_SUB = 'results';
+function sajuTab() {
+  var t = DATA.totals || {};
+  return '<div class="kpis">' + kpi('참여 시작', t.start || 0, '') + kpi('결과 확인', t.finish || 0, '완주율 ' + (t.start ? Math.round(t.finish / t.start * 100) + '%' : '–')) + kpi('심층 리포트', t.report || 0, '열람률 ' + (t.finish ? Math.round(t.report / t.finish * 100) + '%' : '–')) + kpi('평균 참여 시간', DATA.avgMinutes != null ? DATA.avgMinutes + '분' : '–', '') + '</div>' +
+    '<div class="row" style="gap:8px;margin:6px 0 12px">' + [['results', '결과 분포'], ['funnel', '문항 이탈']].map(function (x) { return '<button class="sec" data-sub="' + x[0] + '" style="' + (SAJU_SUB === x[0] ? 'border-color:var(--ink);font-weight:700' : '') + '">' + x[1] + '</button>'; }).join('') + '</div>' +
+    (SAJU_SUB === 'funnel' ? funnelTab() : resultsTab());
+}
+function compatTab() {
+  var c = EVN('compat'), g = coinItem('group');
+  return needDeploy() + '<div class="kpis">' + kpi('리포트 코드 발급', DATA.codes != null ? DATA.codes : '–', '단톡방에 올리는 6자리 코드') + kpi('코드 복사·보내기', EVN('mycode').n, EVN('mycode').users + '명') +
+    kpi('궁합 본 횟수', c.n, c.users + '명') + kpi('그룹 관계 지도', g.spend, '구매 ' + g.users + '명 · 코인 부족 ' + g.short + '회') + '</div>' +
+    subTable('궁합을 본 경로', 'compat', { code: '코드 입력', view: '공유 링크에서', invite: '초대받고', birth: '생년월일로' }) +
+    subTable('한 번에 비교한 인원', 'compat', { '1명': '1명', '2명': '2명', '3명': '3명', '4명': '4명', '5명': '5명' }) +
+    '<div class="card"><h2>궁합 초대</h2>' + [['invite_open', '초대 링크로 방문'], ['invite_accept', '수락'], ['invite_decline', '거절'], ['invite_delete', '삭제']].map(function (x) { var e = EVN(x[0]); return '<div class="row between small" style="padding:6px 0;border-top:1px solid #EEE"><span>' + x[1] + '</span><b>' + e.n + '회 · ' + e.users + '명</b></div>'; }).join('') + '</div>' +
+    '<div class="card"><h2>궁합 결과 공유</h2><p class="small">둘의 궁합 링크 공유 <b>' + (EVN('share').sub.pair || 0) + '회</b></p></div>' +
+    evDaily('일자별', [['compat', '궁합'], ['mycode', '코드 복사'], ['invite_open', '초대 방문'], ['invite_accept', '초대 수락']]);
+}
+function newyearTab() {
+  var n = coinItem('ny2027');
+  return needDeploy() + '<div class="kpis">' + kpi('구매', n.spend, n.users + '명 · ' + n.coins + '코인') + kpi('코인 부족으로 못 산 시도', n.short, n.shortUsers + '명') + kpi('키워드 공유', EVN('share').sub.newyear || 0, '') +
+    kpi('구매 전환', (DATA.totals || {}).finish ? Math.round(n.users / DATA.totals.finish * 100) + '%' : '–', '결과를 본 사람 중') + '</div>' +
+    '<div class="card"><p class="small muted">신년운세는 마마미코인 15개로 열어요. \'못 산 시도\'가 많으면 정식 유료 전환 때 가장 먼저 팔릴 후보예요.</p></div>';
+}
+var SERVICES = [
+  { id: 'saju', name: '사주×성향', tab: sajuTab },
+  { id: 'compat', name: '궁합·리포트 코드', tab: compatTab },
+  { id: 'newyear', name: '2027 신년운세', tab: newyearTab },
+  { id: 'brain', name: '두뇌 퍼즐', tab: function () { return brainTab(); } },
+  { id: 'forest', name: '대나무숲·상담', tab: function () { return forestTab(); } }
+];
 function render() {
   CHARTS = {};
   var waiting = CONS.filter(function (c) { return c.status !== '답변 완료'; }).length;
-  var tabs = [['overview', '개요'], ['trends', '일자별 보기'], ['ai', 'AI 사용량'], ['coin', '마마미코인'], ['brain', '두뇌 퍼즐'], ['traffic', '유입 경로'], ['funnel', '문항 이탈'], ['people', '참여자'], ['results', '결과 분포'], ['forest', '대나무숲 · 상담' + (waiting ? ' (' + waiting + ')' : '')]];
-  var body = TAB === 'trends' ? trendsTab() : TAB === 'ai' ? aiTab() : TAB === 'coin' ? coinTab() : TAB === 'brain' ? brainTab() : TAB === 'funnel' ? funnelTab() : TAB === 'traffic' ? trafficTab() : TAB === 'people' ? peopleTab() : TAB === 'results' ? resultsTab() : TAB === 'forest' ? forestTab() : overviewTab();
+  if (TAB === 'results' || TAB === 'funnel') { SAJU_SUB = TAB; TAB = 'saju'; }
+  var common = [['overview', '개요'], ['trends', '일자별 보기'], ['traffic', '유입 경로'], ['people', '참여자'], ['coin', '마마미코인'], ['ai', 'AI 사용량']];
+  var svc = SERVICES.map(function (x) { return [x.id, x.name + (x.id === 'forest' && waiting ? ' (' + waiting + ')' : '')]; });
+  var tabBtn = function (t) { return '<button role="tab" aria-selected="' + (TAB === t[0]) + '" class="tabb' + (TAB === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>'; };
+  var svcHit = SERVICES.filter(function (x) { return x.id === TAB; })[0];
+  var body = svcHit ? svcHit.tab() : TAB === 'trends' ? trendsTab() : TAB === 'ai' ? aiTab() : TAB === 'coin' ? coinTab() : TAB === 'traffic' ? trafficTab() : TAB === 'people' ? peopleTab() : TAB === 'results' ? resultsTab() : TAB === 'forest' ? forestTab() : overviewTab();
   app.innerHTML = '<div class="row between" style="flex-wrap:wrap"><h1>MyMyMe 관리자</h1><div class="row"><span class="small muted">갱신 ' + new Date(DATA.updated).toLocaleString('ko-KR') + '</span><button class="sec" id="re">새로고침</button><button class="sec" id="out">로그아웃</button></div></div>' +
-    '<nav class="tabs" role="tablist">' + tabs.map(function (t) { return '<button role="tab" aria-selected="' + (TAB === t[0]) + '" class="tabb' + (TAB === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</nav>' +
+    '<nav class="tabs" role="tablist"><span class="small muted" style="align-self:center;margin-right:4px">공통</span>' + common.map(tabBtn).join('') + '</nav>' +
+    '<nav class="tabs" role="tablist" style="margin-top:-6px"><span class="small muted" style="align-self:center;margin-right:4px">서비스</span>' + svc.map(tabBtn).join('') + '</nav>' +
     body + '<p class="small muted">원본 데이터는 구글 시트 "MyMyMe 운영 데이터"에서 볼 수 있어요. 이름·생년월일시는 "사주 통계 연구"에 동의한 참여자만 기록돼요. 연락처는 수집하지 않아요.</p>';
   bindCharts();
   var pq = document.getElementById('pq');
@@ -431,6 +498,11 @@ document.addEventListener('click', function (e) {
   else if (b.id === 'out') { KEY = ''; try { sessionStorage.removeItem('mm_admin'); } catch (er) {} login(); }
   else if (b.dataset.tab) { TAB = b.dataset.tab; render(); }
   else if (b.dataset.range) { RANGE = +b.dataset.range; render(); }
+  else if (b.dataset.sub) { SAJU_SUB = b.dataset.sub; render(); }
+  else if (b.dataset.cgift) { giftTo([b.dataset.cgift]); }
+  else if (b.id === 'pgiftsel') { giftTo(Object.keys(PSEL)); }
+  else if (b.id === 'gsend') { var gs = (document.getElementById('gsids').value || '').split(/[\s,]+/).filter(Boolean); giftTo(gs, +document.getElementById('gamt').value, document.getElementById('gmemo').value); }
+  else if (b.dataset.gcancel) { if (confirm('이 선물을 취소할까요? 아직 받지 않은 선물만 취소돼요.')) { b.disabled = true; apost({ kind: 'admin_edit', op: 'coin_cancel', id: b.dataset.gcancel }).then(load, load); } }
   else if (b.dataset.day) { DAYSEL = b.dataset.day; render(); }
   else if (b.dataset.calm) { var cy = +CALM.slice(0, 4), cm = +CALM.slice(5, 7) + (+b.dataset.calm); if (cm < 1) { cm = 12; cy--; } if (cm > 12) { cm = 1; cy++; } CALM = cy + '-' + (cm < 10 ? '0' : '') + cm; render(); }
   else if (b.dataset.tview) { TABLEVIEW[b.dataset.tview] = !TABLEVIEW[b.dataset.tview]; render(); }
