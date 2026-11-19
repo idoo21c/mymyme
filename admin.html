@@ -184,7 +184,7 @@ function dayPanel(date) {
   if (!r) return head + '<div class="card"><p class="small muted">데이터 없음</p></div>';
   var g = function (k) { return r[k] || 0; }, pr = function (a, b) { var v = rate(a, b); return v == null ? '–' : v + '%'; };
   var kpis = '<div class="kpis">' + kpi('방문자', g('visit'), '') + kpi('참여 시작', g('start'), '참여율 ' + pr(g('start'), g('visit'))) + kpi('결과 확인', g('finish'), '완주율 ' + pr(g('finish'), g('start'))) +
-    kpi('심층 리포트', g('report'), '열람률 ' + pr(g('report'), g('finish'))) + kpi('공유 · 궁합', g('share') + ' · ' + g('compat'), '코드 복사 ' + g('mycode')) + kpi('대나무숲 · 상담', g('secretsSaved') + ' · ' + g('consultsSaved'), '날려 보냄 ' + g('secret_release')) + '</div>';
+    kpi('심층 리포트', g('report'), '열람률 ' + pr(g('report'), g('finish'))) + kpi('공유 · 궁합', g('share') + ' · ' + g('compat'), '코드 복사 ' + g('mycode')) + kpi('대나무숲 · 상담', g('secretsSaved') + ' · ' + g('consultsSaved'), '날려 보냄 ' + g('secret_release')) + kpi('두뇌 퍼즐', g('brain_finish'), '시작 ' + g('brain_start')) + '</div>';
   var funnel = [['방문', 'visit'], ['참여 시작', 'start'], ['성향 문항 완료', 'likert_done'], ['상황 문항 완료', 'scenario_done'], ['결과 확인', 'finish'], ['심층 리포트', 'report']];
   var top = Math.max(1, g('visit'));
   var fun = '<div class="card"><h2>그날의 단계별 인원</h2>' + funnel.map(function (f) { var v = g(f[1]); return '<div class="row" style="gap:10px;margin:6px 0"><span class="small" style="width:110px;flex:none">' + f[0] + '</span><div style="flex:1;background:#EEEDF5;border-radius:4px;height:14px"><div style="width:' + Math.round(v / top * 100) + '%;background:var(--acc,#4B3FC7);height:14px;border-radius:4px"></div></div><b class="small" style="width:44px;text-align:right">' + v + '</b></div>'; }).join('') + '</div>';
@@ -239,7 +239,25 @@ function aiTab() {
     lineChart('c_tokens', 'AI 토큰 사용량 (토큰/일)', '토큰', days, [{ name: '입력 토큰', color: SERIES[0], values: rows.map(function (r) { return r.in; }) }, { name: '출력 토큰', color: SERIES[1], values: rows.map(function (r) { return r.out; }) }]) +
     table + '<p class="small muted">예상 비용은 Claude Haiku 5.5 공시 단가(입력 $0.10 · 출력 $0.50 / 100만 토큰)로 계산했어요. 실제 청구액은 Anthropic 콘솔(console.anthropic.com)의 Usage에서 확인하세요.</p>';
 }
-var ITEMN = { ny2027: '2027 신년운세', group: '그룹 관계 지도', consult: '추가 고민 상담' };
+var BDOM = { P: ['패턴', 5], N: ['수리', 6], S: ['공간', 4], L: ['논리', 5] }, BTYPE = { P: '패턴 탐정', N: '숫자 설계자', S: '공간 건축가', L: '논리 전략가' };
+var BITEM_DOM = 'NPLSNPLSNPLSNPLSNPLN';
+function hbar(label, v, max, right) { return '<div class="row" style="gap:10px;margin:5px 0"><span class="small" style="width:96px;flex:none">' + label + '</span><div style="flex:1;background:#EEEDF5;border-radius:4px;height:14px"><div style="width:' + (max ? Math.round(v / max * 100) : 0) + '%;background:#4B3FC7;height:14px;border-radius:4px"></div></div><b class="small" style="width:56px;text-align:right">' + right + '</b></div>'; }
+function brainTab() {
+  var b = DATA.brain;
+  if (!b) return '<div class="card"><p class="small muted">Code.gs를 최신 버전으로 배포하면 이 날부터 두뇌 퍼즐 기록이 쌓여요.</p></div>';
+  if (!b.n) return '<div class="kpis">' + kpi('퍼즐 시작', b.started, '') + kpi('퍼즐 완료', 0, '') + '</div><div class="card"><p class="small muted">아직 완료한 사람이 없어요 (데이터 없음).</p></div>';
+  var hmax = Math.max.apply(null, b.hist.concat([1])), tmax = Math.max.apply(null, Object.keys(b.types).map(function (k) { return b.types[k]; }).concat([1]));
+  var hist = '<div class="card"><h2>점수 분포 (20점 만점)</h2>' + b.hist.map(function (v, i) { return v ? hbar(i + '점', v, hmax, v + '명') : ''; }).join('') + '</div>';
+  var dom = '<div class="card"><h2>영역별 평균 정답률</h2>' + Object.keys(BDOM).map(function (k) { var a = b.dom[k]; return hbar(BDOM[k][0] + ' (' + BDOM[k][1] + '문제)', a == null ? 0 : a, BDOM[k][1], a == null ? '–' : Math.round(a / BDOM[k][1] * 100) + '%'); }).join('') + '</div>';
+  var types = '<div class="card"><h2>두뇌 유형 분포</h2>' + Object.keys(BTYPE).map(function (k) { var v = b.types[k] || 0; return hbar(BTYPE[k], v, tmax, v + '명'); }).join('') + '</div>';
+  var items = '<div class="card"><h2>문제별 정답률</h2><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>문제</th><th>영역</th><th>정답률</th><th>메모</th></tr></thead><tbody>' + b.item.map(function (v, i) {
+      var note = v == null ? '' : v >= 95 ? '너무 쉬움' : v <= 15 ? '너무 어려움 · 문제 확인' : '';
+      return '<tr><td>' + (i + 1) + '</td><td>' + BDOM[BITEM_DOM.charAt(i)][0] + '</td><td>' + (v == null ? '–' : v + '%') + '</td><td>' + note + '</td></tr>'; }).join('') + '</tbody></table></div>' +
+    '<p class="small muted">정답률이 지나치게 높거나 낮은 문제는 변별력이 낮아요. 참여자가 충분히 쌓이면 바꿀 후보예요.</p></div>';
+  return '<div class="kpis">' + kpi('퍼즐 시작', b.started, '') + kpi('퍼즐 완료', b.n, '완료율 ' + (b.started ? Math.round(b.n / b.started * 100) + '%' : '–')) + kpi('평균 점수', b.avg + ' / 20', '') + kpi('풀이 시간 중앙값', b.medSec ? Math.floor(b.medSec / 60) + '분 ' + (b.medSec % 60) + '초' : '–', '') + '</div>' +
+    hist + dom + types + items + '<p class="small muted">한 사람이 여러 번 풀면 마지막 결과만 셌어요. "상위 몇 %"는 참여자가 충분히 쌓인 뒤 이용자 화면에 보여줄 예정이에요.</p>';
+}
+var ITEMN = { ny2027: '2027 신년운세', group: '그룹 관계 지도', consult: '추가 고민 상담', brainx: '두뇌 퍼즐 해설' };
 function coinTab() {
   var c = DATA.coin;
   if (!c) return '<div class="card"><p class="small muted">Code.gs를 최신 버전으로 배포하면 이 날부터 마마미코인 기록이 쌓여요.</p></div>';
@@ -390,8 +408,8 @@ function forestTab() {
 function render() {
   CHARTS = {};
   var waiting = CONS.filter(function (c) { return c.status !== '답변 완료'; }).length;
-  var tabs = [['overview', '개요'], ['trends', '일자별 보기'], ['ai', 'AI 사용량'], ['coin', '마마미코인'], ['traffic', '유입 경로'], ['funnel', '문항 이탈'], ['people', '참여자'], ['results', '결과 분포'], ['forest', '대나무숲 · 상담' + (waiting ? ' (' + waiting + ')' : '')]];
-  var body = TAB === 'trends' ? trendsTab() : TAB === 'ai' ? aiTab() : TAB === 'coin' ? coinTab() : TAB === 'funnel' ? funnelTab() : TAB === 'traffic' ? trafficTab() : TAB === 'people' ? peopleTab() : TAB === 'results' ? resultsTab() : TAB === 'forest' ? forestTab() : overviewTab();
+  var tabs = [['overview', '개요'], ['trends', '일자별 보기'], ['ai', 'AI 사용량'], ['coin', '마마미코인'], ['brain', '두뇌 퍼즐'], ['traffic', '유입 경로'], ['funnel', '문항 이탈'], ['people', '참여자'], ['results', '결과 분포'], ['forest', '대나무숲 · 상담' + (waiting ? ' (' + waiting + ')' : '')]];
+  var body = TAB === 'trends' ? trendsTab() : TAB === 'ai' ? aiTab() : TAB === 'coin' ? coinTab() : TAB === 'brain' ? brainTab() : TAB === 'funnel' ? funnelTab() : TAB === 'traffic' ? trafficTab() : TAB === 'people' ? peopleTab() : TAB === 'results' ? resultsTab() : TAB === 'forest' ? forestTab() : overviewTab();
   app.innerHTML = '<div class="row between" style="flex-wrap:wrap"><h1>MyMyMe 관리자</h1><div class="row"><span class="small muted">갱신 ' + new Date(DATA.updated).toLocaleString('ko-KR') + '</span><button class="sec" id="re">새로고침</button><button class="sec" id="out">로그아웃</button></div></div>' +
     '<nav class="tabs" role="tablist">' + tabs.map(function (t) { return '<button role="tab" aria-selected="' + (TAB === t[0]) + '" class="tabb' + (TAB === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</nav>' +
     body + '<p class="small muted">원본 데이터는 구글 시트 "MyMyMe 운영 데이터"에서 볼 수 있어요. 이름·생년월일시는 "사주 통계 연구"에 동의한 참여자만 기록돼요. 연락처는 수집하지 않아요.</p>';
