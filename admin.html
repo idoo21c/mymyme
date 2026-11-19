@@ -213,6 +213,26 @@ function tgList(r) { return (r.tg || '').split(' ').filter(Boolean).map(function
 function usList(r) { return (r.us || '').split(' ').filter(Boolean).map(function (x, i) { return POSN[i] + ' ' + USN[+x]; }); }
 function elStr(r) { if (!r.el) return ''; var v = r.el.split('/'); return '목' + v[0] + ' 화' + v[1] + ' 토' + v[2] + ' 금' + v[3] + ' 수' + v[4]; }
 function birthStr(r) { if (!r.birth) return ''; return (CALN[r.cal] || '') + ' ' + r.birth + (r.hour !== '' && r.hour != null ? ' ' + r.hour + '시' : ' 시간모름'); }
+function qSection(i) { return i <= 60 ? '성향 ' + i : i <= 72 ? '상황 ' + (i - 60) : '오행 ' + (i - 72); }
+function funnelTab() {
+  var f = DATA.qfunnel;
+  if (!f) return '<div class="card"><p class="small muted">Code.gs를 최신 버전으로 배포하면 문항 단위 데이터가 쌓여요.</p></div>';
+  if (!f.sessions) return '<div class="card"><h2>문항별 이탈</h2><p class="small muted">데이터 없음 — 이 기능을 배포한 뒤 테스트를 시작한 참여자부터 쌓여요.</p></div>';
+  var items = f.items, stopped = items.filter(function (x) { return x.stopped; }).sort(function (a, b) { return b.stopped - a.stopped; }).slice(0, 5);
+  var max = Math.max.apply(null, items.map(function (x) { return x.reached; })) || 1;
+  var dropped = items.reduce(function (t, x) { return t + x.stopped; }, 0);
+  var bars = '<div style="display:flex;align-items:flex-end;gap:2px;height:120px;padding-top:6px" role="img" aria-label="문항별 도달 인원">' + items.map(function (x) {
+    var h = Math.max(2, Math.round(x.reached / max * 110)), col = x.stopped ? 'var(--coral)' : x.i <= 60 ? 'var(--acc)' : x.i <= 72 ? '#1E88C9' : '#A6790A';
+    return '<div title="' + qSection(x.i) + ' · 도달 ' + x.reached + '명 · 여기서 멈춤 ' + x.stopped + '명" style="flex:1;height:' + h + 'px;background:' + col + ';border-radius:2px 2px 0 0"></div>';
+  }).join('') + '</div><div class="row between xs muted"><span>성향 1</span><span>성향 60 | 상황 61~72 | 오행 73~82</span><span>82</span></div>';
+  return '<div class="kpis">' + kpi('계측된 참여', f.sessions, '문항 데이터가 있는 사람 기준') + kpi('끝까지 완료', f.finished, f.sessions ? Math.round(f.finished / f.sessions * 100) + '% (분모: 계측된 참여 ' + f.sessions + '명)' : '') +
+    kpi('중간에 멈춤', dropped, '30분 넘게 활동 없고 결과 없음') + kpi('이어서 하기 사용', f.resumed, '진행 중 ' + f.inProgress + '명은 제외') + '</div>' +
+    '<div class="card"><h2>문항별 도달 인원</h2><p class="small muted">막대 높이 = 그 문항까지 온 사람 수. 주황색 = 그 문항에서 멈춘 사람이 있음. 막대에 마우스를 올리면 숫자가 보여요.</p>' + bars + '</div>' +
+    '<div class="card"><h2>가장 많이 멈춘 문항</h2>' + (stopped.length ? stopped.map(function (x) { return '<div class="row between small" style="padding:6px 0;border-bottom:1px solid #EEEAE2"><b>' + qSection(x.i) + '</b><span>' + x.stopped + '명 멈춤 · 도달 ' + x.reached + '명 · 체류 중앙값 ' + (x.dwell == null ? '데이터 없음' : x.dwell + '초') + '</span></div>'; }).join('') : '<p class="small muted">아직 중간에 멈춘 사람이 없어요.</p>') + '</div>' +
+    '<div class="card"><h2>문항별 상세</h2><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>문항</th><th>도달</th><th>여기서 멈춤</th><th>멈춤 비율</th><th>체류 중앙값</th><th>응답 수</th><th>뒤로가기</th><th>화면 이탈</th></tr></thead><tbody>' +
+    items.map(function (x) { return '<tr' + (x.stopped ? ' style="background:#FBE9E3"' : '') + '><td>' + qSection(x.i) + '</td><td>' + x.reached + '</td><td>' + x.stopped + '</td><td>' + (x.reached ? Math.round(x.stopped / x.reached * 100) + '%' : '–') + '</td><td>' + (x.dwell == null ? '<span class="muted">데이터 없음</span>' : x.dwell + '초') + '</td><td>' + x.n + '</td><td>' + x.back + '</td><td>' + x.hides + '</td></tr>'; }).join('') +
+    '</tbody></table></div><p class="small muted">성향 문항 번호는 실제로 보여준 순서예요. 화면 이탈 = 그 문항에서 앱을 닫거나 다른 앱으로 넘어간 횟수(돌아온 경우도 포함).</p></div>';
+}
 function peopleTab() {
   var rows = peopleRows(), all = DATA.participants || [];
   var yn = function (v, t) { return v ? '<span class="tag" style="background:var(--ok-l);color:var(--ok)">' + (t || '예') + '</span>' : '<span class="muted">–</span>'; };
@@ -285,8 +305,8 @@ function forestTab() {
 function render() {
   CHARTS = {};
   var waiting = CONS.filter(function (c) { return c.status !== '답변 완료'; }).length;
-  var tabs = [['overview', '개요'], ['trends', '일자별 추이'], ['ai', 'AI 사용량'], ['people', '참여자'], ['results', '결과 분포'], ['forest', '대나무숲 · 상담' + (waiting ? ' (' + waiting + ')' : '')]];
-  var body = TAB === 'trends' ? trendsTab() : TAB === 'ai' ? aiTab() : TAB === 'people' ? peopleTab() : TAB === 'results' ? resultsTab() : TAB === 'forest' ? forestTab() : overviewTab();
+  var tabs = [['overview', '개요'], ['trends', '일자별 추이'], ['ai', 'AI 사용량'], ['funnel', '문항 이탈'], ['people', '참여자'], ['results', '결과 분포'], ['forest', '대나무숲 · 상담' + (waiting ? ' (' + waiting + ')' : '')]];
+  var body = TAB === 'trends' ? trendsTab() : TAB === 'ai' ? aiTab() : TAB === 'funnel' ? funnelTab() : TAB === 'people' ? peopleTab() : TAB === 'results' ? resultsTab() : TAB === 'forest' ? forestTab() : overviewTab();
   app.innerHTML = '<div class="row between" style="flex-wrap:wrap"><h1>MyMyMe 관리자</h1><div class="row"><span class="small muted">갱신 ' + new Date(DATA.updated).toLocaleString('ko-KR') + '</span><button class="sec" id="re">새로고침</button><button class="sec" id="out">로그아웃</button></div></div>' +
     '<nav class="tabs" role="tablist">' + tabs.map(function (t) { return '<button role="tab" aria-selected="' + (TAB === t[0]) + '" class="tabb' + (TAB === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</nav>' +
     body + '<p class="small muted">원본 데이터는 구글 시트 "MyMyMe 운영 데이터"에서 볼 수 있어요. 이름·생년월일시는 "사주 통계 연구"에 동의한 참여자만 기록돼요. 연락처는 수집하지 않아요.</p>';
