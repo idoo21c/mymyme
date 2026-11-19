@@ -9311,7 +9311,7 @@ function parseCodes(txt) {
 function fetchCodes(list) {
   if (!list.length) return Promise.resolve({});
   if (!ENDPOINT) return Promise.resolve(null);
-  return fetch(ENDPOINT + '?action=code&c=' + list.join(',')).then(function (x) { return x.json(); }).then(function (j) { return j && j.ok ? j.items : null; }).catch(function () { return null; });
+  return fetch(ENDPOINT + '?action=code&q=' + list.join(',')).then(function (x) { return x.json(); }).then(function (j) { return j && j.ok ? j.items : null; }).catch(function () { return null; });
 }
 /* 궁합 본 사람 목록: 기기에만 저장(최대 10명). 새로 시작해도 지워지지 않게 결과와 따로 둔다 */
 var FRIENDS = (function () { try { return JSON.parse(localStorage.getItem('mymyme_friends') || '[]') || []; } catch (e) { return []; } })();
