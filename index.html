@@ -10123,7 +10123,29 @@ try {
   else if (p0) { PAIR = readPair(p0); S.view = 'pair'; track('pair_open'); }
 } catch (e) { VIEW = null; PAIR = null; }
 try { var w0 = new URLSearchParams(location.search).get('with'); if (w0 && w0 !== (S.result ? myCode() : '')) { readCode(w0); S.invite = w0; save(); track('invite_open'); if (history.replaceState) history.replaceState(null, '', location.pathname); } } catch (e) {}
-try { if (!sessionStorage.getItem('mymyme_v')) { sessionStorage.setItem('mymyme_v', '1'); track('visit'); } } catch (e) { track('visit'); }
+/* ---------- 유입 경로: UTM > 앱 내 브라우저 > 이전 페이지 주소 > 직접 방문 ----------
+ * 처음 들어온 경로(first touch)는 기기에 한 번만 저장하고, 매 방문마다 이번 경로와 함께 보낸다 */
+function trafficSource() {
+  var q = new URLSearchParams(location.search), ua = navigator.userAgent || '', ref = '';
+  try { ref = document.referrer ? new URL(document.referrer).hostname.replace(/^www\./, '') : ''; } catch (e) {}
+  if (ref && location.hostname && ref === location.hostname) ref = '';
+  var app = /KAKAOTALK/i.test(ua) ? 'kakaotalk' : /Barcelona/i.test(ua) ? 'threads' : /Instagram/i.test(ua) ? 'instagram' : /FBAN|FBAV/i.test(ua) ? 'facebook' : /NAVER\(inapp/i.test(ua) ? 'naver' : /\bLine\//i.test(ua) ? 'line' : /everytimeApp/i.test(ua) ? 'everytime' : '';
+  var REF = [[/threads\.(net|com)/, 'threads'], [/instagram\./, 'instagram'], [/kakao/, 'kakaotalk'], [/naver\./, 'naver'], [/google\./, 'google'], [/daum\.net/, 'daum'], [/facebook\.|fb\.me/, 'facebook'], [/(t\.co|x\.com|twitter\.com)$/, 'x'], [/youtube\.|youtu\.be/, 'youtube'], [/bing\./, 'bing'], [/pickle/, 'pickle']];
+  var fromRef = ''; REF.some(function (r) { if (r[0].test(ref)) { fromRef = r[1]; return true; } return false; });
+  var src = (q.get('utm_source') || '').toLowerCase().slice(0, 30) || app || fromRef || (ref ? 'other' : 'direct');
+  var land = q.get('v') ? 'shared' : q.get('pair') ? 'pair' : q.get('with') ? 'invite' : 'home';
+  return { src: src, med: (q.get('utm_medium') || '').slice(0, 30), camp: (q.get('utm_campaign') || '').slice(0, 40), ref: ref.slice(0, 60), app: app, land: land, lang: LANG };
+}
+try {
+  if (!sessionStorage.getItem('mymyme_v')) {
+    sessionStorage.setItem('mymyme_v', '1');
+    var TS = trafficSource(), first = null;
+    try { first = JSON.parse(localStorage.getItem('mymyme_src') || 'null'); } catch (e) {}
+    if (!first) { first = { src: TS.src, camp: TS.camp, at: Date.now() }; try { localStorage.setItem('mymyme_src', JSON.stringify(first)); } catch (e) {} }
+    TS.first = first.src; TS.firstCamp = first.camp || ''; TS.returning = Date.now() - (first.at || Date.now()) > 30 * 60000;
+    track('visit', TS);
+  }
+} catch (e) { track('visit'); }
 render();
 </script>
 </body>

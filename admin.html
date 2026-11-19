@@ -214,6 +214,32 @@ function usList(r) { return (r.us || '').split(' ').filter(Boolean).map(function
 function elStr(r) { if (!r.el) return ''; var v = r.el.split('/'); return '목' + v[0] + ' 화' + v[1] + ' 토' + v[2] + ' 금' + v[3] + ' 수' + v[4]; }
 function birthStr(r) { if (!r.birth) return ''; return (CALN[r.cal] || '') + ' ' + r.birth + (r.hour !== '' && r.hour != null ? ' ' + r.hour + '시' : ' 시간모름'); }
 function qSection(i) { return i <= 60 ? '성향 ' + i : i <= 72 ? '상황 ' + (i - 60) : '오행 ' + (i - 72); }
+var SRC_NAME = { threads: '스레드', instagram: '인스타그램', kakaotalk: '카카오톡', naver: '네이버', google: '구글', daum: '다음', facebook: '페이스북', x: 'X(트위터)', youtube: '유튜브', bing: '빙', line: '라인', everytime: '에브리타임', pickle: '피클', direct: '직접 방문·북마크', other: '기타 사이트', unknown: '이전 기록(경로 없음)' };
+function srcName(k) { return SRC_NAME[k] || k; }
+var UTM_SRC = 'threads', UTM_CAMP = '';
+function pct(a, b) { return b ? Math.round(a / b * 100) + '%' : '–'; }
+function trafficTab() {
+  var t = DATA.traffic;
+  if (!t) return '<div class="card"><p class="small muted">Code.gs를 최신 버전으로 배포하면 유입 경로가 쌓여요.</p></div>';
+  var srcs = t.sources || [], top = srcs.filter(function (x) { return x.src !== 'unknown'; }).slice(0, 5).map(function (x) { return x.src; });
+  var dmap = {}; (t.days || []).forEach(function (d) { dmap[d.date] = d; });
+  var labels = (DATA.daily || []).slice(-Math.min(RANGE, 30)).map(function (d) { return d.date; }); if (!labels.length) labels = Object.keys(dmap).sort();
+  var series = top.map(function (k, i) { return { name: srcName(k), color: SERIES[i % SERIES.length], values: labels.map(function (dt) { return (dmap[dt] || {})[k] || 0; }) }; });
+  var base = location.origin + location.pathname.replace(/admin\.html$/, '');
+  var link = base + '?utm_source=' + encodeURIComponent(UTM_SRC) + (UTM_CAMP ? '&utm_campaign=' + encodeURIComponent(UTM_CAMP) : '');
+  return '<div class="kpis">' + kpi('지금 접속 중', t.live10, '최근 10분 안에 활동한 사람 · 1시간 기준 ' + t.live60 + '명') + kpi('오늘 방문자', t.today, '오늘(한국 시간) 한 번이라도 활동한 사람') +
+    kpi('오늘 결과 확인', t.todayFinish, '분모: 오늘 방문자 ' + t.today + '명 · ' + pct(t.todayFinish, t.today)) + kpi('경로 기록된 사람', t.tracked, '집계 ' + esc(t.at) + ' · 새로고침으로 갱신') + '</div>' +
+    '<div class="card"><h2>유입 경로별 전환</h2><p class="small muted">사람마다 <b>처음 들어온 경로</b> 기준이에요. 비율의 분모는 그 경로로 들어온 방문자 수예요. "이전 기록"은 이 기능을 배포하기 전에 들어온 사람이에요.</p>' +
+    '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>경로</th><th>방문자</th><th>참여 시작</th><th>결과 확인</th><th>심층 리포트</th><th>공유</th><th>상담</th></tr></thead><tbody>' +
+    (srcs.length ? srcs.map(function (x) { return '<tr><td><b>' + esc(srcName(x.src)) + '</b></td><td>' + x.visitors + '</td><td>' + x.start + ' <span class="xs muted">' + pct(x.start, x.visitors) + '</span></td><td>' + x.finish + ' <span class="xs muted">' + pct(x.finish, x.visitors) + '</span></td><td>' + x.report + ' <span class="xs muted">' + pct(x.report, x.visitors) + '</span></td><td>' + x.share + ' <span class="xs muted">' + pct(x.share, x.visitors) + '</span></td><td>' + x.consult + '</td></tr>'; }).join('') : '<tr><td colspan="7" class="muted">데이터 없음</td></tr>') +
+    '</tbody></table></div></div>' +
+    (series.length && labels.length ? lineChart('c_src', '경로별 일일 방문자 (사람/일, 상위 5개 경로)', '명', labels, series) : '<div class="card"><p class="small muted">경로별 일일 추이는 데이터가 쌓이면 보여요.</p></div>') +
+    '<div class="card"><h2>캠페인 (utm_campaign)</h2>' + ((t.campaigns || []).length ? '<table class="tbl"><thead><tr><th>캠페인</th><th>경로</th><th>방문자</th><th>결과 확인</th></tr></thead><tbody>' + t.campaigns.map(function (c) { return '<tr><td><b>' + esc(c.camp) + '</b></td><td>' + esc(srcName(c.src)) + '</td><td>' + c.visitors + '</td><td>' + c.finish + ' <span class="xs muted">' + pct(c.finish, c.visitors) + '</span></td></tr>'; }).join('') + '</tbody></table>' : '<p class="small muted">아직 캠페인 링크로 들어온 사람이 없어요. 아래에서 캠페인 링크를 만들어 홍보 글에 쓰세요.</p>') + '</div>' +
+    '<div class="card col" style="gap:10px"><h2 style="margin:0">홍보 링크 만들기</h2><p class="small muted">게시물마다 캠페인 이름을 다르게 붙이면 어떤 글이 사람을 데려왔는지 위 표에서 바로 보여요.</p>' +
+    '<div class="row" style="gap:8px;flex-wrap:wrap"><select id="utmSrc" style="height:40px">' + ['threads', 'instagram', 'kakaotalk', 'naver', 'youtube', 'pickle', 'blog', 'etc'].map(function (k) { return '<option value="' + k + '"' + (UTM_SRC === k ? ' selected' : '') + '>' + srcName(k) + ' (' + k + ')</option>'; }).join('') + '</select>' +
+    '<input id="utmCamp" placeholder="캠페인 이름 예: 1119_pickle_mbti" value="' + esc(UTM_CAMP) + '" style="height:40px;min-width:240px"></div>' +
+    '<div class="row" style="gap:8px;flex-wrap:wrap"><code id="utmLink" style="padding:8px 10px;background:#F1EFF9;border-radius:8px;word-break:break-all;flex:1">' + esc(link) + '</code><button class="sec" id="utmCopy">복사</button></div></div>';
+}
 function funnelTab() {
   var f = DATA.qfunnel;
   if (!f) return '<div class="card"><p class="small muted">Code.gs를 최신 버전으로 배포하면 문항 단위 데이터가 쌓여요.</p></div>';
@@ -305,17 +331,20 @@ function forestTab() {
 function render() {
   CHARTS = {};
   var waiting = CONS.filter(function (c) { return c.status !== '답변 완료'; }).length;
-  var tabs = [['overview', '개요'], ['trends', '일자별 추이'], ['ai', 'AI 사용량'], ['funnel', '문항 이탈'], ['people', '참여자'], ['results', '결과 분포'], ['forest', '대나무숲 · 상담' + (waiting ? ' (' + waiting + ')' : '')]];
-  var body = TAB === 'trends' ? trendsTab() : TAB === 'ai' ? aiTab() : TAB === 'funnel' ? funnelTab() : TAB === 'people' ? peopleTab() : TAB === 'results' ? resultsTab() : TAB === 'forest' ? forestTab() : overviewTab();
+  var tabs = [['overview', '개요'], ['trends', '일자별 추이'], ['ai', 'AI 사용량'], ['traffic', '유입 경로'], ['funnel', '문항 이탈'], ['people', '참여자'], ['results', '결과 분포'], ['forest', '대나무숲 · 상담' + (waiting ? ' (' + waiting + ')' : '')]];
+  var body = TAB === 'trends' ? trendsTab() : TAB === 'ai' ? aiTab() : TAB === 'funnel' ? funnelTab() : TAB === 'traffic' ? trafficTab() : TAB === 'people' ? peopleTab() : TAB === 'results' ? resultsTab() : TAB === 'forest' ? forestTab() : overviewTab();
   app.innerHTML = '<div class="row between" style="flex-wrap:wrap"><h1>MyMyMe 관리자</h1><div class="row"><span class="small muted">갱신 ' + new Date(DATA.updated).toLocaleString('ko-KR') + '</span><button class="sec" id="re">새로고침</button><button class="sec" id="out">로그아웃</button></div></div>' +
     '<nav class="tabs" role="tablist">' + tabs.map(function (t) { return '<button role="tab" aria-selected="' + (TAB === t[0]) + '" class="tabb' + (TAB === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</nav>' +
     body + '<p class="small muted">원본 데이터는 구글 시트 "MyMyMe 운영 데이터"에서 볼 수 있어요. 이름·생년월일시는 "사주 통계 연구"에 동의한 참여자만 기록돼요. 연락처는 수집하지 않아요.</p>';
   bindCharts();
   var pq = document.getElementById('pq');
+  var uc = document.getElementById('utmCamp');
+  if (uc) uc.addEventListener('input', function () { UTM_CAMP = uc.value.trim().replace(/\s+/g, '_'); var base = location.origin + location.pathname.replace(/admin\.html$/, ''); document.getElementById('utmLink').textContent = base + '?utm_source=' + encodeURIComponent(UTM_SRC) + (UTM_CAMP ? '&utm_campaign=' + encodeURIComponent(UTM_CAMP) : ''); });
   if (pq) pq.addEventListener('input', function () { PQ = pq.value; var pos = pq.selectionStart; render(); var n = document.getElementById('pq'); n.focus(); n.setSelectionRange(pos, pos); });
 }
 document.addEventListener('change', function (e) {
   var t = e.target;
+  if (t.id === 'utmSrc') { UTM_SRC = t.value; render(); return; }
   if (t.dataset && t.dataset.psel) { if (t.checked) PSEL[t.dataset.psel] = 1; else delete PSEL[t.dataset.psel]; render(); }
   else if (t.id === 'pall') { peopleRows().slice(0, 500).forEach(function (p) { if (t.checked) PSEL[p.sid] = 1; else delete PSEL[p.sid]; }); render(); }
 });
@@ -340,6 +369,7 @@ document.addEventListener('click', function (e) {
   else if (b.dataset.cdel) { if (confirm('상담 ' + b.dataset.cdel + '의 글과 답변을 모두 삭제할까요? 상담자 화면에서도 사라지고, 되돌릴 수 없어요.')) { b.disabled = true; apost({ kind: 'admin_edit', op: 'consult_delete', id: b.dataset.cdel }).then(load, load); } }
   else if (b.dataset.mdel) { var mp = b.dataset.mdel.split('|'); if (confirm('이 메시지를 삭제할까요? 되돌릴 수 없어요.')) { b.disabled = true; apost({ kind: 'admin_edit', op: 'msg_delete', id: mp[1], idx: +mp[2] }).then(load, load); } }
   else if (b.dataset.pdel) { var one = b.dataset.pdel; if (confirm('참여자 ' + one + '의 기록을 모두 삭제할까요? 통계에서도 빠지고, 되돌릴 수 없어요.')) { b.disabled = true; apost({ kind: 'admin_edit', op: 'people_delete', sids: [one] }).then(function () { delete PSEL[one]; load(); }, load); } }
+  else if (b.id === 'utmCopy') { var lk = document.getElementById('utmLink').textContent; try { navigator.clipboard.writeText(lk).then(function () { b.textContent = '복사됨'; }); } catch (err) { prompt('복사하세요', lk); } }
   else if (b.id === 'pdelsel') { var ids = Object.keys(PSEL); if (ids.length && confirm('선택한 ' + ids.length + '명의 기록을 모두 삭제할까요? 통계에서도 빠지고, 되돌릴 수 없어요.')) { b.disabled = true; b.textContent = '삭제 중…'; apost({ kind: 'admin_edit', op: 'people_delete', sids: ids }).then(function (j) { PSEL = {}; if (j && j.ok) alert(ids.length + '명의 기록(' + j.removed + '줄)을 삭제했어요.'); load(); }, load); } }
   else if (b.dataset.filter) { FILTER = b.dataset.filter; render(); }
   else if (b.dataset.cfilter) { CFILTER = b.dataset.cfilter; render(); }
