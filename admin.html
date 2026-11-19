@@ -194,6 +194,20 @@ function aiTab() {
     lineChart('c_tokens', 'AI 토큰 사용량 (토큰/일)', '토큰', days, [{ name: '입력 토큰', color: SERIES[0], values: rows.map(function (r) { return r.in; }) }, { name: '출력 토큰', color: SERIES[1], values: rows.map(function (r) { return r.out; }) }]) +
     table + '<p class="small muted">예상 비용은 Claude Haiku 5.5 공시 단가(입력 $0.10 · 출력 $0.50 / 100만 토큰)로 계산했어요. 실제 청구액은 Anthropic 콘솔(console.anthropic.com)의 Usage에서 확인하세요.</p>';
 }
+var ITEMN = { ny2027: '2027 신년운세', group: '그룹 관계 지도', consult: '추가 고민 상담' };
+function coinTab() {
+  var c = DATA.coin;
+  if (!c) return '<div class="card"><p class="small muted">Code.gs를 최신 버전으로 배포하면 이 날부터 마마미코인 기록이 쌓여요.</p></div>';
+  var items = c.items || [];
+  var table = '<div class="card"><h2>상품별 수요</h2><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>상품</th><th>구매</th><th>구매자</th><th>사용 코인</th><th>코인 부족으로 못 산 횟수</th><th>못 산 사람</th></tr></thead><tbody>' +
+    (items.length ? items.map(function (x) { return '<tr><td>' + (ITEMN[x.item] || x.item) + '</td><td>' + x.spend + '</td><td>' + x.users + '</td><td>' + x.coins + '</td><td>' + x.short + '</td><td>' + x.shortUsers + '</td></tr>'; }).join('') : '<tr><td colspan="6" class="muted">데이터 없음</td></tr>') + '</tbody></table></div>' +
+    '<p class="small muted">\'못 산 횟수\'는 코인이 모자라 열지 못한 시도예요. 베타에는 충전이 없으니, 이 숫자가 큰 상품이 정식 출시 때 가장 먼저 팔릴 후보예요.</p></div>';
+  var daily = '<div class="card"><h2>일자별</h2><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>날짜</th><th>구매</th><th>사용 코인</th><th>코인 부족</th></tr></thead><tbody>' +
+    ((c.daily || []).length ? c.daily.slice().reverse().map(function (d) { return '<tr><td>' + d.date + '</td><td>' + d.spend + '</td><td>' + d.coins + '</td><td>' + d.short + '</td></tr>'; }).join('') : '<tr><td colspan="4" class="muted">데이터 없음</td></tr>') + '</tbody></table></div></div>';
+  return '<div class="kpis">' + kpi('지급한 코인', num(c.granted), '받은 사람 ' + c.grantUsers + '명') + kpi('사용한 코인', num(c.spent), '사용한 사람 ' + c.spenders + '명') +
+    kpi('사용률', c.grantUsers ? Math.round(c.spenders / c.grantUsers * 100) + '%' : '–', '받은 사람 중 한 번이라도 쓴 비율') + '</div>' + table + daily +
+    '<p class="small muted">마마미코인은 베타 체험용(실제 돈 아님)이에요. 지갑은 이용자 기기에 저장되고, 여기에는 지급·사용·부족 기록만 모여요.</p>';
+}
 function peopleRows() {
   var q = PQ.trim().toLowerCase();
   return (DATA.participants || []).filter(function (p) {
@@ -331,8 +345,8 @@ function forestTab() {
 function render() {
   CHARTS = {};
   var waiting = CONS.filter(function (c) { return c.status !== '답변 완료'; }).length;
-  var tabs = [['overview', '개요'], ['trends', '일자별 추이'], ['ai', 'AI 사용량'], ['traffic', '유입 경로'], ['funnel', '문항 이탈'], ['people', '참여자'], ['results', '결과 분포'], ['forest', '대나무숲 · 상담' + (waiting ? ' (' + waiting + ')' : '')]];
-  var body = TAB === 'trends' ? trendsTab() : TAB === 'ai' ? aiTab() : TAB === 'funnel' ? funnelTab() : TAB === 'traffic' ? trafficTab() : TAB === 'people' ? peopleTab() : TAB === 'results' ? resultsTab() : TAB === 'forest' ? forestTab() : overviewTab();
+  var tabs = [['overview', '개요'], ['trends', '일자별 추이'], ['ai', 'AI 사용량'], ['coin', '마마미코인'], ['traffic', '유입 경로'], ['funnel', '문항 이탈'], ['people', '참여자'], ['results', '결과 분포'], ['forest', '대나무숲 · 상담' + (waiting ? ' (' + waiting + ')' : '')]];
+  var body = TAB === 'trends' ? trendsTab() : TAB === 'ai' ? aiTab() : TAB === 'coin' ? coinTab() : TAB === 'funnel' ? funnelTab() : TAB === 'traffic' ? trafficTab() : TAB === 'people' ? peopleTab() : TAB === 'results' ? resultsTab() : TAB === 'forest' ? forestTab() : overviewTab();
   app.innerHTML = '<div class="row between" style="flex-wrap:wrap"><h1>MyMyMe 관리자</h1><div class="row"><span class="small muted">갱신 ' + new Date(DATA.updated).toLocaleString('ko-KR') + '</span><button class="sec" id="re">새로고침</button><button class="sec" id="out">로그아웃</button></div></div>' +
     '<nav class="tabs" role="tablist">' + tabs.map(function (t) { return '<button role="tab" aria-selected="' + (TAB === t[0]) + '" class="tabb' + (TAB === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</nav>' +
     body + '<p class="small muted">원본 데이터는 구글 시트 "MyMyMe 운영 데이터"에서 볼 수 있어요. 이름·생년월일시는 "사주 통계 연구"에 동의한 참여자만 기록돼요. 연락처는 수집하지 않아요.</p>';
