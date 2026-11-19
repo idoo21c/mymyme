@@ -41,6 +41,7 @@ ol li{margin-bottom:6px;line-height:1.6}
 .tip i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px}
 .danger{color:#B3261E!important;border-color:#F0C9C2!important}
 .mini{height:30px!important;min-height:30px!important;padding:0 10px!important;font-size:12.5px!important}
+.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.calw{text-align:center;font-size:12px;color:#5A5D72;padding:2px 0}.calday{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:52px;border:1px solid #E4E2EE;border-radius:8px;cursor:pointer;font:inherit;padding:2px}.calday b{font-size:14px}.calday span{font-size:10.5px;opacity:.85}.calday:disabled{cursor:default}
 </style>
 </head>
 <body>
@@ -159,13 +160,57 @@ function bindCharts() {
   });
 }
 function rate(a, b) { return b ? Math.round(a / b * 100) : null; }
+/* ---------- 달력: 하루를 골라 그날 데이터만 보기 ---------- */
+function kstToday() { var d = new Date(Date.now() + 9 * 3600e3); return d.toISOString().slice(0, 10); }
+var DAYSEL = kstToday(), CALM = DAYSEL.slice(0, 7);
+function dayRow(date) { return (DATA.daily || []).filter(function (x) { return x.date === date; })[0] || null; }
+function calendarHtml() {
+  var y = +CALM.slice(0, 4), m = +CALM.slice(5, 7), first = new Date(Date.UTC(y, m - 1, 1)).getUTCDay(), days = new Date(Date.UTC(y, m, 0)).getUTCDate(), today = kstToday();
+  var max = 1; (DATA.daily || []).forEach(function (x) { if (x.date.slice(0, 7) === CALM) max = Math.max(max, x.visit || 0); });
+  var cells = '';
+  for (var i = 0; i < first; i++) cells += '<span></span>';
+  for (var dd = 1; dd <= days; dd++) {
+    var key = CALM + '-' + (dd < 10 ? '0' : '') + dd, r = dayRow(key), v = r ? r.visit || 0 : 0, fut = key > today, sel = key === DAYSEL;
+    var bg = v ? 'rgba(75,63,199,' + (0.1 + 0.6 * v / max).toFixed(2) + ')' : 'transparent', dark = v / max > 0.55;
+    cells += '<button class="calday" data-day="' + key + '"' + (fut ? ' disabled' : '') + ' style="background:' + bg + ';color:' + (dark ? '#fff' : 'var(--ink)') + ';' + (sel ? 'outline:2.5px solid var(--coral);outline-offset:-2px;' : '') + (fut ? 'opacity:.35;' : '') + '"><b>' + dd + '</b><span>' + (v ? v + '명' : '') + '</span></button>';
+  }
+  return '<div class="card"><div class="row between"><button class="sec" data-calm="-1">‹</button><h2 style="margin:0">' + y + '년 ' + m + '월</h2><button class="sec" data-calm="1">›</button></div>' +
+    '<div class="calgrid" style="margin-top:10px">' + ['일', '월', '화', '수', '목', '금', '토'].map(function (w) { return '<span class="calw">' + w + '</span>'; }).join('') + cells + '</div>' +
+    '<p class="small muted" style="margin-top:8px">날짜를 누르면 그날 데이터만 보여요. 칸 색이 진할수록 방문자가 많은 날이에요. (한국 시간 기준)</p></div>';
+}
+function dayPanel(date) {
+  var r = dayRow(date), wk = ['일', '월', '화', '수', '목', '금', '토'][new Date(date + 'T00:00:00Z').getUTCDay()];
+  var head = '<h2 style="margin:18px 0 8px">' + date + ' (' + wk + ')' + (date === kstToday() ? ' · 오늘' : '') + '</h2>';
+  if (!r) return head + '<div class="card"><p class="small muted">데이터 없음</p></div>';
+  var g = function (k) { return r[k] || 0; }, pr = function (a, b) { var v = rate(a, b); return v == null ? '–' : v + '%'; };
+  var kpis = '<div class="kpis">' + kpi('방문자', g('visit'), '') + kpi('참여 시작', g('start'), '참여율 ' + pr(g('start'), g('visit'))) + kpi('결과 확인', g('finish'), '완주율 ' + pr(g('finish'), g('start'))) +
+    kpi('심층 리포트', g('report'), '열람률 ' + pr(g('report'), g('finish'))) + kpi('공유 · 궁합', g('share') + ' · ' + g('compat'), '코드 복사 ' + g('mycode')) + kpi('대나무숲 · 상담', g('secretsSaved') + ' · ' + g('consultsSaved'), '날려 보냄 ' + g('secret_release')) + '</div>';
+  var funnel = [['방문', 'visit'], ['참여 시작', 'start'], ['성향 문항 완료', 'likert_done'], ['상황 문항 완료', 'scenario_done'], ['결과 확인', 'finish'], ['심층 리포트', 'report']];
+  var top = Math.max(1, g('visit'));
+  var fun = '<div class="card"><h2>그날의 단계별 인원</h2>' + funnel.map(function (f) { var v = g(f[1]); return '<div class="row" style="gap:10px;margin:6px 0"><span class="small" style="width:110px;flex:none">' + f[0] + '</span><div style="flex:1;background:#EEEDF5;border-radius:4px;height:14px"><div style="width:' + Math.round(v / top * 100) + '%;background:var(--acc,#4B3FC7);height:14px;border-radius:4px"></div></div><b class="small" style="width:44px;text-align:right">' + v + '</b></div>'; }).join('') + '</div>';
+  var srcRow = ((DATA.traffic || {}).days || []).filter(function (x) { return x.date === date; })[0];
+  var srcs = srcRow ? Object.keys(srcRow).filter(function (k) { return k !== 'date'; }).sort(function (a, b) { return srcRow[b] - srcRow[a]; }) : [];
+  var src = '<div class="card"><h2>그날의 유입 경로</h2>' + (srcs.length ? '<table class="tbl"><thead><tr><th>경로</th><th>방문자</th></tr></thead><tbody>' + srcs.map(function (k) { return '<tr><td>' + srcName(k) + '</td><td>' + srcRow[k] + '</td></tr>'; }).join('') + '</tbody></table>' : '<p class="small muted">데이터 없음 (최근 30일만 보관)</p>') + '</div>';
+  var fin = (DATA.participants || []).filter(function (p) { return p.finished && p.finished.indexOf(date) === 0; });
+  var drop = (DATA.participants || []).filter(function (p) { return !p.finished && p.started && p.started.indexOf(date) === 0; }).length;
+  var cnt = {}; fin.forEach(function (p) { var c = (p.result || {}).code || '?'; cnt[c] = (cnt[c] || 0) + 1; });
+  var codes = Object.keys(cnt).sort(function (a, b) { return cnt[b] - cnt[a]; });
+  var res = '<div class="card"><h2>그날 결과를 본 사람 ' + fin.length + '명</h2>' +
+    (codes.length ? '<p class="small" style="margin:4px 0 10px">성향 코드: ' + codes.map(function (c) { return '<b>' + c + '</b> ' + cnt[c]; }).join(' · ') + '</p>' : '') +
+    (fin.length ? '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>시각</th><th>유형</th><th>코드</th><th>일간</th><th>혈액형</th><th>성별</th><th>소요</th><th>리포트</th></tr></thead><tbody>' + fin.map(function (p) { var x = p.result || {};
+      return '<tr><td>' + p.finished.slice(11) + '</td><td>' + (x.name || '') + '</td><td>' + (x.code || '') + '</td><td>' + (STEM_READ[x.dayStem] || x.dayStem || '') + '</td><td>' + (x.blood || '–') + '</td><td>' + ({ m: '남', f: '여' }[x.gender] || '–') + '</td><td>' + (x.minutes ? x.minutes + '분' : '–') + '</td><td>' + (p.report ? '열람' : '') + '</td></tr>'; }).join('') + '</tbody></table></div>' : '<p class="small muted">데이터 없음</p>') +
+    '<p class="small muted" style="margin-top:8px">그날 시작했지만 아직 결과를 보지 않은 사람: ' + drop + '명</p></div>';
+  var cd = ((DATA.coin || {}).daily || []).filter(function (x) { return x.date === date; })[0];
+  var coin = cd ? '<div class="card"><h2>그날의 마마미코인</h2><p class="small">구매 ' + cd.spend + '건 · 사용 코인 ' + cd.coins + ' · 코인 부족 ' + cd.short + '회</p></div>' : '';
+  return head + kpis + fun + res + src + coin;
+}
 function trendsTab() {
   var d = (DATA.daily || []).slice(-RANGE);
   if (!d.length) return '<div class="card"><p class="small muted">아직 데이터가 없어요</p></div>';
   var dates = d.map(function (x) { return x.date; }), col = function (k) { return d.map(function (x) { return x[k] || 0; }); };
   var sum = function (k) { return d.reduce(function (a, x) { return a + (x[k] || 0); }, 0); };
   var picker = '<div class="row" style="flex-wrap:wrap;gap:8px"><span class="small muted">기간</span>' + [[7, '7일'], [14, '14일'], [30, '30일'], [90, '90일']].map(function (r) { return '<button class="sec" data-range="' + r[0] + '" style="' + (RANGE === r[0] ? 'border-color:var(--ink);font-weight:700' : '') + '">' + r[1] + '</button>'; }).join('') + '<span class="small muted">· ' + dates[0] + ' ~ ' + dates[dates.length - 1] + '</span></div>';
-  return picker +
+  return calendarHtml() + dayPanel(DAYSEL) + '<h2 style="margin:22px 0 8px">기간 추이</h2>' + picker +
     '<div class="kpis">' + kpi('기간 방문자', sum('visit'), '하루 평균 ' + Math.round(sum('visit') / d.length * 10) / 10) + kpi('참여율', rate(sum('start'), sum('visit')) == null ? '–' : rate(sum('start'), sum('visit')) + '%', '방문 → 참여 시작') +
     kpi('완주율', rate(sum('finish'), sum('start')) == null ? '–' : rate(sum('finish'), sum('start')) + '%', '참여 시작 → 결과') + kpi('리포트 열람률', rate(sum('report'), sum('finish')) == null ? '–' : rate(sum('report'), sum('finish')) + '%', '결과 → 심층 리포트') +
     kpi('대나무숲 비밀', sum('secretsSaved'), '날려 보냄 ' + sum('secret_release') + '명') + kpi('고민 상담', sum('consultsSaved'), '상담한 사람 ' + sum('consult') + '명') + '</div>' +
@@ -345,7 +390,7 @@ function forestTab() {
 function render() {
   CHARTS = {};
   var waiting = CONS.filter(function (c) { return c.status !== '답변 완료'; }).length;
-  var tabs = [['overview', '개요'], ['trends', '일자별 추이'], ['ai', 'AI 사용량'], ['coin', '마마미코인'], ['traffic', '유입 경로'], ['funnel', '문항 이탈'], ['people', '참여자'], ['results', '결과 분포'], ['forest', '대나무숲 · 상담' + (waiting ? ' (' + waiting + ')' : '')]];
+  var tabs = [['overview', '개요'], ['trends', '일자별 보기'], ['ai', 'AI 사용량'], ['coin', '마마미코인'], ['traffic', '유입 경로'], ['funnel', '문항 이탈'], ['people', '참여자'], ['results', '결과 분포'], ['forest', '대나무숲 · 상담' + (waiting ? ' (' + waiting + ')' : '')]];
   var body = TAB === 'trends' ? trendsTab() : TAB === 'ai' ? aiTab() : TAB === 'coin' ? coinTab() : TAB === 'funnel' ? funnelTab() : TAB === 'traffic' ? trafficTab() : TAB === 'people' ? peopleTab() : TAB === 'results' ? resultsTab() : TAB === 'forest' ? forestTab() : overviewTab();
   app.innerHTML = '<div class="row between" style="flex-wrap:wrap"><h1>MyMyMe 관리자</h1><div class="row"><span class="small muted">갱신 ' + new Date(DATA.updated).toLocaleString('ko-KR') + '</span><button class="sec" id="re">새로고침</button><button class="sec" id="out">로그아웃</button></div></div>' +
     '<nav class="tabs" role="tablist">' + tabs.map(function (t) { return '<button role="tab" aria-selected="' + (TAB === t[0]) + '" class="tabb' + (TAB === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</nav>' +
@@ -368,6 +413,8 @@ document.addEventListener('click', function (e) {
   else if (b.id === 'out') { KEY = ''; try { sessionStorage.removeItem('mm_admin'); } catch (er) {} login(); }
   else if (b.dataset.tab) { TAB = b.dataset.tab; render(); }
   else if (b.dataset.range) { RANGE = +b.dataset.range; render(); }
+  else if (b.dataset.day) { DAYSEL = b.dataset.day; render(); }
+  else if (b.dataset.calm) { var cy = +CALM.slice(0, 4), cm = +CALM.slice(5, 7) + (+b.dataset.calm); if (cm < 1) { cm = 12; cy--; } if (cm > 12) { cm = 1; cy++; } CALM = cy + '-' + (cm < 10 ? '0' : '') + cm; render(); }
   else if (b.dataset.tview) { TABLEVIEW[b.dataset.tview] = !TABLEVIEW[b.dataset.tview]; render(); }
   else if (b.dataset.pfilter) { PFILTER = b.dataset.pfilter; render(); }
   else if (b.id === 'csv') downloadCsv();

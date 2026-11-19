@@ -8986,8 +8986,24 @@ function tarotCard(n, label, small) {
 }
 var E = MMEngine(window);
 var STAGE = {}; Q.stages.forEach(function (s) { STAGE[s.id] = s; });
-var LIK_ORDER = [], LIK_BLOCK_OF = {};
+var LIK_ORDER = [], LIK_BLOCK_OF = {}, SC_ITEMS = STAGE.scenario.items.slice(), EL_ITEMS = STAGE.element.items.slice();
 STAGE.likert.blocks.forEach(function (b) { b.items.forEach(function (id) { LIK_ORDER.push(id); LIK_BLOCK_OF[id] = b; }); });
+/* 문항 순서: 새로 시작할 때 사람마다 섞는다(성향 문항은 같은 블록 안에서만 섞어 중간 쉼터 위치는 그대로).
+ * 섞은 순서는 S.ord에 저장해 새로고침·이어하기에도 같은 순서를 유지. S.ord가 없는(예전에 시작한) 사람은 원래 순서 */
+var DEF_LIK = LIK_ORDER.slice();
+function shuffled(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+function makeOrder() {
+  return { lik: [].concat.apply([], STAGE.likert.blocks.map(function (b) { return shuffled(b.items); })), sc: shuffled(STAGE.scenario.items.map(function (x) { return x.id; })), el: shuffled(STAGE.element.items.map(function (x) { return x.id; })) };
+}
+function sameSet(a, b) { return a && a.length === b.length && a.slice().sort().join() === b.slice().sort().join(); }
+function applyOrder() {
+  var o = S.ord || {}, scIds = STAGE.scenario.items.map(function (x) { return x.id; }), elIds = STAGE.element.items.map(function (x) { return x.id; });
+  LIK_ORDER = sameSet(o.lik, DEF_LIK) ? o.lik.slice() : DEF_LIK.slice();
+  var byId = function (list, id) { return list.filter(function (x) { return x.id === id; })[0]; };
+  SC_ITEMS = sameSet(o.sc, scIds) ? o.sc.map(function (id) { return byId(STAGE.scenario.items, id); }) : STAGE.scenario.items.slice();
+  EL_ITEMS = sameSet(o.el, elIds) ? o.el.map(function (id) { return byId(STAGE.element.items, id); }) : STAGE.element.items.slice();
+}
+function curItemId() { return S.view === 'likert' ? LIK_ORDER[S.li] : S.view === 'scenario' ? (SC_ITEMS[S.si] || {}).id : S.view === 'element' ? (EL_ITEMS[S.ei] || {}).id : ''; }
 var YEAR = 2027;
 var ICON = {
   back: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1E2140" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
@@ -9043,11 +9059,11 @@ function qIndex() { return S.view === 'likert' ? S.li + 1 : S.view === 'scenario
 function qShown() { var i = qIndex(); if (i && QSTAT.cur !== i) { QSTAT.cur = i; QSTAT.shownAt = Date.now(); } }
 function qAnswered() {
   var i = qIndex(); if (!i) return;
-  QSTAT.buf.push([i, Math.min(600, Math.round((Date.now() - QSTAT.shownAt) / 100) / 10), 0]);
+  QSTAT.buf.push([i, Math.min(600, Math.round((Date.now() - QSTAT.shownAt) / 100) / 10), 0, curItemId()]);
   QSTAT.cur = 0; if (QSTAT.buf.length >= 10) qFlush('batch');
 }
 /* 뒤로가기는 떠나는 문항에 [문항, 0, 1]로 기록 (체류 0초 = 응답 아님) */
-function qBackFrom() { var i = qIndex(); if (i) QSTAT.buf.push([i, 0, 1]); QSTAT.cur = 0; }
+function qBackFrom() { var i = qIndex(); if (i) QSTAT.buf.push([i, 0, 1, curItemId()]); QSTAT.cur = 0; }
 function qFlush(reason, beacon) {
   if (!ENDPOINT || S.result || !S.startedAt) { QSTAT.buf = []; return; }
   var i = qIndex();
@@ -9161,7 +9177,7 @@ V.interlude1 = function () {
     checkpoint() + T('<button class="btn btn-pri" style="margin-top:auto" data-act="likContinue">계속하기 · 남은 ') + (60 - S.li) + T('문항</button></div>');
 };
 V.scenario = function () {
-  var it = STAGE.scenario.items[S.si], cur = S.answers.scenario[it.id];
+  var it = SC_ITEMS[S.si], cur = S.answers.scenario[it.id];
   return '<div class="screen"><div class="col" style="gap:10px">' +
     T('<div class="row between"><button class="iconbtn" data-act="scPrev" aria-label="이전 문항">') + ICON.back + T('</button><span class="small muted" style="font-weight:500">3 / 4 단계 · ') + (S.si + 1) + ' / 12</span>' + editBirthBtn() + '</div>' + progress(overall()) + '<span class="xs muted" style="text-align:right">' + leftLine() + '</span>' + '</div>' + cheer('scenario', S.si) +
     T('<div class="col" style="gap:14px;margin-top:12px;min-height:120px"><span class="pill pill-coral">이런 순간</span><h1 style="font-size:22px;line-height:1.5">') + esc(it.text) + '</h1></div>' +
@@ -9178,7 +9194,7 @@ V.interlude2 = function () {
     checkpoint() + T('<button class="btn btn-pri" style="margin-top:auto" data-go="introElement">마지막 단계로</button></div>');
 };
 V.element = function () {
-  var it = STAGE.element.items[S.ei];
+  var it = EL_ITEMS[S.ei];
   return '<div class="screen"><div class="col" style="gap:10px">' +
     T('<div class="row between"><button class="iconbtn" data-act="elPrev" aria-label="이전 문항">') + ICON.back + T('</button><span class="small muted" style="font-weight:500">4 / 4 단계 · ') + (S.ei + 1) + ' / 10</span>' + editBirthBtn() + '</div>' + progress(overall()) + '<span class="xs muted" style="text-align:right">' + leftLine() + '</span>' + '</div>' + cheer('element', S.ei) +
     T('<div class="col" style="gap:14px;margin-top:12px;min-height:150px"><span class="pill pill-coral">타고난 나 vs 살아온 나</span><h1 style="font-size:23px;line-height:1.5">') + esc(it.text) + '</h1></div>' +
@@ -10251,11 +10267,11 @@ document.addEventListener('click', function (ev) {
   if (d.paym !== undefined) { document.querySelectorAll('[data-paym]').forEach(function (b) { b.classList.remove('on'); }); el.classList.add('on'); return; }
   if (d.lik !== undefined) { qAnswered(); S.answers.likert[LIK_ORDER[S.li]] = +d.lik; save(); render(); setTimeout(advanceLikert, 180); return; }
   if (d.sc !== undefined) {
-    qAnswered(); S.answers.scenario[STAGE.scenario.items[S.si].id] = +d.sc; save(); render();
+    qAnswered(); S.answers.scenario[SC_ITEMS[S.si].id] = +d.sc; save(); render();
     setTimeout(function () { if (S.si === 11) { qFlush('section'); track('scenario_done'); go('interlude2'); } else { S.si++; save(); render(); } }, 180); return;
   }
   if (d.el !== undefined) {
-    qAnswered(); S.answers.element[STAGE.element.items[S.ei].id] = +d.el; save(); render();
+    qAnswered(); S.answers.element[EL_ITEMS[S.ei].id] = +d.el; save(); render();
     setTimeout(function () { if (S.ei === 9) { qFlush('section'); S.finishedAt = Date.now(); compute(); var rr = S.result;
         track('finish', resultPayload(rr));
         go('analyzing'); } else { S.ei++; save(); render(); } }, 180); return;
@@ -10275,7 +10291,7 @@ document.addEventListener('click', function (ev) {
         else track('birth_edit', { where: back });
         save(); go(back); break;
       }
-      if (!S.startedAt) { S.startedAt = Date.now(); track('start'); } save(); go('introLikert'); break;
+      if (!S.startedAt) { S.startedAt = Date.now(); S.ord = makeOrder(); applyOrder(); track('start'); } save(); go('introLikert'); break;
     case 'joinResearch':
       S.birth.research = true; save(); track('result_update', resultPayload(S.result)); track('research_join', {});
       toast(T('통계 연구에 참여해 주셔서 고마워요')); PEERS = { key: '', data: null, loading: false }; render(); break;
@@ -10285,7 +10301,7 @@ document.addEventListener('click', function (ev) {
     case 'resume':
       track('resume', { n: answeredCount(), away: S.lastAt ? Math.round((Date.now() - S.lastAt) / 60000) : null });
       if (!S.birth.y) go('birth'); else if (Object.keys(S.answers.likert).length < 60) go('likert'); else if (Object.keys(S.answers.scenario).length < 12) go('scenario'); else go('element'); break;
-    case 'restart': var keepInv = S.invite; S = fresh(); S.invite = keepInv; save(); go('home'); break;
+    case 'restart': var keepInv = S.invite; S = fresh(); S.invite = keepInv; applyOrder(); save(); go('home'); break;
     case 'quick': quickFill(); break;
     case 'relock': if (S.result) { S.paid = false; save(); toast(T('결제 잠금을 초기화했어요')); render(); } else toast(T('결과가 생기면 쓸 수 있어요')); break;
     case 'likPrev': qBackFrom(); if (S.li > 0) { S.li--; save(); render(); } else go('introLikert'); break;
@@ -10398,7 +10414,7 @@ document.addEventListener('click', function (ev) {
 document.addEventListener('change', function (ev) {
   if (ev.target.id === 'agree') document.getElementById('payBtn').disabled = !ev.target.checked;
 });
-load(); S.lang = LANG;
+load(); S.lang = LANG; applyOrder();
 /* 재방문: 문항을 풀던 중 30분 넘게 떠나 있었다면 바로 문항으로 들이지 않고 '이어서 하기' 화면부터 보여 준다 */
 if (S.startedAt && !S.result && S.view !== 'home' && S.view !== 'lang' && S.lastAt && Date.now() - S.lastAt > 30 * 60000) S.view = 'home';
 try {
