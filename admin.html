@@ -39,6 +39,8 @@ ol li{margin-bottom:6px;line-height:1.6}
 .tbl td{padding:8px 10px;border-bottom:1px solid #F0ECE4}.tbl tr:hover td{background:#FAF9F6}
 .tip{position:absolute;background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:12px;box-shadow:0 4px 14px rgba(30,33,64,.12);pointer-events:none;min-width:150px;line-height:1.7}
 .tip i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px}
+.danger{color:#B3261E!important;border-color:#F0C9C2!important}
+.mini{height:30px!important;min-height:30px!important;padding:0 10px!important;font-size:12.5px!important}
 </style>
 </head>
 <body>
@@ -93,11 +95,19 @@ function consultBox() {
         '<span class="tag" style="background:' + st[0] + ';color:' + st[1] + '">' + esc(c.status) + '</span>' + (c.crisis ? '<span class="tag" style="background:#B3261E;color:#fff">위기 신호 · 109 안내 확인</span>' : '') +
         (c.memo ? '<span class="tag" style="background:#FFF4D6;color:#7A5A00" title="' + esc(c.memo) + '">' + esc(String(c.memo).slice(0, 60)) + '</span>' : '') +
         chips.map(function (t) { return '<span class="tag" style="background:#F0ECE4;color:#33364F">' + esc(t) + '</span>'; }).join('') + '</div>' +
-        c.thread.map(function (m) { return '<div style="border-left:3px solid ' + (m.who === 'user' ? 'var(--acc)' : m.who === 'ai' ? '#4C8F66' : 'var(--coral)') + ';padding:4px 0 4px 12px"><div class="small muted"><b>' + WHO[m.who] + '</b> · ' + esc(m.date) + '</div><p style="margin:4px 0 0;white-space:pre-wrap;line-height:1.6">' + esc(m.text) + '</p></div>'; }).join('') +
+        c.thread.map(function (m, i) { var key = 'm|' + c.id + '|' + i, editing = EDIT === key;
+          return '<div style="border-left:3px solid ' + (m.who === 'user' ? 'var(--acc)' : m.who === 'ai' ? '#4C8F66' : 'var(--coral)') + ';padding:4px 0 4px 12px;width:100%;box-sizing:border-box"><div class="row between small muted"><span><b>' + WHO[m.who] + '</b> · ' + esc(m.date) + '</span>' +
+            (editing ? '' : '<span class="row" style="gap:4px">' + edBtn('data-edit="' + key + '"', true) + delBtn('data-mdel="' + key + '"', '', true) + '</span>') + '</div>' +
+            (editing ? editBox(key, m.text) : '<p style="margin:4px 0 0;white-space:pre-wrap;line-height:1.6">' + esc(m.text) + '</p>') + '</div>'; }).join('') +
         '<label class="small" for="r_' + esc(c.id) + '" style="font-weight:500">운영자 답변</label><textarea id="r_' + esc(c.id) + '" style="width:100%;min-height:90px;border:1px solid #D9D5CC;border-radius:12px;padding:10px;font-family:inherit;font-size:14px"></textarea>' +
-        '<div class="row"><button data-reply="' + esc(c.id) + '">답변 등록</button>' + (c.status !== '답변 완료' ? '<button class="sec" data-cdone="' + esc(c.id) + '">답변 없이 완료 처리</button>' : '<button class="sec" data-creopen="' + esc(c.id) + '">다시 열기</button>') + '</div></div>';
+        '<div class="row"><button data-reply="' + esc(c.id) + '">답변 등록</button>' + (c.status !== '답변 완료' ? '<button class="sec" data-cdone="' + esc(c.id) + '">답변 없이 완료 처리</button>' : '<button class="sec" data-creopen="' + esc(c.id) + '">다시 열기</button>') + '<span style="flex:1"></span>' + delBtn('data-cdel="' + esc(c.id) + '"', '상담 전체 삭제') + '</div></div>';
     }).join('') : '<p class="small muted">' + (CFILTER === 'open' ? '답변이 필요한 상담이 없어요' : '아직 상담이 없어요') + '</p>') + '</div>';
 }
+var EDIT = null, PSEL = {};
+var TA = 'display:block;box-sizing:border-box;width:100%;min-height:90px;border:1px solid #D9D5CC;border-radius:12px;padding:10px;font-family:inherit;font-size:14px';
+function editBox(key, text) { return '<textarea id="ed_' + key + '" style="' + TA + '">' + esc(text) + '</textarea><div class="row" style="gap:6px"><button data-esave="' + key + '">저장</button><button class="sec" data-ecancel="1">취소</button></div>'; }
+function delBtn(attrs, label, mini) { return '<button class="sec danger' + (mini ? ' mini' : '') + '" ' + attrs + '>' + (label || '삭제') + '</button>'; }
+function edBtn(attrs, mini) { return '<button class="sec' + (mini ? ' mini' : '') + '" ' + attrs + '>수정</button>'; }
 function apost(body) { body.key = KEY; return fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(body) }).then(function (r) { return r.json(); }); }
 var TAB = 'overview', RANGE = 30, PQ = '', PFILTER = 'finished', TABLEVIEW = {};
 var SERIES = ['#4B3FC7', '#D35A2E', '#1E88C9', '#A6790A'];  /* 검증된 순서 고정 팔레트 */
@@ -209,12 +219,12 @@ function peopleTab() {
   var consented = all.filter(function (p) { return p.result && p.result.research; }).length;
   return '<div class="card"><div class="row between" style="flex-wrap:wrap;gap:10px;margin-bottom:10px"><h2 style="margin:0">참여자 ' + rows.length + '명 <span class="small muted">/ 전체 ' + all.length + '명 · 통계 연구 동의 ' + consented + '명</span></h2>' +
     '<div class="row" style="flex-wrap:wrap;gap:8px">' + [['finished', '결과 확인'], ['research', '연구 동의'], ['dropped', '중도 이탈'], ['all', '전체']].map(function (f) { return '<button class="sec" data-pfilter="' + f[0] + '" style="' + (PFILTER === f[0] ? 'border-color:var(--ink);font-weight:700' : '') + '">' + f[1] + '</button>'; }).join('') +
-    '<input id="pq" placeholder="이름·유형·코드·일간·간지·혈액형 검색" value="' + esc(PQ) + '" style="height:40px;font-size:14px;min-width:220px"><button class="sec" id="csv">CSV 받기 (전체 속성)</button></div></div>' +
+    '<input id="pq" placeholder="이름·유형·코드·일간·간지·혈액형 검색" value="' + esc(PQ) + '" style="height:40px;font-size:14px;min-width:220px"><button class="sec" id="csv">CSV 받기 (전체 속성)</button>' + (Object.keys(PSEL).length ? delBtn('id="pdelsel"', '선택한 ' + Object.keys(PSEL).length + '명 삭제') : '') + '</div></div>' +
     '<p class="small muted">이름·생년월일·태어난 시간은 참여자가 "사주 통계 연구"에 동의한 경우에만 기록돼요. 사주 간지·십성·12운성·오행·성향 점수는 모든 참여자가 익명으로 기록돼요(이 기능을 배포한 뒤 참여한 사람부터). 같은 사람이라도 다른 기기에서 하면 다른 번호로 보여요.</p>' +
-    '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>결과 확인 시각</th><th>이름 (동의)</th><th>생년월일시 (동의)</th><th>사주 간지 (연·월·일·시)</th><th>일간</th><th>오행</th><th>십성 (천간/지지)</th><th>유형 · 코드</th><th>성향 E/S/T/J/안정 %</th><th>혈액형</th><th>성별</th><th>신살</th><th>언어</th><th>참여 시간</th><th>리포트</th><th>공유</th><th>궁합</th><th>상담</th><th>익명 번호</th></tr></thead><tbody>' +
+    '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th><input type="checkbox" id="pall" title="보이는 참여자 모두 선택"' + (rows.length && rows.slice(0, 500).every(function (p) { return PSEL[p.sid]; }) ? ' checked' : '') + '></th><th>결과 확인 시각</th><th>이름 (동의)</th><th>생년월일시 (동의)</th><th>사주 간지 (연·월·일·시)</th><th>일간</th><th>오행</th><th>십성 (천간/지지)</th><th>유형 · 코드</th><th>성향 E/S/T/J/안정 %</th><th>혈액형</th><th>성별</th><th>신살</th><th>언어</th><th>참여 시간</th><th>리포트</th><th>공유</th><th>궁합</th><th>상담</th><th>익명 번호</th><th></th></tr></thead><tbody>' +
     (rows.length ? rows.slice(0, 500).map(function (p) {
       var r = p.result || {};
-      return '<tr><td style="white-space:nowrap">' + esc(p.finished || ('시작 ' + (p.started || ''))) + '</td>' +
+      return '<tr><td><input type="checkbox" data-psel="' + esc(p.sid) + '"' + (PSEL[p.sid] ? ' checked' : '') + '></td><td style="white-space:nowrap">' + esc(p.finished || ('시작 ' + (p.started || ''))) + '</td>' +
         '<td>' + (r.person ? '<b>' + esc(r.person) + '</b>' : r.research ? '<span class="muted">(이름 없음)</span>' : '<span class="muted">–</span>') + '</td>' +
         '<td style="white-space:nowrap">' + (r.birth ? esc(birthStr(r)) + (r.lunar && r.cal === 'solar' ? '<br><span class="xs muted">음력 ' + esc(r.lunar) + '</span>' : r.solar && r.cal !== 'solar' ? '<br><span class="xs muted">양력 ' + esc(r.solar) + '</span>' : '') : '<span class="muted">–</span>') + '</td>' +
         '<td style="white-space:nowrap;font-size:15px;letter-spacing:1px">' + esc(r.pillars || '') + '</td>' +
@@ -223,8 +233,8 @@ function peopleTab() {
         '<td class="xs" style="white-space:nowrap">' + esc(tgList(r).join(' · ')) + '</td>' +
         '<td>' + (r.name ? '<b>' + esc(r.name) + '</b><br><span class="xs muted">' + esc(r.code || '') + '</span>' : '<span class="muted">중도 이탈</span>') + '</td>' +
         '<td class="xs">' + esc(r.pct || '') + '</td><td>' + esc(r.blood || '') + '</td><td>' + esc(GENDER[r.gender] || '') + '</td><td class="xs">' + esc(r.sal || '') + '</td><td class="xs">' + esc(r.lang || '') + '</td>' +
-        '<td>' + (r.minutes != null ? r.minutes + '분' : '') + '</td><td>' + yn(p.report, '열람') + '</td><td>' + (p.share || '<span class="muted">–</span>') + '</td><td>' + (p.compat || '<span class="muted">–</span>') + '</td><td>' + (p.consult || '<span class="muted">–</span>') + '</td><td><code class="xs">' + esc(p.sid) + '</code></td></tr>';
-    }).join('') : '<tr><td colspan="19" class="muted">해당하는 참여자가 없어요</td></tr>') + '</tbody></table></div>' + (rows.length > 500 ? '<p class="small muted">최근 500명만 표시해요. 전체는 CSV로 받아보세요.</p>' : '') + '</div>';
+        '<td>' + (r.minutes != null ? r.minutes + '분' : '') + '</td><td>' + yn(p.report, '열람') + '</td><td>' + (p.share || '<span class="muted">–</span>') + '</td><td>' + (p.compat || '<span class="muted">–</span>') + '</td><td>' + (p.consult || '<span class="muted">–</span>') + '</td><td><code class="xs">' + esc(p.sid) + '</code></td><td>' + delBtn('data-pdel="' + esc(p.sid) + '"', '', true) + '</td></tr>';
+    }).join('') : '<tr><td colspan="21" class="muted">해당하는 참여자가 없어요</td></tr>') + '</tbody></table></div>' + (rows.length > 500 ? '<p class="small muted">최근 500명만 표시해요. 전체는 CSV로 받아보세요.</p>' : '') + '</div>';
 }
 function downloadCsv() {
   var head = ['결과확인', '참여시작', '익명번호', '연구동의', '이름', '달력구분', '입력생년월일', '태어난시', '양력', '음력', '연주', '월주', '일주', '시주', '일간', '목', '화', '토', '금', '수', '과다오행', '부족오행',
@@ -264,11 +274,12 @@ function forestTab() {
   var secrets = DATA.secrets.filter(function (s) { return FILTER === 'all' || (FILTER === 'hidden' ? s.hidden : !s.hidden); });
   return consultBox() + '<div class="card"><div class="row between" style="flex-wrap:wrap;margin-bottom:6px"><h2 style="margin:0">대나무숲 관리</h2><div class="row">' +
     [['all', '전체'], ['visible', '공개 중'], ['hidden', '숨김']].map(function (f) { return '<button class="sec" data-filter="' + f[0] + '" style="' + (FILTER === f[0] ? 'border-color:var(--ink);font-weight:700' : '') + '">' + f[1] + '</button>'; }).join('') + '</div></div>' +
-    '<p class="small muted">위기 단어가 들어간 글과 신고 3회 이상 글은 자동으로 숨겨져요. 숨김/공개를 직접 바꿀 수 있어요.</p>' +
+    '<p class="small muted">위기 단어가 들어간 글과 신고 3회 이상 글은 자동으로 숨겨져요. 숨김/공개를 바꾸거나, 글을 직접 수정·삭제할 수 있어요. 삭제한 글은 되돌릴 수 없어요.</p>' +
     (secrets.length ? secrets.map(function (s) {
-      return '<div class="sec-item"><div style="flex:1"><p style="margin:0 0 6px;white-space:pre-wrap;line-height:1.6">' + esc(s.text) + '</p><div class="row small muted" style="flex-wrap:wrap"><span>' + esc(s.date) + '</span><span>공감 ' + s.empathy + '</span><span>신고 ' + s.reports + '</span>' +
+      var skey = 's|' + s.id, sed = EDIT === skey;
+      return '<div class="sec-item"><div style="flex:1">' + (sed ? editBox(skey, s.text) : '<p style="margin:0 0 6px;white-space:pre-wrap;line-height:1.6">' + esc(s.text) + '</p>') + '<div class="row small muted" style="flex-wrap:wrap"><span>' + esc(s.date) + '</span><span>공감 ' + s.empathy + '</span><span>신고 ' + s.reports + '</span>' +
         (s.hidden ? '<span class="tag" style="background:#FBE9E3;color:#8A3520">숨김</span>' : '<span class="tag" style="background:var(--ok-l);color:var(--ok)">공개</span>') + (s.memo ? '<span>' + esc(s.memo) + '</span>' : '') + '</div></div>' +
-        '<button class="sec" data-mod="' + (s.hidden ? 'unhide' : 'hide') + '" data-id="' + esc(s.id) + '">' + (s.hidden ? '공개하기' : '숨기기') + '</button></div>';
+        '<div class="col" style="gap:6px"><button class="sec" data-mod="' + (s.hidden ? 'unhide' : 'hide') + '" data-id="' + esc(s.id) + '">' + (s.hidden ? '공개하기' : '숨기기') + '</button>' + (sed ? '' : edBtn('data-edit="' + skey + '"')) + delBtn('data-sdel="' + esc(s.id) + '"') + '</div></div>';
     }).join('') : '<p class="small muted">해당하는 글이 없어요</p>') + '</div>';
 }
 function render() {
@@ -283,6 +294,11 @@ function render() {
   var pq = document.getElementById('pq');
   if (pq) pq.addEventListener('input', function () { PQ = pq.value; var pos = pq.selectionStart; render(); var n = document.getElementById('pq'); n.focus(); n.setSelectionRange(pos, pos); });
 }
+document.addEventListener('change', function (e) {
+  var t = e.target;
+  if (t.dataset && t.dataset.psel) { if (t.checked) PSEL[t.dataset.psel] = 1; else delete PSEL[t.dataset.psel]; render(); }
+  else if (t.id === 'pall') { peopleRows().slice(0, 500).forEach(function (p) { if (t.checked) PSEL[p.sid] = 1; else delete PSEL[p.sid]; }); render(); }
+});
 document.addEventListener('click', function (e) {
   var b = e.target.closest('button'); if (!b) return;
   if (b.id === 're') load();
@@ -292,6 +308,19 @@ document.addEventListener('click', function (e) {
   else if (b.dataset.tview) { TABLEVIEW[b.dataset.tview] = !TABLEVIEW[b.dataset.tview]; render(); }
   else if (b.dataset.pfilter) { PFILTER = b.dataset.pfilter; render(); }
   else if (b.id === 'csv') downloadCsv();
+  else if (b.dataset.edit) { EDIT = b.dataset.edit; render(); var ta0 = document.getElementById('ed_' + EDIT); if (ta0) ta0.focus(); }
+  else if (b.dataset.ecancel) { EDIT = null; render(); }
+  else if (b.dataset.esave) {
+    var k = b.dataset.esave, parts = k.split('|'), tx = (document.getElementById('ed_' + k) || {}).value || '';
+    if (!tx.trim()) return; b.disabled = true; b.textContent = '저장 중…';
+    var body = parts[0] === 's' ? { kind: 'admin_edit', op: 'secret_edit', id: parts[1], text: tx } : { kind: 'admin_edit', op: 'msg_edit', id: parts[1], idx: +parts[2], text: tx };
+    apost(body).then(function (j) { if (!j || !j.ok) alert('수정하지 못했어요: ' + ((j && j.reason) || '연결 오류')); EDIT = null; load(); }, function () { EDIT = null; load(); });
+  }
+  else if (b.dataset.sdel) { if (confirm('이 대나무숲 글을 삭제할까요? 되돌릴 수 없어요.')) { b.disabled = true; apost({ kind: 'admin_edit', op: 'secret_delete', id: b.dataset.sdel }).then(load, load); } }
+  else if (b.dataset.cdel) { if (confirm('상담 ' + b.dataset.cdel + '의 글과 답변을 모두 삭제할까요? 상담자 화면에서도 사라지고, 되돌릴 수 없어요.')) { b.disabled = true; apost({ kind: 'admin_edit', op: 'consult_delete', id: b.dataset.cdel }).then(load, load); } }
+  else if (b.dataset.mdel) { var mp = b.dataset.mdel.split('|'); if (confirm('이 메시지를 삭제할까요? 되돌릴 수 없어요.')) { b.disabled = true; apost({ kind: 'admin_edit', op: 'msg_delete', id: mp[1], idx: +mp[2] }).then(load, load); } }
+  else if (b.dataset.pdel) { var one = b.dataset.pdel; if (confirm('참여자 ' + one + '의 기록을 모두 삭제할까요? 통계에서도 빠지고, 되돌릴 수 없어요.')) { b.disabled = true; apost({ kind: 'admin_edit', op: 'people_delete', sids: [one] }).then(function () { delete PSEL[one]; load(); }, load); } }
+  else if (b.id === 'pdelsel') { var ids = Object.keys(PSEL); if (ids.length && confirm('선택한 ' + ids.length + '명의 기록을 모두 삭제할까요? 통계에서도 빠지고, 되돌릴 수 없어요.')) { b.disabled = true; b.textContent = '삭제 중…'; apost({ kind: 'admin_edit', op: 'people_delete', sids: ids }).then(function (j) { PSEL = {}; if (j && j.ok) alert(ids.length + '명의 기록(' + j.removed + '줄)을 삭제했어요.'); load(); }, load); } }
   else if (b.dataset.filter) { FILTER = b.dataset.filter; render(); }
   else if (b.dataset.cfilter) { CFILTER = b.dataset.cfilter; render(); }
   else if (b.dataset.reply) {
