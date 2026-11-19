@@ -295,7 +295,7 @@ function peopleRows() {
     if (PFILTER === 'dropped' && p.finished) return false;
     if (PFILTER === 'research' && !(p.result && p.result.research)) return false;
     if (!q) return true;
-    var r = p.result || {}; return [p.sid, r.name, r.code, STEM_READ[r.dayStem], r.blood, r.person, r.pillars, r.birth].join(' ').toLowerCase().indexOf(q) >= 0;
+    var r = p.result || {}; return [p.sid, p.rcode, r.name, r.code, STEM_READ[r.dayStem], r.blood, r.person, r.pillars, r.birth].join(' ').toLowerCase().indexOf(q) >= 0;
   });
 }
 var TGN = ['비견', '겁재', '식신', '상관', '편재', '정재', '편관', '정관', '편인', '정인'];
@@ -359,12 +359,12 @@ function peopleTab() {
   var consented = all.filter(function (p) { return p.result && p.result.research; }).length;
   return '<div class="card"><div class="row between" style="flex-wrap:wrap;gap:10px;margin-bottom:10px"><h2 style="margin:0">참여자 ' + rows.length + '명 <span class="small muted">/ 전체 ' + all.length + '명 · 통계 연구 동의 ' + consented + '명</span></h2>' +
     '<div class="row" style="flex-wrap:wrap;gap:8px">' + [['finished', '결과 확인'], ['research', '연구 동의'], ['dropped', '중도 이탈'], ['all', '전체']].map(function (f) { return '<button class="sec" data-pfilter="' + f[0] + '" style="' + (PFILTER === f[0] ? 'border-color:var(--ink);font-weight:700' : '') + '">' + f[1] + '</button>'; }).join('') +
-    '<input id="pq" placeholder="이름·유형·코드·일간·간지·혈액형 검색" value="' + esc(PQ) + '" style="height:40px;font-size:14px;min-width:220px"><button class="sec" id="csv">CSV 받기 (전체 속성)</button>' + (Object.keys(PSEL).length ? '<button class="sec" id="pgiftsel">🪙 선택한 ' + Object.keys(PSEL).length + '명에게 코인 선물</button>' + delBtn('id="pdelsel"', '선택한 ' + Object.keys(PSEL).length + '명 삭제') : '') + '</div></div>' +
+    '<input id="pq" placeholder="이름·유형·코드·리포트코드·일간·간지·혈액형 검색" value="' + esc(PQ) + '" style="height:40px;font-size:14px;min-width:220px"><button class="sec" id="csv">CSV 받기 (전체 속성)</button>' + (Object.keys(PSEL).length ? '<button class="sec" id="pgiftsel">🪙 선택한 ' + Object.keys(PSEL).length + '명에게 코인 선물</button>' + delBtn('id="pdelsel"', '선택한 ' + Object.keys(PSEL).length + '명 삭제') : '') + '</div></div>' +
     '<p class="small muted">이름·생년월일·태어난 시간은 참여자가 "사주 통계 연구"에 동의한 경우에만 기록돼요. 사주 간지·십성·12운성·오행·성향 점수는 모든 참여자가 익명으로 기록돼요(이 기능을 배포한 뒤 참여한 사람부터). 같은 사람이라도 다른 기기에서 하면 다른 번호로 보여요.</p>' +
     '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th><input type="checkbox" id="pall" title="보이는 참여자 모두 선택"' + (rows.length && rows.slice(0, 500).every(function (p) { return PSEL[p.sid]; }) ? ' checked' : '') + '></th><th>결과 확인 시각</th><th>이름 (동의)</th><th>생년월일시 (동의)</th><th>사주 간지 (연·월·일·시)</th><th>일간</th><th>오행</th><th>십성 (천간/지지)</th><th>유형 · 코드</th><th>성향 E/S/T/J/안정 %</th><th>혈액형</th><th>성별</th><th>신살</th><th>언어</th><th>참여 시간</th><th>리포트</th><th>공유</th><th>궁합</th><th>상담</th><th>익명 번호</th><th></th></tr></thead><tbody>' +
     (rows.length ? rows.slice(0, 500).map(function (p) {
       var r = p.result || {};
-      return '<tr><td><input type="checkbox" data-psel="' + esc(p.sid) + '"' + (PSEL[p.sid] ? ' checked' : '') + '></td><td style="white-space:nowrap">' + esc(p.finished || ('시작 ' + (p.started || ''))) + '<br><span class="xs muted" title="익명번호">' + esc(p.sid) + '</span></td>' +
+      return '<tr><td><input type="checkbox" data-psel="' + esc(p.sid) + '"' + (PSEL[p.sid] ? ' checked' : '') + '></td><td style="white-space:nowrap">' + esc(p.finished || ('시작 ' + (p.started || ''))) + '<br><span class="xs muted" title="익명번호">' + esc(p.sid) + '</span>' + (p.rcode ? '<br><b class="xs" title="리포트 코드" style="letter-spacing:.5px;color:#4B3FC7">' + esc(p.rcode) + '</b>' : '') + '</td>' +
         '<td>' + (r.person ? '<b>' + esc(r.person) + '</b>' : r.research ? '<span class="muted">(이름 없음)</span>' : '<span class="muted">–</span>') + '</td>' +
         '<td style="white-space:nowrap">' + (r.birth ? esc(birthStr(r)) + (r.lunar && r.cal === 'solar' ? '<br><span class="xs muted">음력 ' + esc(r.lunar) + '</span>' : r.solar && r.cal !== 'solar' ? '<br><span class="xs muted">양력 ' + esc(r.solar) + '</span>' : '') : '<span class="muted">–</span>') + '</td>' +
         '<td style="white-space:nowrap;font-size:15px;letter-spacing:1px">' + esc(r.pillars || '') + '</td>' +
@@ -377,7 +377,7 @@ function peopleTab() {
     }).join('') : '<tr><td colspan="21" class="muted">해당하는 참여자가 없어요</td></tr>') + '</tbody></table></div>' + (rows.length > 500 ? '<p class="small muted">최근 500명만 표시해요. 전체는 CSV로 받아보세요.</p>' : '') + '</div>';
 }
 function downloadCsv() {
-  var head = ['결과확인', '참여시작', '익명번호', '연구동의', '이름', '달력구분', '입력생년월일', '태어난시', '양력', '음력', '연주', '월주', '일주', '시주', '일간', '목', '화', '토', '금', '수', '과다오행', '부족오행',
+  var head = ['결과확인', '참여시작', '익명번호', '리포트코드', '연구동의', '이름', '달력구분', '입력생년월일', '태어난시', '양력', '음력', '연주', '월주', '일주', '시주', '일간', '목', '화', '토', '금', '수', '과다오행', '부족오행',
     '연주십성(천간)', '연주십성(지지)', '월주십성(천간)', '월주십성(지지)', '일지십성', '시주십성(천간)', '시주십성(지지)', '연주12운성', '월주12운성', '일주12운성', '시주12운성', '납음(연·월·일·시)', '신살',
     '유형이름', '코드', '외향%', '감각%', '사고%', '계획%', '안정%', '변형', '체감목', '체감화', '체감토', '체감금', '체감수', '혈액형', '성별', '언어', '참여시간(분)', '리포트열람', '공유', '궁합', '상담', '숲에남김', '초대유입', '방문수'];
   var lines = [head].concat(peopleRows().map(function (p) {
@@ -386,7 +386,7 @@ function downloadCsv() {
     var us = (r.us || '').split(' ').map(function (x) { return x === '' ? '' : USN[+x]; });
     var g = function (arr, i) { return arr[i] == null ? '' : arr[i]; }, t = function (i, j) { return tg[i] ? tg[i][j] : ''; };
     var lx = function (v) { return (v || '').split(',').filter(Boolean).map(function (e) { return ELN[e] || e; }).join(' '); };
-    return [p.finished || '', p.started || '', p.sid, r.research ? 'Y' : 'N', r.person || '', CALN[r.cal] || '', r.birth || '', r.hour == null ? '' : r.hour, r.solar || '', r.lunar || '',
+    return [p.finished || '', p.started || '', p.sid, p.rcode || '', r.research ? 'Y' : 'N', r.person || '', CALN[r.cal] || '', r.birth || '', r.hour == null ? '' : r.hour, r.solar || '', r.lunar || '',
       g(pl, 0), g(pl, 1), g(pl, 2), g(pl, 3), r.dayStem ? STEM_READ[r.dayStem] : '', g(el, 0), g(el, 1), g(el, 2), g(el, 3), g(el, 4), lx(r.excess), lx(r.lack),
       t(0, 0), t(0, 1), t(1, 0), t(1, 1), t(2, 1), t(3, 0), t(3, 1), g(us, 0), g(us, 1), g(us, 2), g(us, 3), r.nayin || '', r.sal || '',
       r.name || '', r.code || '', g(pc, 0), g(pc, 1), g(pc, 2), g(pc, 3), g(pc, 4), r.variant || '', g(fe, 0), g(fe, 1), g(fe, 2), g(fe, 3), g(fe, 4),
