@@ -189,27 +189,59 @@ function peopleRows() {
   return (DATA.participants || []).filter(function (p) {
     if (PFILTER === 'finished' && !p.finished) return false;
     if (PFILTER === 'dropped' && p.finished) return false;
+    if (PFILTER === 'research' && !(p.result && p.result.research)) return false;
     if (!q) return true;
-    var r = p.result || {}; return [p.sid, r.name, r.code, STEM_READ[r.dayStem], r.blood].join(' ').toLowerCase().indexOf(q) >= 0;
+    var r = p.result || {}; return [p.sid, r.name, r.code, STEM_READ[r.dayStem], r.blood, r.person, r.pillars, r.birth].join(' ').toLowerCase().indexOf(q) >= 0;
   });
 }
+var TGN = ['비견', '겁재', '식신', '상관', '편재', '정재', '편관', '정관', '편인', '정인'];
+var USN = ['장생', '목욕', '관대', '건록', '제왕', '쇠', '병', '사', '묘', '절', '태', '양'];
+var ELN = { wood: '목', fire: '화', earth: '토', metal: '금', water: '수' };
+var CALN = { solar: '양력', lunar: '음력', lunar_leap: '음력(윤달)' };
+var POSN = ['연', '월', '일', '시'];
+function tgList(r) { return (r.tg || '').split(' ').filter(Boolean).map(function (x, i) { var a = x.split(':'); return POSN[i] + ' ' + (a[0] === '-1' ? '일간' : TGN[+a[0]]) + '/' + TGN[+a[1]]; }); }
+function usList(r) { return (r.us || '').split(' ').filter(Boolean).map(function (x, i) { return POSN[i] + ' ' + USN[+x]; }); }
+function elStr(r) { if (!r.el) return ''; var v = r.el.split('/'); return '목' + v[0] + ' 화' + v[1] + ' 토' + v[2] + ' 금' + v[3] + ' 수' + v[4]; }
+function birthStr(r) { if (!r.birth) return ''; return (CALN[r.cal] || '') + ' ' + r.birth + (r.hour !== '' && r.hour != null ? ' ' + r.hour + '시' : ' 시간모름'); }
 function peopleTab() {
   var rows = peopleRows(), all = DATA.participants || [];
   var yn = function (v, t) { return v ? '<span class="tag" style="background:var(--ok-l);color:var(--ok)">' + (t || '예') + '</span>' : '<span class="muted">–</span>'; };
-  return '<div class="card"><div class="row between" style="flex-wrap:wrap;gap:10px;margin-bottom:10px"><h2 style="margin:0">참여자 ' + rows.length + '명 <span class="small muted">/ 전체 ' + all.length + '명</span></h2>' +
-    '<div class="row" style="flex-wrap:wrap;gap:8px">' + [['finished', '결과 확인'], ['dropped', '중도 이탈'], ['all', '전체']].map(function (f) { return '<button class="sec" data-pfilter="' + f[0] + '" style="' + (PFILTER === f[0] ? 'border-color:var(--ink);font-weight:700' : '') + '">' + f[1] + '</button>'; }).join('') +
-    '<input id="pq" placeholder="유형·코드·일간·혈액형 검색" value="' + esc(PQ) + '" style="height:40px;font-size:14px;min-width:200px"><button class="sec" id="csv">CSV 받기</button></div></div>' +
-    '<p class="small muted">이름·연락처·생년월일 없이 익명 번호로만 기록돼요. 같은 사람이라도 다른 기기에서 하면 다른 번호로 보여요.</p>' +
-    '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>결과 확인 시각</th><th>익명 번호</th><th>유형 이름</th><th>코드</th><th>일간</th><th>혈액형</th><th>성별</th><th>참여 시간</th><th>리포트</th><th>공유</th><th>궁합</th><th>상담</th><th>숲</th><th>초대 유입</th></tr></thead><tbody>' +
+  var consented = all.filter(function (p) { return p.result && p.result.research; }).length;
+  return '<div class="card"><div class="row between" style="flex-wrap:wrap;gap:10px;margin-bottom:10px"><h2 style="margin:0">참여자 ' + rows.length + '명 <span class="small muted">/ 전체 ' + all.length + '명 · 통계 연구 동의 ' + consented + '명</span></h2>' +
+    '<div class="row" style="flex-wrap:wrap;gap:8px">' + [['finished', '결과 확인'], ['research', '연구 동의'], ['dropped', '중도 이탈'], ['all', '전체']].map(function (f) { return '<button class="sec" data-pfilter="' + f[0] + '" style="' + (PFILTER === f[0] ? 'border-color:var(--ink);font-weight:700' : '') + '">' + f[1] + '</button>'; }).join('') +
+    '<input id="pq" placeholder="이름·유형·코드·일간·간지·혈액형 검색" value="' + esc(PQ) + '" style="height:40px;font-size:14px;min-width:220px"><button class="sec" id="csv">CSV 받기 (전체 속성)</button></div></div>' +
+    '<p class="small muted">이름·생년월일·태어난 시간은 참여자가 "사주 통계 연구"에 동의한 경우에만 기록돼요. 사주 간지·십성·12운성·오행·성향 점수는 모든 참여자가 익명으로 기록돼요(이 기능을 배포한 뒤 참여한 사람부터). 같은 사람이라도 다른 기기에서 하면 다른 번호로 보여요.</p>' +
+    '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>결과 확인 시각</th><th>이름 (동의)</th><th>생년월일시 (동의)</th><th>사주 간지 (연·월·일·시)</th><th>일간</th><th>오행</th><th>십성 (천간/지지)</th><th>유형 · 코드</th><th>성향 E/S/T/J/안정 %</th><th>혈액형</th><th>성별</th><th>신살</th><th>언어</th><th>참여 시간</th><th>리포트</th><th>공유</th><th>궁합</th><th>상담</th><th>익명 번호</th></tr></thead><tbody>' +
     (rows.length ? rows.slice(0, 500).map(function (p) {
       var r = p.result || {};
-      return '<tr><td>' + esc(p.finished || ('시작 ' + (p.started || ''))) + '</td><td><code>' + esc(p.sid) + '</code></td><td>' + (r.name ? '<b>' + esc(r.name) + '</b>' : '<span class="muted">중도 이탈</span>') + '</td><td>' + esc(r.code || '') + '</td><td>' + esc(r.dayStem ? STEM_READ[r.dayStem] + ' ' + r.dayStem : '') + '</td><td>' + esc(r.blood ? r.blood + '형' : '') + '</td><td>' + esc(GENDER[r.gender] || '') + '</td>' +
-        '<td>' + (r.minutes != null ? r.minutes + '분' : '') + '</td><td>' + yn(p.report, '열람') + '</td><td>' + (p.share || '<span class="muted">–</span>') + '</td><td>' + (p.compat || '<span class="muted">–</span>') + '</td><td>' + (p.consult || '<span class="muted">–</span>') + '</td><td>' + (p.secretPost || '<span class="muted">–</span>') + '</td><td>' + yn(p.invited) + '</td></tr>';
-    }).join('') : '<tr><td colspan="14" class="muted">해당하는 참여자가 없어요</td></tr>') + '</tbody></table></div>' + (rows.length > 500 ? '<p class="small muted">최근 500명만 표시해요. 전체는 CSV로 받아보세요.</p>' : '') + '</div>';
+      return '<tr><td style="white-space:nowrap">' + esc(p.finished || ('시작 ' + (p.started || ''))) + '</td>' +
+        '<td>' + (r.person ? '<b>' + esc(r.person) + '</b>' : r.research ? '<span class="muted">(이름 없음)</span>' : '<span class="muted">–</span>') + '</td>' +
+        '<td style="white-space:nowrap">' + (r.birth ? esc(birthStr(r)) + (r.lunar && r.cal === 'solar' ? '<br><span class="xs muted">음력 ' + esc(r.lunar) + '</span>' : r.solar && r.cal !== 'solar' ? '<br><span class="xs muted">양력 ' + esc(r.solar) + '</span>' : '') : '<span class="muted">–</span>') + '</td>' +
+        '<td style="white-space:nowrap;font-size:15px;letter-spacing:1px">' + esc(r.pillars || '') + '</td>' +
+        '<td>' + (r.dayStem ? esc(STEM_READ[r.dayStem] || r.dayStem) : '') + '</td>' +
+        '<td style="white-space:nowrap">' + esc(elStr(r)) + '</td>' +
+        '<td class="xs" style="white-space:nowrap">' + esc(tgList(r).join(' · ')) + '</td>' +
+        '<td>' + (r.name ? '<b>' + esc(r.name) + '</b><br><span class="xs muted">' + esc(r.code || '') + '</span>' : '<span class="muted">중도 이탈</span>') + '</td>' +
+        '<td class="xs">' + esc(r.pct || '') + '</td><td>' + esc(r.blood || '') + '</td><td>' + esc(GENDER[r.gender] || '') + '</td><td class="xs">' + esc(r.sal || '') + '</td><td class="xs">' + esc(r.lang || '') + '</td>' +
+        '<td>' + (r.minutes != null ? r.minutes + '분' : '') + '</td><td>' + yn(p.report, '열람') + '</td><td>' + (p.share || '<span class="muted">–</span>') + '</td><td>' + (p.compat || '<span class="muted">–</span>') + '</td><td>' + (p.consult || '<span class="muted">–</span>') + '</td><td><code class="xs">' + esc(p.sid) + '</code></td></tr>';
+    }).join('') : '<tr><td colspan="19" class="muted">해당하는 참여자가 없어요</td></tr>') + '</tbody></table></div>' + (rows.length > 500 ? '<p class="small muted">최근 500명만 표시해요. 전체는 CSV로 받아보세요.</p>' : '') + '</div>';
 }
 function downloadCsv() {
-  var head = ['결과확인', '참여시작', '익명번호', '유형이름', '코드', '일간', '혈액형', '성별', '참여시간(분)', '리포트열람', '공유', '궁합', '상담', '숲에남김', '초대유입', '방문수'];
-  var lines = [head].concat(peopleRows().map(function (p) { var r = p.result || {}; return [p.finished || '', p.started || '', p.sid, r.name || '', r.code || '', r.dayStem ? STEM_READ[r.dayStem] : '', r.blood || '', GENDER[r.gender] || '', r.minutes == null ? '' : r.minutes, p.report ? 'Y' : '', p.share, p.compat, p.consult, p.secretPost, p.invited ? 'Y' : '', p.visits]; }));
+  var head = ['결과확인', '참여시작', '익명번호', '연구동의', '이름', '달력구분', '입력생년월일', '태어난시', '양력', '음력', '연주', '월주', '일주', '시주', '일간', '목', '화', '토', '금', '수', '과다오행', '부족오행',
+    '연주십성(천간)', '연주십성(지지)', '월주십성(천간)', '월주십성(지지)', '일지십성', '시주십성(천간)', '시주십성(지지)', '연주12운성', '월주12운성', '일주12운성', '시주12운성', '납음(연·월·일·시)', '신살',
+    '유형이름', '코드', '외향%', '감각%', '사고%', '계획%', '안정%', '변형', '체감목', '체감화', '체감토', '체감금', '체감수', '혈액형', '성별', '언어', '참여시간(분)', '리포트열람', '공유', '궁합', '상담', '숲에남김', '초대유입', '방문수'];
+  var lines = [head].concat(peopleRows().map(function (p) {
+    var r = p.result || {}, pl = (r.pillars || '').split(' '), el = (r.el || '').split('/'), pc = (r.pct || '').split('/'), fe = (r.felt || '').split('/');
+    var tg = (r.tg || '').split(' ').map(function (x) { var a = x.split(':'); return a.length < 2 ? ['', ''] : [a[0] === '-1' ? '일간' : TGN[+a[0]], TGN[+a[1]]]; });
+    var us = (r.us || '').split(' ').map(function (x) { return x === '' ? '' : USN[+x]; });
+    var g = function (arr, i) { return arr[i] == null ? '' : arr[i]; }, t = function (i, j) { return tg[i] ? tg[i][j] : ''; };
+    var lx = function (v) { return (v || '').split(',').filter(Boolean).map(function (e) { return ELN[e] || e; }).join(' '); };
+    return [p.finished || '', p.started || '', p.sid, r.research ? 'Y' : 'N', r.person || '', CALN[r.cal] || '', r.birth || '', r.hour == null ? '' : r.hour, r.solar || '', r.lunar || '',
+      g(pl, 0), g(pl, 1), g(pl, 2), g(pl, 3), r.dayStem ? STEM_READ[r.dayStem] : '', g(el, 0), g(el, 1), g(el, 2), g(el, 3), g(el, 4), lx(r.excess), lx(r.lack),
+      t(0, 0), t(0, 1), t(1, 0), t(1, 1), t(2, 1), t(3, 0), t(3, 1), g(us, 0), g(us, 1), g(us, 2), g(us, 3), r.nayin || '', r.sal || '',
+      r.name || '', r.code || '', g(pc, 0), g(pc, 1), g(pc, 2), g(pc, 3), g(pc, 4), r.variant || '', g(fe, 0), g(fe, 1), g(fe, 2), g(fe, 3), g(fe, 4),
+      r.blood || '', GENDER[r.gender] || '', r.lang || '', r.minutes == null ? '' : r.minutes, p.report ? 'Y' : '', p.share || 0, p.compat || 0, p.consult || 0, p.secretPost || 0, p.invited ? 'Y' : '', p.visits || 0];
+  }));
   var csv = '﻿' + lines.map(function (l) { return l.map(function (v) { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(','); }).join('\n');
   var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = 'mymyme-participants-' + new Date().toISOString().slice(0, 10) + '.csv'; document.body.appendChild(a); a.click(); a.remove();
 }
@@ -246,7 +278,7 @@ function render() {
   var body = TAB === 'trends' ? trendsTab() : TAB === 'ai' ? aiTab() : TAB === 'people' ? peopleTab() : TAB === 'results' ? resultsTab() : TAB === 'forest' ? forestTab() : overviewTab();
   app.innerHTML = '<div class="row between" style="flex-wrap:wrap"><h1>MyMyMe 관리자</h1><div class="row"><span class="small muted">갱신 ' + new Date(DATA.updated).toLocaleString('ko-KR') + '</span><button class="sec" id="re">새로고침</button><button class="sec" id="out">로그아웃</button></div></div>' +
     '<nav class="tabs" role="tablist">' + tabs.map(function (t) { return '<button role="tab" aria-selected="' + (TAB === t[0]) + '" class="tabb' + (TAB === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</nav>' +
-    body + '<p class="small muted">원본 데이터는 구글 시트 "MyMyMe 운영 데이터"에서 볼 수 있어요. 생년월일·이름·연락처는 수집하지 않아요.</p>';
+    body + '<p class="small muted">원본 데이터는 구글 시트 "MyMyMe 운영 데이터"에서 볼 수 있어요. 이름·생년월일시는 "사주 통계 연구"에 동의한 참여자만 기록돼요. 연락처는 수집하지 않아요.</p>';
   bindCharts();
   var pq = document.getElementById('pq');
   if (pq) pq.addEventListener('input', function () { PQ = pq.value; var pos = pq.selectionStart; render(); var n = document.getElementById('pq'); n.focus(); n.setSelectionRange(pos, pos); });
