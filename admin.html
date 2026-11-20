@@ -538,6 +538,22 @@ function pushSend(only) {
     .then(function () { PUSH.busy = false; PUSH.count = null; render(); });
 }
 function alertBox(m) { alert(m); }
+
+/* ---------- 귀인 찾기 (Worker /api/match/admin): 집계와 신고 처리만. 누가 누구와 연결됐는지는 보지 않는다 ---------- */
+var MADM = { d: null, busy: false };
+function matchAdminLoad() { MADM.busy = true; wpost('/api/match/admin', {}).then(function (j) { MADM.busy = false; MADM.d = j && j.ok ? j : { err: j && j.reason || 'fail' }; render(); }, function () { MADM.busy = false; MADM.d = { err: 'net' }; render(); }); }
+function matchTab() {
+  if (!MADM.d && !MADM.busy) matchAdminLoad();
+  var d = MADM.d; if (!d) return '<p class="small muted">불러오는 중…</p>';
+  if (d.err) return '<div class="card"><p class="small">' + (d.err === 'auth' ? '관리자 비밀번호 확인에 실패했어요. 최신 Code.gs가 배포됐는지 확인해 주세요.' : '불러오지 못했어요 (' + esc(d.err) + ')') + '</p><button class="sec" id="madmReload">다시 불러오기</button></div>';
+  var RN = { friend: '친구', work: '일 동료', mentor: '멘토·멘티', biz: '사업 파트너' };
+  return '<div class="kpis">' + kpi('켠 사람', d.profiles + '명', '성인 ' + (d.band.a || 0) + ' · 만 14~18세 ' + (d.band.t || 0)) + kpi('연결 요청', d.likes + '건', '보낸 요청 누적') + kpi('성사된 연결', d.connections + '쌍', '서로 원함') + kpi('숨김', d.hidden + '명', '신고 3건 이상 자동') + '</div>' +
+    '<div class="grid2"><div class="card"><h2>원하는 관계</h2>' + Object.keys(RN).map(function (k) { return '<div class="row between small" style="padding:6px 0;border-bottom:1px solid #EEEAE2"><span>' + RN[k] + '</span><b>' + (d.rel[k] || 0) + '명</b></div>'; }).join('') + '</div>' +
+    '<div class="card"><h2>일간 분포</h2>' + Object.keys(d.stem).sort(function (a, b) { return d.stem[b] - d.stem[a]; }).map(function (k) { return '<div class="row between small" style="padding:6px 0;border-bottom:1px solid #EEEAE2"><span>' + esc(STEM_READ[k] || k) + '</span><b>' + d.stem[k] + '명</b></div>'; }).join('') + '</div></div>' +
+    '<div class="card"><h2>신고된 소개</h2><p class="small muted">신고 3건이 쌓이면 자동으로 숨겨져요. 확인 후 다시 보이게 하거나 삭제할 수 있어요. 대표님의 귀인 목록은 앱의 \'귀인 찾기\'에서 일반 이용자와 똑같이 봐요.</p>' +
+    (d.reported.length ? '<table class="tbl"><thead><tr><th>별명</th><th>소개</th><th>신고</th><th>상태</th><th></th></tr></thead><tbody>' + d.reported.map(function (r) {
+      return '<tr><td><b>' + esc(r.n) + '</b></td><td class="small">' + esc(r.i || '') + '</td><td>' + r.reports + '</td><td>' + (r.h ? '<span class="tag" style="background:#FBE9E3;color:#8A3520">숨김</span>' : '보임') + '</td><td style="white-space:nowrap"><button class="sec" data-madm="' + (r.h ? 'unhide' : 'hide') + '" data-pid="' + r.pid + '">' + (r.h ? '다시 보이게' : '숨기기') + '</button> <button class="sec" data-madm="delete" data-pid="' + r.pid + '">삭제</button></td></tr>'; }).join('') + '</tbody></table>' : '<p class="small muted">신고된 소개가 없어요.</p>') + '</div>';
+}
 function overviewTab() {
   var t = DATA.totals;
   var funnel = [['방문', t.visit], ['참여 시작', t.start], ['성향 60문항 완료', t.likert_done], ['상황 12문항 완료', t.scenario_done], ['결과 확인', t.finish], ['심층 리포트 열람', t.report]];
@@ -692,11 +708,11 @@ function render() {
   CHARTS = {};
   var waiting = CONS.filter(function (c) { return c.status !== '답변 완료'; }).length;
   if (TAB === 'results' || TAB === 'funnel') { SAJU_SUB = TAB; TAB = 'saju'; }
-  var common = [['overview', '개요'], ['trends', '일자별 보기'], ['traffic', '유입 경로'], ['people', '참여자'], ['coin', '마마미코인'], ['push', '알림 보내기'], ['ai', 'AI 사용량'], ['preview', '미리보기']];
+  var common = [['overview', '개요'], ['trends', '일자별 보기'], ['traffic', '유입 경로'], ['people', '참여자'], ['coin', '마마미코인'], ['push', '알림 보내기'], ['match', '귀인 찾기'], ['ai', 'AI 사용량'], ['preview', '미리보기']];
   var svc = SERVICES.map(function (x) { return [x.id, x.name + (x.id === 'forest' && waiting ? ' (' + waiting + ')' : '')]; });
   var tabBtn = function (t) { return '<button role="tab" aria-selected="' + (TAB === t[0]) + '" class="tabb' + (TAB === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>'; };
   var svcHit = SERVICES.filter(function (x) { return x.id === TAB; })[0];
-  var body = svcHit ? svcHit.tab() : TAB === 'preview' ? previewTab() : TAB === 'trends' ? trendsTab() : TAB === 'ai' ? aiTab() : TAB === 'coin' ? coinTab() : TAB === 'push' ? pushTab() : TAB === 'traffic' ? trafficTab() : TAB === 'people' ? peopleTab() : TAB === 'results' ? resultsTab() : TAB === 'forest' ? forestTab() : overviewTab();
+  var body = svcHit ? svcHit.tab() : TAB === 'preview' ? previewTab() : TAB === 'trends' ? trendsTab() : TAB === 'ai' ? aiTab() : TAB === 'coin' ? coinTab() : TAB === 'push' ? pushTab() : TAB === 'match' ? matchTab() : TAB === 'traffic' ? trafficTab() : TAB === 'people' ? peopleTab() : TAB === 'results' ? resultsTab() : TAB === 'forest' ? forestTab() : overviewTab();
   app.innerHTML = '<div class="row between" style="flex-wrap:wrap"><h1>MyMyMe 관리자</h1><div class="row"><span class="small muted">갱신 ' + new Date(DATA.updated).toLocaleString('ko-KR') + '</span><button class="sec" id="re">새로고침</button><button class="sec" id="out">로그아웃</button></div></div>' +
     '<nav class="tabs" role="tablist"><span class="small muted" style="align-self:center;margin-right:4px">공통</span>' + common.map(tabBtn).join('') + '</nav>' +
     '<nav class="tabs" role="tablist" style="margin-top:-6px"><span class="small muted" style="align-self:center;margin-right:4px">서비스</span>' + svc.map(tabBtn).join('') + '</nav>' +
@@ -731,6 +747,8 @@ document.addEventListener('click', function (e) {
   else if (b.dataset.pfilter) { PFILTER = b.dataset.pfilter; render(); }
   else if (b.id === 'csv') downloadCsv();
   else if (b.id === 'pushTest') pushSend(true);
+  else if (b.id === 'madmReload') { MADM.d = null; render(); }
+  else if (b.dataset.madm) { var op = b.dataset.madm; if (op === 'delete' && !confirm('이 소개를 삭제할까요? 되돌릴 수 없어요.')) return; b.disabled = true; wpost('/api/match/admin', { op: op, pid: b.dataset.pid }).then(function () { MADM.d = null; render(); }); }
   else if (b.id === 'pushAll') pushSend(false);
   else if (b.id === 'meSave') { var mk = (document.getElementById('meKey').value || '').trim(), mc = mk.toUpperCase().replace(/^MM-?/, ''); if (/^[2-9A-HJKMNP-Z]{6}$/.test(mc)) mk = 'MM-' + mc; try { if (mk) localStorage.setItem(ME_KEY, mk); else localStorage.removeItem(ME_KEY); } catch (e) {} render(); }
   else if (b.dataset.edit) { EDIT = b.dataset.edit; render(); var ta0 = document.getElementById('ed_' + EDIT); if (ta0) ta0.focus(); }

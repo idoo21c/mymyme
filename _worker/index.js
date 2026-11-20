@@ -1,3 +1,4 @@
+import { matchApi } from './match.js';
 /* MyMyMe 웹 푸시 Worker (Cloudflare).
  * /api/push/* 만 이 코드가 처리하고, 나머지 주소는 정적 파일(사이트)을 그대로 돌려준다.
  * - 구독 정보(엔드포인트·키)는 KV(PUSH)에만 저장한다. 서버 비밀키(VAPID)는 처음 요청 때 Worker가 직접 만들어 KV에 둔다(저장소·채팅 어디에도 안 나감).
@@ -62,6 +63,11 @@ async function isAdmin(key) {
   try { const r = await fetch(ENDPOINT + '?action=pushauth&key=' + encodeURIComponent(key)); const j = await r.json(); return !!(j && j.ok); } catch (err) { return false; }
 }
 
+/* 특정 이용자(익명번호)에게만 알림: 귀인 찾기 연결 요청·성사 */
+async function notifySid(env, sid, payload) {
+  if (!sid) return; const v = await vapid(env); let cursor;
+  do { const l = await env.PUSH.list({ prefix: 'sub:', cursor }); for (const x of l.keys) if (x.metadata && x.metadata.u === sid) { try { const st = await sendOne(v, x.metadata, payload); if (st === 404 || st === 410) await env.PUSH.delete(x.name); } catch (e) {} } cursor = l.list_complete ? null : l.cursor; } while (cursor);
+}
 async function api(req, env, path) {
   if (path === '/api/push/key' && req.method === 'GET') return json({ ok: true, key: (await vapid(env)).pub });
   if (req.method !== 'POST') return json({ ok: false, reason: 'method' }, 405);
@@ -100,6 +106,11 @@ async function api(req, env, path) {
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
+    if (url.pathname.startsWith('/api/match/')) {
+      if (!env.PUSH) return json({ ok: false, reason: 'no-kv' }, 503);
+      env.NOTIFY = (sid, payload) => notifySid(env, sid, payload);
+      try { return await matchApi(req, env, url.pathname, isAdmin); } catch (err) { return json({ ok: false, reason: 'error' }, 500); }
+    }
     if (url.pathname.startsWith('/api/push/')) {
       if (!env.PUSH) return json({ ok: false, reason: 'no-kv' }, 503);
       try { return await api(req, env, url.pathname); } catch (err) { return json({ ok: false, reason: 'error' }, 500); }
