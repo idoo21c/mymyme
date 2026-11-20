@@ -1,0 +1,8 @@
+{
+  // MyMyMe: 정적 사이트 + /api/push/* 만 Worker 코드가 처리 (웹 푸시)
+  "name": "mymyme",
+  "main": "_worker/index.js",
+  "compatibility_date": "2026-11-18",
+  "assets": { "directory": ".", "binding": "ASSETS", "run_worker_first": ["/api/*"] },
+  "kv_namespaces": [{ "binding": "PUSH", "id": "8fa2025c4b7640ccb6431a8ec535b96f" }]
+}

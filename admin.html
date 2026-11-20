@@ -502,6 +502,42 @@ function homeCard() {
     '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:12px"><div><h3 class="small">맛보기 일간 분포</h3><div class="col" style="gap:6px">' + bars + '</div><p class="xs muted">양력 ' + (cal.solar || 0) + ' · 음력 ' + (cal.lunar || 0) + ' · 윤달 ' + (cal.lunar_leap || 0) + '명</p></div>' +
     '<div><h3 class="small">최근 7일</h3>' + trend + '</div></div><p class="xs muted">맛보기만 하고 떠난 사람은 참여자 탭의 \'30초 맛보기만\' 필터에서 볼 수 있어요.</p></div>';
 }
+
+/* ---------- 알림 보내기 (웹 푸시) : Cloudflare Worker /api/push 를 관리자 비밀번호로 호출 ---------- */
+var PUSH = { count: null, busy: false, log: [] };
+function wpost(path, body) { body.key = KEY; return fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).then(function (r) { return r.json(); }); }
+function pushCount() { wpost('/api/push/count', {}).then(function (j) { PUSH.count = j && j.ok ? j.count : (j && j.reason === 'no-kv' ? '설정 전' : '확인 실패'); render(); }, function () { PUSH.count = '확인 실패'; render(); }); }
+function pushTab() {
+  if (PUSH.count === null) { PUSH.count = '…'; pushCount(); }
+  var h = DATA.home || {};
+  return '<div class="kpis">' + kpi('알림 구독 기기', PUSH.count, '발송 서버 기준(지금 받을 수 있는 기기)') + kpi('알림 켠 사람', (h.push || 0) + '명', '앱 기록 기준') + '</div>' +
+    '<div class="card col" style="gap:10px"><h2>알림 보내기</h2><p class="small muted">알림을 켠 사람에게만 가요. 새 기능·공지는 \'서비스 소식\'으로, 할인·이벤트처럼 광고 성격이면 제목 앞에 (광고)를 붙이고 밤 9시~아침 8시는 피해 주세요.</p>' +
+    '<label class="small">제목 (최대 60자)<input id="pt" maxlength="60" placeholder="예: 새 테스트 \'다크 성향\'이 열렸어요" style="width:100%;height:42px;font-size:15px"></label>' +
+    '<label class="small">내용 (최대 180자)<textarea id="pb" maxlength="180" rows="3" style="width:100%;font-size:15px" placeholder="예: 5분이면 끝나요. 지금 확인해 보세요."></textarea></label>' +
+    '<label class="small">누르면 열 주소 (사이트 안 경로)<input id="pu" value="/" style="width:100%;height:42px;font-size:15px"></label>' +
+    '<div class="row" style="gap:8px;flex-wrap:wrap"><input id="psid" placeholder="테스트 받을 익명번호 (지갑의 \'내 번호\')" style="flex:1;min-width:200px;height:42px;font-size:14px"><button class="sec" id="pushTest"' + (PUSH.busy ? ' disabled' : '') + '>이 번호로만 테스트</button></div>' +
+    '<button id="pushAll"' + (PUSH.busy ? ' disabled' : '') + ' style="height:46px">모든 구독자에게 보내기</button>' +
+    (PUSH.log.length ? '<div class="col small" style="gap:4px">' + PUSH.log.map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('') + '</div>' : '') + '</div>';
+}
+function pushSend(only) {
+  var t = (document.getElementById('pt').value || '').trim(), b = (document.getElementById('pb').value || '').trim(), u = (document.getElementById('pu').value || '/').trim(), sid = (document.getElementById('psid').value || '').trim();
+  if (!t) { alertBox('제목을 넣어 주세요'); return; }
+  if (only && !sid) { alertBox('테스트 받을 익명번호를 넣어 주세요'); return; }
+  if (!only && !confirm('알림을 켠 모든 사람에게 보낼까요?\n\n' + t + '\n' + b)) return;
+  PUSH.busy = true; var tot = { sent: 0, failed: 0, removed: 0 }, started = new Date().toLocaleTimeString();
+  var step = function (cursor) {
+    return wpost('/api/push/send', { title: t, body: b, url: u, sid: only ? sid : '', cursor: cursor || '' }).then(function (j) {
+      if (!j || !j.ok) throw new Error(j && j.reason || 'fail');
+      tot.sent += j.sent; tot.failed += j.failed; tot.removed += j.removed;
+      if (!j.done && j.cursor) return step(j.cursor);
+    });
+  };
+  render();
+  step('').then(function () { PUSH.log.unshift(started + ' · ' + (only ? '테스트(' + sid + ')' : '전체') + ' · "' + t + '" · 성공 ' + tot.sent + ' · 실패 ' + tot.failed + (tot.removed ? ' · 만료 정리 ' + tot.removed : '')); },
+    function (e) { PUSH.log.unshift(started + ' · 보내지 못했어요 (' + (e.message === 'auth' ? '관리자 비밀번호 확인 실패' : e.message === 'no-kv' ? '발송 서버 설정 전' : e.message) + ')'); })
+    .then(function () { PUSH.busy = false; PUSH.count = null; render(); });
+}
+function alertBox(m) { alert(m); }
 function overviewTab() {
   var t = DATA.totals;
   var funnel = [['방문', t.visit], ['참여 시작', t.start], ['성향 60문항 완료', t.likert_done], ['상황 12문항 완료', t.scenario_done], ['결과 확인', t.finish], ['심층 리포트 열람', t.report]];
@@ -656,11 +692,11 @@ function render() {
   CHARTS = {};
   var waiting = CONS.filter(function (c) { return c.status !== '답변 완료'; }).length;
   if (TAB === 'results' || TAB === 'funnel') { SAJU_SUB = TAB; TAB = 'saju'; }
-  var common = [['overview', '개요'], ['trends', '일자별 보기'], ['traffic', '유입 경로'], ['people', '참여자'], ['coin', '마마미코인'], ['ai', 'AI 사용량'], ['preview', '미리보기']];
+  var common = [['overview', '개요'], ['trends', '일자별 보기'], ['traffic', '유입 경로'], ['people', '참여자'], ['coin', '마마미코인'], ['push', '알림 보내기'], ['ai', 'AI 사용량'], ['preview', '미리보기']];
   var svc = SERVICES.map(function (x) { return [x.id, x.name + (x.id === 'forest' && waiting ? ' (' + waiting + ')' : '')]; });
   var tabBtn = function (t) { return '<button role="tab" aria-selected="' + (TAB === t[0]) + '" class="tabb' + (TAB === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>'; };
   var svcHit = SERVICES.filter(function (x) { return x.id === TAB; })[0];
-  var body = svcHit ? svcHit.tab() : TAB === 'preview' ? previewTab() : TAB === 'trends' ? trendsTab() : TAB === 'ai' ? aiTab() : TAB === 'coin' ? coinTab() : TAB === 'traffic' ? trafficTab() : TAB === 'people' ? peopleTab() : TAB === 'results' ? resultsTab() : TAB === 'forest' ? forestTab() : overviewTab();
+  var body = svcHit ? svcHit.tab() : TAB === 'preview' ? previewTab() : TAB === 'trends' ? trendsTab() : TAB === 'ai' ? aiTab() : TAB === 'coin' ? coinTab() : TAB === 'push' ? pushTab() : TAB === 'traffic' ? trafficTab() : TAB === 'people' ? peopleTab() : TAB === 'results' ? resultsTab() : TAB === 'forest' ? forestTab() : overviewTab();
   app.innerHTML = '<div class="row between" style="flex-wrap:wrap"><h1>MyMyMe 관리자</h1><div class="row"><span class="small muted">갱신 ' + new Date(DATA.updated).toLocaleString('ko-KR') + '</span><button class="sec" id="re">새로고침</button><button class="sec" id="out">로그아웃</button></div></div>' +
     '<nav class="tabs" role="tablist"><span class="small muted" style="align-self:center;margin-right:4px">공통</span>' + common.map(tabBtn).join('') + '</nav>' +
     '<nav class="tabs" role="tablist" style="margin-top:-6px"><span class="small muted" style="align-self:center;margin-right:4px">서비스</span>' + svc.map(tabBtn).join('') + '</nav>' +
@@ -694,6 +730,8 @@ document.addEventListener('click', function (e) {
   else if (b.dataset.tview) { TABLEVIEW[b.dataset.tview] = !TABLEVIEW[b.dataset.tview]; render(); }
   else if (b.dataset.pfilter) { PFILTER = b.dataset.pfilter; render(); }
   else if (b.id === 'csv') downloadCsv();
+  else if (b.id === 'pushTest') pushSend(true);
+  else if (b.id === 'pushAll') pushSend(false);
   else if (b.id === 'meSave') { var mk = (document.getElementById('meKey').value || '').trim(), mc = mk.toUpperCase().replace(/^MM-?/, ''); if (/^[2-9A-HJKMNP-Z]{6}$/.test(mc)) mk = 'MM-' + mc; try { if (mk) localStorage.setItem(ME_KEY, mk); else localStorage.removeItem(ME_KEY); } catch (e) {} render(); }
   else if (b.dataset.edit) { EDIT = b.dataset.edit; render(); var ta0 = document.getElementById('ed_' + EDIT); if (ta0) ta0.focus(); }
   else if (b.dataset.ecancel) { EDIT = null; render(); }
