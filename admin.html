@@ -386,11 +386,66 @@ function funnelTab() {
     items.map(function (x) { return '<tr' + (x.stopped ? ' style="background:#FBE9E3"' : '') + '><td>' + qSection(x.i) + '</td><td>' + x.reached + '</td><td>' + x.stopped + '</td><td>' + (x.reached ? Math.round(x.stopped / x.reached * 100) + '%' : '–') + '</td><td>' + (x.dwell == null ? '<span class="muted">데이터 없음</span>' : x.dwell + '초') + '</td><td>' + x.n + '</td><td>' + x.back + '</td><td>' + x.hides + '</td></tr>'; }).join('') +
     '</tbody></table></div><p class="small muted">성향 문항 번호는 실제로 보여준 순서예요. 화면 이탈 = 그 문항에서 앱을 닫거나 다른 앱으로 넘어간 횟수(돌아온 경우도 포함).</p></div>';
 }
+
+/* ---------- 내 귀인 유형 (집계만) ----------
+   운영자 본인 결과(리포트 코드로 찾음)와 참여자 각자의 궁합을 이 화면 안에서만 계산하고,
+   일간·성향 코드별 인원과 평균 점수만 보여준다. 개인 행·이름·생년월일은 보여주지 않는다.
+   3명 미만인 묶음은 숨긴다(개인을 짐작할 수 없게). 궁합 공식은 앱의 심층 궁합(engine.deepCompat)과 같다. */
+var ME_KEY = 'mymyme_admin_me';
+var G_STEM_EL = { 甲: 'wood', 乙: 'wood', 丙: 'fire', 丁: 'fire', 戊: 'earth', 己: 'earth', 庚: 'metal', 辛: 'metal', 壬: 'water', 癸: 'water' };
+var G_GEN = { wood: 'fire', fire: 'earth', earth: 'metal', metal: 'water', water: 'wood' };
+var G_EL = ['wood', 'fire', 'earth', 'metal', 'water'];
+var G_HAP = ['子丑', '寅亥', '卯戌', '辰酉', '巳申', '午未'], G_CHUNG = ['子午', '丑未', '寅申', '卯酉', '辰戌', '巳亥'];
+var G_MIN = 3;
+function gProfile(r) {
+  if (!r || !r.dayStem || !r.pillars || !r.pct || !r.el) return null;
+  var pil = r.pillars.split(' '), day = pil[2], pct = r.pct.split('/').map(Number), el = r.el.split('/').map(Number);
+  if (!day || pct.length < 4 || el.length < 5) return null;
+  var counts = {}; G_EL.forEach(function (e, i) { counts[e] = el[i]; });
+  return { stem: r.dayStem, dayEl: G_STEM_EL[r.dayStem], branch: day.charAt(1), counts: counts, pct: { EI: pct[0], SN: pct[1], TF: pct[2], JP: pct[3] }, code: r.code || '' };
+}
+function gPair(list, a, b) { return list.some(function (x) { return (x[0] === a && x[1] === b) || (x[0] === b && x[1] === a); }); }
+function gScore(A, B) {
+  var kind = A.dayEl === B.dayEl ? 'same' : (G_GEN[A.dayEl] === B.dayEl || G_GEN[B.dayEl] === A.dayEl) ? 'generate' : 'control';
+  var br = gPair(G_HAP, A.branch, B.branch) ? 'harmony' : gPair(G_CHUNG, A.branch, B.branch) ? 'clash' : 'neutral';
+  var gets = G_EL.filter(function (e) { return (A.counts[e] === 0 && B.counts[e] >= 2) || (B.counts[e] === 0 && A.counts[e] >= 2); }).length;
+  var close = ['EI', 'SN', 'TF', 'JP'].reduce(function (s, k) { return s + (100 - Math.abs(A.pct[k] - B.pct[k])); }, 0) / 4;
+  var sc = 58 + (kind === 'generate' ? 12 : kind === 'same' ? 7 : 2) + (br === 'harmony' ? 10 : br === 'clash' ? -4 : 3) + Math.min(8, gets * 4) + Math.round((close - 50) / 5);
+  return Math.max(55, Math.min(98, sc));
+}
+function gwiinCard() {
+  var key = ''; try { key = localStorage.getItem(ME_KEY) || ''; } catch (e) {}
+  var all = DATA.participants || [];
+  var norm = function (c) { return String(c || '').toUpperCase().replace(/^MM-?/, ''); };
+  var me = key ? all.filter(function (p) { return (p.rcode && norm(p.rcode) === norm(key)) || p.sid === key; })[0] : null;
+  var form = '<div class="row" style="gap:8px;flex-wrap:wrap"><input id="meKey" placeholder="내 리포트 코드 (MM-XXXXXX)" value="' + esc(key) + '" style="height:40px;font-size:14px;min-width:220px"><button class="sec" id="meSave">내 결과로 등록</button></div>';
+  var head = '<div class="card"><h2>내 귀인 유형 <span class="small muted">· 집계만</span></h2>';
+  if (!key) return head + '<p class="small muted">대표님의 사주×성향 리포트 코드를 넣으면, 대표님과 궁합이 좋은 일간·성향 유형과 그 유형의 참여자 수를 보여드려요. 개인 정보는 보이지 않고 묶음별 숫자만 나와요.</p>' + form + '</div>';
+  var M = me && gProfile(me.result);
+  if (!M) return head + '<p class="small" style="color:#B3261E">' + (me ? '이 코드의 결과 정보가 부족해요. 앱에서 결과 화면을 한 번 다시 열면 갱신돼요.' : '이 리포트 코드의 참여 기록을 찾지 못했어요. 앱의 \'내 리포트 코드\'와 같은지 확인해 주세요.') + '</p>' + form + '</div>';
+  var others = all.filter(function (p) { return p !== me && p.finished; }).map(function (p) { return gProfile(p.result); }).filter(Boolean);
+  if (!others.length) return head + '<p class="small muted">데이터 없음 — 비교할 다른 참여자 결과가 아직 없어요.</p>' + form + '</div>';
+  var scores = others.map(function (o) { return { o: o, s: gScore(M, o) }; });
+  var good = scores.filter(function (x) { return x.s >= 85; }).length;
+  function group(keyFn, labelFn) {
+    var g = {}; scores.forEach(function (x) { var k = keyFn(x.o); if (!k) return; (g[k] = g[k] || { n: 0, sum: 0, good: 0 }); g[k].n++; g[k].sum += x.s; if (x.s >= 85) g[k].good++; });
+    var list = Object.keys(g).map(function (k) { return { k: k, n: g[k].n, avg: Math.round(g[k].sum / g[k].n), good: g[k].good }; });
+    var shown = list.filter(function (x) { return x.n >= G_MIN; }).sort(function (a, b) { return b.avg - a.avg || b.n - a.n; });
+    var hidden = list.length - shown.length;
+    return (shown.length ? '<table class="tbl"><thead><tr><th>유형</th><th>평균 궁합</th><th>참여자</th><th>85점 이상</th></tr></thead><tbody>' + shown.map(function (x) {
+      return '<tr><td><b>' + esc(labelFn(x.k)) + '</b></td><td>' + x.avg + '점</td><td>' + x.n + '명</td><td>' + x.good + '명</td></tr>'; }).join('') + '</tbody></table>' : '<p class="small muted">3명 이상 모인 유형이 아직 없어요.</p>') +
+      (hidden ? '<p class="xs muted">참여자 3명 미만인 ' + hidden + '개 유형은 개인을 짐작할 수 없게 숨겼어요.</p>' : '');
+  }
+  return head + '<p class="small">대표님: <b>' + esc(STEM_READ[M.stem] || M.stem) + ' · ' + esc(M.code) + '</b> · 비교한 참여자 ' + others.length + '명 · 궁합 85점 이상 <b>' + good + '명 (' + Math.round(good / others.length * 100) + '%)</b></p>' +
+    '<div class="grid2" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:10px"><div><h3 class="small">일간별</h3>' + group(function (o) { return o.stem; }, function (k) { return STEM_READ[k] || k; }) + '</div>' +
+    '<div><h3 class="small">성향 코드별</h3>' + group(function (o) { return o.code; }, function (k) { return k; }) + '</div></div>' +
+    '<p class="xs muted" style="margin-top:8px">점수는 앱의 심층 궁합과 같은 공식(일간 오행 관계·일지 합충·서로 채워 주는 오행·성향 거리)이에요. 개별 참여자는 보여주지 않아요. 특정 사람과 연결하려면 상대의 동의가 필요해서, 동의 기반 \'귀인 찾기\' 기능으로 준비 중이에요.</p>' + form + '</div>';
+}
 function peopleTab() {
   var rows = peopleRows(), all = DATA.participants || [];
   var yn = function (v, t) { return v ? '<span class="tag" style="background:var(--ok-l);color:var(--ok)">' + (t || '예') + '</span>' : '<span class="muted">–</span>'; };
   var consented = all.filter(function (p) { return p.result && p.result.birth; }).length;
-  return '<div class="card"><div class="row between" style="flex-wrap:wrap;gap:10px;margin-bottom:10px"><h2 style="margin:0">참여자 ' + rows.length + '명 <span class="small muted">/ 전체 ' + all.length + '명 · 생년월일 수집 ' + consented + '명</span></h2>' +
+  return gwiinCard() + '<div class="card"><div class="row between" style="flex-wrap:wrap;gap:10px;margin-bottom:10px"><h2 style="margin:0">참여자 ' + rows.length + '명 <span class="small muted">/ 전체 ' + all.length + '명 · 생년월일 수집 ' + consented + '명</span></h2>' +
     '<div class="row" style="flex-wrap:wrap;gap:8px">' + [['finished', '결과 확인'], ['research', '생년월일 수집'], ['dropped', '중도 이탈'], ['all', '전체']].map(function (f) { return '<button class="sec" data-pfilter="' + f[0] + '" style="' + (PFILTER === f[0] ? 'border-color:var(--ink);font-weight:700' : '') + '">' + f[1] + '</button>'; }).join('') +
     '<input id="pq" placeholder="이름·유형·코드·리포트코드·일간·간지·혈액형 검색" value="' + esc(PQ) + '" style="height:40px;font-size:14px;min-width:220px"><button class="sec" id="csv">CSV 받기 (전체 속성)</button>' + (Object.keys(PSEL).length ? '<button class="sec" id="pgiftsel">🪙 선택한 ' + Object.keys(PSEL).length + '명에게 코인 선물</button>' + delBtn('id="pdelsel"', '선택한 ' + Object.keys(PSEL).length + '명 삭제') : '') + '</div></div>' +
     '<p class="small muted">생년월일·양력/음력·태어난 시간·이름(입력한 경우)은 입력 화면에서 저장 고지를 본 참여자부터 모두 기록돼요. 그 전에 참여해 동의하지 않은 사람은 \'미수집\'으로 보이고, 생년월일 화면을 다시 거치면 그때부터 기록돼요. 같은 사람이라도 다른 기기에서 하면 다른 번호로 보여요.</p>' +
@@ -621,6 +676,7 @@ document.addEventListener('click', function (e) {
   else if (b.dataset.tview) { TABLEVIEW[b.dataset.tview] = !TABLEVIEW[b.dataset.tview]; render(); }
   else if (b.dataset.pfilter) { PFILTER = b.dataset.pfilter; render(); }
   else if (b.id === 'csv') downloadCsv();
+  else if (b.id === 'meSave') { var mk = (document.getElementById('meKey').value || '').trim(), mc = mk.toUpperCase().replace(/^MM-?/, ''); if (/^[2-9A-HJKMNP-Z]{6}$/.test(mc)) mk = 'MM-' + mc; try { if (mk) localStorage.setItem(ME_KEY, mk); else localStorage.removeItem(ME_KEY); } catch (e) {} render(); }
   else if (b.dataset.edit) { EDIT = b.dataset.edit; render(); var ta0 = document.getElementById('ed_' + EDIT); if (ta0) ta0.focus(); }
   else if (b.dataset.ecancel) { EDIT = null; render(); }
   else if (b.dataset.esave) {
