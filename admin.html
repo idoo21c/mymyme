@@ -267,7 +267,7 @@ function brainTab() {
   return '<div class="kpis">' + kpi('퍼즐 시작', b.started, '') + kpi('퍼즐 완료', b.n, '완료율 ' + (b.started ? Math.round(b.n / b.started * 100) + '%' : '–')) + kpi('평균 점수', b.avg + ' / 20', '') + kpi('풀이 시간 중앙값', b.medSec ? Math.floor(b.medSec / 60) + '분 ' + (b.medSec % 60) + '초' : '–', '') + '</div>' +
     challengeHtml() + hist + dom + types + items + '<p class="small muted">한 사람이 여러 번 풀면 마지막 결과만 셌어요. "상위 몇 %"는 참여자가 충분히 쌓인 뒤 이용자 화면에 보여줄 예정이에요.</p>';
 }
-var ITEMN = { ny2027: '2027 신년운세', group: '그룹 관계 지도', consult: '추가 고민 상담', brainx: '두뇌 퍼즐 해설', level: '두뇌 챌린지 단계 열기', moneyx: '재테크 DNA 심층 리포트', aix: 'AI 활용력 심층 리포트' };
+var ITEMN = { ny2027: '2027 신년운세', group: '그룹 관계 지도', consult: '추가 고민 상담', brainx: '두뇌 퍼즐 해설', level: '두뇌 챌린지 단계 열기', moneyx: '재테크 DNA 심층 리포트', aix: 'AI 활용력 심층 리포트', genx: '세대 감각 심층 리포트' };
 function giftTo(sids, amt, memo) {
   sids = (sids || []).filter(Boolean); if (!sids.length) { alert('받을 사람의 익명번호를 넣어 주세요.'); return; }
   if (!amt) { var a = prompt(sids.length + '명에게 줄 마마미코인 개수 (1~1000)', '10'); if (a === null) return; amt = +a; }
@@ -471,6 +471,21 @@ function newyearTab() {
     kpi('구매 전환', (DATA.totals || {}).finish ? Math.round(n.users / DATA.totals.finish * 100) + '%' : '–', '결과를 본 사람 중') + '</div>' +
     '<div class="card"><p class="small muted">신년운세는 마마미코인 15개로 열어요. \'못 산 시도\'가 많으면 정식 유료 전환 때 가장 먼저 팔릴 후보예요.</p></div>';
 }
+var GNAME = { alpha: '🧸 알파 감성', z: '✨ 젠지 감성', m: '📱 밀레니얼 감성', x: '📼 X세대 감성', boom: '📻 베이비붐 감성' };
+function genTab() {
+  var m = DATA.gen, x = coinItem('genx');
+  if (!m) return '<div class="card"><p class="small muted">Code.gs를 최신 버전으로 배포하면 이 날부터 세대 감각 기록이 쌓여요.</p></div>';
+  if (!m.n) return '<div class="kpis">' + kpi('테스트 시작', m.started, '') + kpi('완료', 0, '') + '</div><div class="card"><p class="small muted">세대 감각을 완료한 사람이 아직 없어요 (데이터 없음). 한국어 화면에서만 보이는 테스트예요.</p></div>';
+  var keys = Object.keys(GNAME), gmax = Math.max.apply(null, keys.map(function (k) { return m.gen[k] || 0; }).concat([1]));
+  var ws = Object.keys(m.words).map(function (w) { var o = m.words[w]; return [w, o[0], o[1], Math.round(o[0] / o[1] * 100)]; }).sort(function (a, b) { return a[3] - b[3]; });
+  var cross = keys.filter(function (k) { return m.cross[k]; }).map(function (k) { var c = m.cross[k]; return '<tr><td>' + GNAME[k] + '</td><td>' + keys.filter(function (g) { return c[g]; }).map(function (g) { return GNAME[g] + ' ' + c[g]; }).join(' · ') + '</td></tr>'; }).join('');
+  return '<div class="kpis">' + kpi('테스트 시작', m.started, '') + kpi('완료', m.n, '완료율 ' + (m.started ? Math.round(m.n / m.started * 100) + '%' : '–')) + kpi('요즘 말 평균', m.avgRight != null ? m.avgRight + ' / 8' : '–', '언어 점수 평균 ' + (m.avgLang != null ? m.avgLang : '–')) +
+    kpi('심층 리포트', x.spend, x.users + '명 · 코인 부족 ' + x.short + '회') + kpi('공유', EVN('share').sub.gen || 0, '') + '</div>' +
+    '<div class="card"><h2>감각 세대 분포</h2>' + keys.map(function (k) { var v = m.gen[k] || 0; return hbar(GNAME[k], v, gmax, v + '명 · ' + Math.round(v / m.n * 100) + '%'); }).join('') + '</div>' +
+    (cross ? '<div class="card"><h2>실제 세대 → 감각 세대</h2><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>실제 세대(출생연도 입력자)</th><th>감각 세대</th></tr></thead><tbody>' + cross + '</tbody></table></div></div>' : '') +
+    '<div class="card"><h2>요즘 말 단어별 정답률</h2><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>단어</th><th>정답률</th><th>출제</th></tr></thead><tbody>' + ws.map(function (w) { return '<tr><td>' + esc(w[0]) + '</td><td>' + w[3] + '%</td><td>' + w[2] + '회</td></tr>'; }).join('') + '</tbody></table></div><p class="small muted">정답률이 아주 낮거나 높은 단어는 매주 단어 점검 때 교체 후보로 봐요.</p></div>' +
+    evDaily('일자별', [['gen_start', '시작'], ['gen_finish', '완료']]) + '<p class="small muted">한 사람이 여러 번 하면 마지막 결과만 셌어요.</p>';
+}
 var ASTYLE = { conductor: '🎼 AI 지휘자', verifier: '🔎 AI 검증관', explorer: '🚀 AI 탐험가', pragmatist: '⚡ AI 실속파', cautious: '🛡️ AI 신중파', sprout: '🌱 AI 새싹' };
 var ATRAIT = { Q: '질문력', V: '검증력', W: '작업 설계', S: '안전 감각', H: '활용 습관', O: '개방성' };
 var AITEM = { q1: '질문력 · 회의록 요약 질문', q2: '질문력 · 사과 메일 질문', q3: '질문력 · 고쳐 달라는 말', q4: '질문력 · 여행 계획 질문', v1: '검증력 · 논문 출처', v2: '검증력 · 견적 합계', v3: '검증력 · 어제 뉴스', v4: '검증력 · 건강 증상', w1: '작업 설계 · 20쪽 보고서', w2: '작업 설계 · 매주 엑셀', s1: '안전 · 고객 명단', s2: '안전 · AI 이미지 광고', s3: '안전 · 주민번호 입력', s4: '안전 · 미발표 실적', o4: '개방성 · 새 도구 도입', lw1: '작업 설계 · 여러 번 다듬기', lw2: '작업 설계 · 지시문 저장', lh1: '습관 · 주 여러 번 사용', lh2: '습관 · 막히면 먼저 물음', lh3: '습관 · 두 가지 넘는 용도', lh4: '습관 · 거의 안 씀(역)', lo1: '개방성 · 새 기능 써 봄', lo2: '개방성 · 방법 찾기 재미', lo3: '개방성 · 새 도구 미룸(역)' };
@@ -518,6 +533,7 @@ var PREVIEWS = [
   ['2027 신년운세', [['newyear', '신년운세 전체']]],
   ['두뇌 퍼즐', [['brain', '두뇌 퍼즐 결과'], ['combo', '사주×성향 + 두뇌 퍼즐 종합 카드'], ['challenge', '챌린지 단계 지도'], ['chresult', '챌린지 단계 결과']]],
   ['두뇌 챌린지 단계별 문제 풀어보기', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(function (n) { return ['ch' + n, n + '단계']; })],
+  ['세대 감각 (한국어)', [['gen', '세대 감각 결과 + 심층 리포트'], ['genq', '요즘 말 퀴즈 화면']]],
   ['AI 활용력', [['aiq', 'AI 활용력 결과 + 심층 리포트'], ['aiqq', '문항 화면']]],
   ['재테크 DNA', [['money', '재테크 DNA 결과 + 심층 리포트'], ['moneyq', '문항 화면']]],
   ['마마미코인', [['wallet', '코인 지갑']]]
@@ -536,6 +552,7 @@ var SERVICES = [
   { id: 'newyear', name: '2027 신년운세', tab: newyearTab },
   { id: 'brain', name: '두뇌 퍼즐', tab: function () { return brainTab(); } },
   { id: 'aiq', name: 'AI 활용력', tab: function () { return aiqTab(); } },
+  { id: 'gen', name: '세대 감각', tab: function () { return genTab(); } },
   { id: 'money', name: '재테크 DNA', tab: function () { return moneyTab(); } },
   { id: 'forest', name: '대나무숲·상담', tab: function () { return forestTab(); } }
 ];
