@@ -9274,10 +9274,10 @@ function pushSubscribe() {
   var diag = function (extra) { PUSH_DIAG = ['권한 ' + Notification.permission, pwaStandalone() ? '설치 앱' : '브라우저', 'SW ' + (navigator.serviceWorker.controller ? '연결' : '없음'), '단계 ' + step + (extra ? ' · ' + extra : ''), ((navigator.userAgent.match(/(Chrome|SamsungBrowser|Version)\/[\d.]+/) || [''])[0])].join(' / '); };
   var finish = function (ok, e) {
     if (done) return; done = true; PUSH_BUSY = false;
-    var msg = e ? String((e && (e.name || e.message)) || e).slice(0, 80) : '';
+    var msg = e ? String((e && ((e.name && e.name !== 'Error' ? e.name + ': ' : '') + (e.message || ''))) || e).slice(0, 120) : '';
     if (ok) { try { localStorage.setItem(PUSH_KEY, '1'); } catch (er) {} track('push_on', { standalone: pwaStandalone() ? 1 : 0 }); toast('알림을 켰어요. 새 소식이 생기면 알려 드릴게요'); render(); return; }
     diag(msg); track('push_err', { step: step, msg: msg, d: PUSH_DIAG.slice(0, 160) }); render();
-    if (Notification.permission === 'denied' || /NotAllowed|denied|시간 초과/.test(msg)) pushHelp(Notification.permission === 'denied'); else toast('알림을 켜지 못했어요 (' + step + (msg ? ' · ' + msg : '') + ')');
+    pushHelp(Notification.permission === 'denied');
   };
   var withTimeout = function (pr, ms, name) { return Promise.race([pr, new Promise(function (_, rej) { setTimeout(function () { rej(new Error(name + ' 시간 초과')); }, ms); })]); };
   if (Notification.permission === 'denied') { step = 'perm'; finish(false, 'denied'); return; }
@@ -9301,7 +9301,7 @@ function pushSubscribe() {
 function pushHelp(denied) {
   openModal('<div class="row between"><h2>알림 켜는 방법</h2><button class="btn btn-ghost" data-act="closeModal">닫기</button></div>' +
     '<p class="small" style="line-height:1.7">' + (denied ? '이 기기에서 MyMyMe 알림이 차단돼 있어요.' : '알림 허용 창이 뜨지 않았어요. 휴대폰이 조용히 막았을 수 있어요.') + ' 아래 방법으로 켠 뒤 \'다시 시도\'를 눌러 주세요.</p>' +
-    '<div class="card col" style="gap:8px"><b class="small">홈 화면에 설치한 MyMyMe 앱이라면</b><span class="small muted" style="line-height:1.6">휴대폰 설정 → 애플리케이션(앱) → MyMyMe → 알림 → 허용</span></div>' +
+    '<div class="card col" style="gap:8px;border:1.5px solid var(--acc)"><b class="small">안드로이드: 휴대폰 설정만으로는 부족할 수 있어요</b><span class="small muted" style="line-height:1.6">설치한 앱도 알림 권한은 크롬이 따로 관리해요. ① 크롬 앱을 열고 mymyme.app 접속 → 주소창 왼쪽 아이콘 → 권한 → 알림 → <b>허용</b> ② 크롬 설정 → 사이트 설정 → 알림 → \'조용한 메시지 사용\'(또는 \'요청 시 조용히 표시\')을 끄기 ③ 휴대폰 설정 → 애플리케이션 → MyMyMe → 알림 허용. 그다음 앱을 완전히 닫았다가 다시 열어 \'켜기\'</span></div>' +
     '<div class="card col" style="gap:8px"><b class="small">크롬에서 보고 있다면</b><span class="small muted" style="line-height:1.6">주소창 왼쪽 아이콘(자물쇠·종) → 권한 → 알림 → 허용. 또는 크롬 설정 → 사이트 설정 → 알림 → mymyme.app 허용</span></div>' +
     '<div class="card col" style="gap:8px"><b class="small">아이폰이라면</b><span class="small muted" style="line-height:1.6">사파리 공유 버튼 → 홈 화면에 추가 → 그 아이콘으로 열어서 \'켜기\'. 이미 막혔다면 설정 → 알림 → MyMyMe → 알림 허용</span></div>' +
     (PUSH_DIAG ? '<p class="xs muted" style="line-height:1.6;word-break:break-all">진단 정보 (안 되면 이 화면을 캡처해 주세요): ' + esc(PUSH_DIAG) + '</p>' : '') +
@@ -11611,6 +11611,9 @@ document.addEventListener('change', function (ev) {
 load(); S.lang = LANG; applyOrder();
 /* 재방문: 문항을 풀던 중 30분 넘게 떠나 있었다면 바로 문항으로 들이지 않고 '이어서 하기' 화면부터 보여 준다 */
 if (S.startedAt && !S.result && S.view !== 'home' && S.view !== 'lang' && S.lastAt && Date.now() - S.lastAt > 30 * 60000) S.view = 'home';
+/* 앱을 새로 열면 홈부터: 문항을 풀던 중(이어서 할 화면)만 그대로 두고, 결과·리포트·소개 화면 등은 홈으로 */
+var KEEP_ON_OPEN = ['likert', 'scenario', 'element', 'interlude1', 'interlude2', 'introLikert', 'introScenario', 'introElement', 'brain', 'money', 'aiq', 'gen', 'chPlay', 'birth'];
+if (KEEP_ON_OPEN.indexOf(S.view) < 0) S.view = 'home';
 try {
   var qs0 = new URLSearchParams(location.search), v0 = qs0.get('v'), p0 = qs0.get('pair');
   if (v0) { VIEWCODE = v0; VIEW = readCode(v0).view; S.view = 'shared'; track('shared_open', { deep: VIEW.deep }); }
