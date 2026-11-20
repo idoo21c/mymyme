@@ -9220,7 +9220,7 @@ function homeFirst() {
     : '<section class="hero" style="gap:12px"><span class="pill" style="align-self:flex-start;background:rgba(247,245,240,.12);color:#F2C9BC">생년월일만 · 30초 · 무료</span>' +
       '<h1 class="serif" style="font-size:28px;line-height:1.3;color:var(--bg)">타고난 나는<br>어떤 나무, 어떤 불일까?</h1>' +
       '<p style="font-size:14px;line-height:1.6;color:#C9C7D6;margin:0">생일을 넣으면 사주의 중심인 일간과 내 기질 키워드를 바로 보여드려요. 회원가입은 없어요.</p>' +
-      '<div class="seg" role="group" aria-label="달력 종류" style="background:rgba(247,245,240,.1)"><button class="' + (b.calendar !== 'lunar' ? 'on' : '') + '" data-qcal="solar" style="' + (b.calendar !== 'lunar' ? '' : 'color:#C9C7D6') + '">양력</button><button class="' + (b.calendar === 'lunar' ? 'on' : '') + '" data-qcal="lunar" style="' + (b.calendar === 'lunar' ? '' : 'color:#C9C7D6') + '">음력</button></div>' +
+      '<div class="seg" role="group" aria-label="달력 종류" style="background:rgba(247,245,240,.1)">' + [['solar', '양력', b.calendar !== 'lunar'], ['lunar', '음력', b.calendar === 'lunar' && !b.leap], ['leap', '음력 윤달', b.calendar === 'lunar' && !!b.leap]].map(function (x) { return '<button class="' + (x[2] ? 'on' : '') + '" data-qcal="' + x[0] + '" aria-pressed="' + x[2] + '" style="' + (x[2] ? '' : 'color:#C9C7D6') + '">' + x[1] + '</button>'; }).join('') + '</div>' + (b.calendar === 'lunar' && b.leap ? '<p class="xs" style="color:#C9C7D6;margin:-4px 0 0">윤달(閏月)에 태어났다면 이 칸을 고르세요. 그 해에 윤달이 있는지 확인해 드려요.</p>' : '') +
       '<div class="grid3"><label class="f" style="color:#C9C7D6">년<input class="inp" id="qy" inputmode="numeric" maxlength="4" placeholder="1990" value="' + esc(b.y) + '"></label><label class="f" style="color:#C9C7D6">월<input class="inp" id="qm" inputmode="numeric" maxlength="2" placeholder="5" value="' + esc(b.m) + '"></label><label class="f" style="color:#C9C7D6">일<input class="inp" id="qd" inputmode="numeric" maxlength="2" placeholder="19" value="' + esc(b.d) + '"></label></div>' +
       '<p id="qerr" class="small" style="color:#F2C9BC;min-height:0;margin:0" role="alert"></p>' +
       '<button class="btn" style="background:var(--coral);color:var(--ink);font-weight:700;font-size:17px" data-act="tasteGo">30초 만에 내 일간 보기</button>' +
@@ -11178,7 +11178,7 @@ document.addEventListener('click', function (ev) {
   if (d.go) { go(d.go); return; }
   if (d.legal) { legalModal(d.legal); return; }
   if (d.setlang) { S.lang = d.setlang; save(); try { var u = new URL(location.href); u.searchParams.set('lang', d.setlang); location.href = u.toString(); } catch (e) { location.reload(); } return; }
-  if (d.qcal) { tasteRead(); S.birth.calendar = d.qcal === 'lunar' ? 'lunar' : 'solar'; S.birth.leap = false; save(); render(); return; }
+  if (d.qcal) { tasteRead(); S.birth.calendar = d.qcal === 'solar' ? 'solar' : 'lunar'; S.birth.leap = d.qcal === 'leap'; save(); render(); return; }
   if (d.cal) { readBirth(); S.birth.calendar = d.cal === 'solar' ? 'solar' : 'lunar'; S.birth.leap = d.cal === 'leap'; save(); render(); return; }
   if (d.gender) { if (S.view === 'birth') readBirth(); S.birth.gender = d.gender; if (S.result) S.result.dy = null; save(); render(); return; }
   if (d.blood !== undefined) { readBirth(); S.birth.blood = d.blood; save(); render(); return; }
@@ -11328,16 +11328,17 @@ document.addEventListener('click', function (ev) {
     case 'aqStart': aqNew(); track('aiq_start'); go('aiq'); break;
     case 'dayCard':
       if (!S.result || COIN.dayCard === TODAY) break;
-      COIN.dayCard = TODAY; COIN.bal += DAYCARD_COIN; coinLog('grant', DAYCARD_COIN, 'daycard'); track('coin', { op: 'daycard', amt: DAYCARD_COIN, bal: COIN.bal }); render(); toast('오늘의 카드를 열었어요 · +' + DAYCARD_COIN + '코인'); break;
+      COIN.dayCard = TODAY; COIN.bal += DAYCARD_COIN; coinLog('grant', DAYCARD_COIN, 'daycard'); track('coin', { op: 'grant', item: 'daycard', amt: DAYCARD_COIN, bal: COIN.bal }); render(); toast('오늘의 카드를 열었어요 · +' + DAYCARD_COIN + '코인'); break;
     case 'mapReward':
       if (!S.result || COIN.mapDone || mapItems().some(function (x) { return !x[1]; })) break;
-      COIN.mapDone = true; COIN.bal += MAP_COIN; coinLog('grant', MAP_COIN, 'mapdone'); track('coin', { op: 'mapdone', amt: MAP_COIN, bal: COIN.bal }); render(); toast('나 탐구 지도 완성! +' + MAP_COIN + '코인'); break;
+      COIN.mapDone = true; COIN.bal += MAP_COIN; coinLog('grant', MAP_COIN, 'mapdone'); track('coin', { op: 'grant', item: 'mapdone', amt: MAP_COIN, bal: COIN.bal }); render(); toast('나 탐구 지도 완성! +' + MAP_COIN + '코인'); break;
     case 'tasteGo':
       tasteRead(); var qe = document.getElementById('qerr'), qb = S.birth;
       if (!validDate(+qb.y, +qb.m, +qb.d)) { if (qe) qe.textContent = '생년월일을 정확히 입력해 주세요. (1900~2099년)'; return; }
-      qb.leap = false; qb.hour = '';
+      qb.leap = qb.calendar === 'lunar' && !!qb.leap; qb.hour = '';
+      if (qb.leap) { var qlm = E.leapMonthOf(+qb.y); if (qlm !== +qb.m) { if (qe) qe.textContent = (+qb.y) + '년에는 ' + (+qb.m) + '월 윤달이 없어요. ' + (qlm ? '이 해의 윤달은 ' + qlm + '월이에요.' : '이 해에는 윤달이 없어요.'); return; } }
       var qsj; try { qsj = calcSajuSafe(); } catch (e) { if (qe) qe.textContent = '존재하지 않는 날짜예요. 다시 확인해 주세요.'; return; }
-      S.taste = { stem: qsj.dayStem, at: TODAY }; qb.noticed = true; save(); track('taste', { stem: qsj.dayStem, birth: qb.y + '-' + ('0' + qb.m).slice(-2) + '-' + ('0' + qb.d).slice(-2), cal: qb.calendar === 'lunar' ? 'lunar' : 'solar', solar: qsj.solarDate || '', pillars: qsj.pillars.map(function (x) { return x.gz; }).join(' ') }); go('taste'); break;
+      S.taste = { stem: qsj.dayStem, at: TODAY }; qb.noticed = true; save(); track('taste', { stem: qsj.dayStem, birth: qb.y + '-' + ('0' + qb.m).slice(-2) + '-' + ('0' + qb.d).slice(-2), cal: qb.calendar === 'lunar' ? (qb.leap ? 'lunar_leap' : 'lunar') : 'solar', solar: qsj.solarDate || '', pillars: qsj.pillars.map(function (x) { return x.gz; }).join(' ') }); go('taste'); break;
     case 'tasteFull': track('taste_full'); go('birth'); break;
     case 'tasteShare': track('taste_share'); shareTextOut('나는 사주 일간이 ' + SJ.dayMasters[S.taste.stem].read + '(' + SJ.dayMasters[S.taste.stem].image + ')래! 너는 어떤 나무, 어떤 불일까? 생일만 넣으면 30초야', 'taste', SITE_URL || (location.origin + location.pathname)); break;
     case 'navTests': var tt = document.getElementById('tests'); if (tt) tt.scrollIntoView({ behavior: 'smooth', block: 'start' }); break;
@@ -11547,6 +11548,7 @@ function demoStart() {
   RC = { code: 'DEMO23', snap: myCode('', true) };
   var d = DEMO; S.view = 'result';
   if (d === 'home') S.view = 'home';
+  if (d === 'taste') { S.taste = { stem: S.result.saju.dayStem, at: TODAY }; S.view = 'taste'; }
   if (d === 'report') { S.view = 'report'; S.tab = 'core'; }
   if (d === 'newyear') S.view = 'newyear';
   if (d === 'brain' || d === 'combo') { demoBrain(); S.view = d === 'brain' ? 'brainResult' : 'result'; if (d === 'brain') S.result = null; }
