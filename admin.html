@@ -354,7 +354,7 @@ function trafficTab() {
   var dmap = {}; (t.days || []).forEach(function (d) { dmap[d.date] = d; });
   var labels = (DATA.daily || []).slice(-Math.min(RANGE, 30)).map(function (d) { return d.date; }); if (!labels.length) labels = Object.keys(dmap).sort();
   var series = top.map(function (k, i) { return { name: srcName(k), color: SERIES[i % SERIES.length], values: labels.map(function (dt) { return (dmap[dt] || {})[k] || 0; }) }; });
-  var base = location.origin + location.pathname.replace(/admin\.html$/, '');
+  var base = location.origin + location.pathname.replace(/admin(\.html)?\/?$/, '');
   var link = base + '?utm_source=' + encodeURIComponent(UTM_SRC) + (UTM_CAMP ? '&utm_campaign=' + encodeURIComponent(UTM_CAMP) : '');
   return '<div class="kpis">' + kpi('지금 접속 중', t.live10, '최근 10분 안에 활동한 사람 · 1시간 기준 ' + t.live60 + '명') + kpi('오늘 방문자', t.today, '오늘(한국 시간) 한 번이라도 활동한 사람') +
     kpi('오늘 결과 확인', t.todayFinish, '분모: 오늘 방문자 ' + t.today + '명 · ' + pct(t.todayFinish, t.today)) + kpi('경로 기록된 사람', t.tracked, '집계 ' + esc(t.at) + ' · 새로고침으로 갱신') + '</div>' +
@@ -673,6 +673,55 @@ function moneyTab() {
     evDaily('일자별', [['money_start', '시작'], ['money_finish', '완료']]) +
     '<p class="small muted">한 사람이 여러 번 하면 마지막 결과만 셌어요. 사주 보정이 들어간 결과 ' + m.saju + '명.</p>';
 }
+/* ---------- 나에게 맞는 우리나라의 절: 이용 집계 · 참여자 추천 검토 · 공식 목록 · 시·군·구 채움 ---------- */
+var TEMPLE_COV = {"reg": {"서울": ["종로구", "중구", "용산구", "성동구", "광진구", "동대문구", "중랑구", "성북구", "강북구", "도봉구", "노원구", "은평구", "서대문구", "마포구", "양천구", "강서구", "구로구", "금천구", "영등포구", "동작구", "관악구", "서초구", "강남구", "송파구", "강동구"], "부산": ["중구", "서구", "동구", "영도구", "부산진구", "동래구", "남구", "북구", "해운대구", "사하구", "금정구", "강서구", "연제구", "수영구", "사상구", "기장군"], "대구": ["중구", "동구", "서구", "남구", "북구", "수성구", "달서구", "달성군", "군위군"], "인천": ["중구", "동구", "미추홀구", "연수구", "남동구", "부평구", "계양구", "서구", "강화군", "옹진군"], "광주": ["동구", "서구", "남구", "북구", "광산구"], "대전": ["동구", "중구", "서구", "유성구", "대덕구"], "울산": ["중구", "남구", "동구", "북구", "울주군"], "세종": ["세종시"], "경기": ["수원시", "성남시", "의정부시", "안양시", "부천시", "광명시", "평택시", "동두천시", "안산시", "고양시", "과천시", "구리시", "남양주시", "오산시", "시흥시", "군포시", "의왕시", "하남시", "용인시", "파주시", "이천시", "안성시", "김포시", "화성시", "광주시", "양주시", "포천시", "여주시", "연천군", "가평군", "양평군"], "강원": ["춘천시", "원주시", "강릉시", "동해시", "태백시", "속초시", "삼척시", "홍천군", "횡성군", "영월군", "평창군", "정선군", "철원군", "화천군", "양구군", "인제군", "고성군", "양양군"], "충북": ["충주시", "제천시", "청주시", "보은군", "옥천군", "영동군", "진천군", "괴산군", "음성군", "단양군", "증평군"], "충남": ["천안시", "공주시", "보령시", "아산시", "서산시", "논산시", "계룡시", "당진시", "금산군", "부여군", "서천군", "청양군", "홍성군", "예산군", "태안군"], "전북": ["전주시", "군산시", "익산시", "정읍시", "남원시", "김제시", "완주군", "진안군", "무주군", "장수군", "임실군", "순창군", "고창군", "부안군"], "전남": ["목포시", "여수시", "순천시", "나주시", "광양시", "담양군", "곡성군", "구례군", "고흥군", "보성군", "화순군", "장흥군", "강진군", "해남군", "영암군", "무안군", "함평군", "영광군", "장성군", "완도군", "진도군", "신안군"], "경북": ["포항시", "경주시", "김천시", "안동시", "구미시", "영주시", "영천시", "상주시", "문경시", "경산시", "의성군", "청송군", "영양군", "영덕군", "청도군", "고령군", "성주군", "칠곡군", "예천군", "봉화군", "울진군", "울릉군"], "경남": ["진주시", "통영시", "사천시", "김해시", "밀양시", "거제시", "양산시", "창원시", "의령군", "함안군", "창녕군", "고성군", "남해군", "하동군", "산청군", "함양군", "거창군", "합천군"], "제주": ["제주시", "서귀포시"]}, "cur": ["강원|고성군", "강원|동해시", "강원|속초시", "강원|양양군", "강원|영월군", "강원|원주시", "강원|정선군", "강원|춘천시", "강원|평창군", "경기|남양주시", "경기|안성시", "경기|양평군", "경기|여주시", "경기|화성시", "경남|남해군", "경남|밀양시", "경남|산청군", "경남|양산시", "경남|창원시", "경남|하동군", "경남|합천군", "경북|경산시", "경북|경주시", "경북|김천시", "경북|안동시", "경북|영주시", "경북|영천시", "경북|울진군", "경북|청도군", "경북|포항시", "광주|동구", "광주|서구", "대구|군위군", "대구|동구", "대전|대덕구", "부산|금정구", "부산|기장군", "부산|부산진구", "서울|강남구", "서울|강북구", "서울|성북구", "서울|은평구", "서울|종로구", "세종|세종시", "울산|울주군", "인천|강화군", "전남|구례군", "전남|순천시", "전남|여수시", "전남|영광군", "전남|장성군", "전남|해남군", "전남|화순군", "전북|고창군", "전북|김제시", "전북|남원시", "전북|부안군", "전북|진안군", "제주|서귀포시", "제주|제주시", "충남|공주시", "충남|부여군", "충남|서산시", "충남|예산군", "충남|천안시", "충북|단양군", "충북|보은군"], "n": 76};   // 빌드 때 넣음: { reg: {시도: [시군구…]}, cur: ['시도|시군구', …] }
+var TADM = { items: null, busy: false, st: null, list: null, err: '', msg: '', filter: 'new' };
+var TP_TYPE = { med: '명상형', nat: '자연형', exp: '탐구형', rit: '의례형', com: '공동체형', svc: '봉사형' }, TP_TER = { mount: '산사', sea: '바다', city: '도심', valley: '계곡', lake: '강·호수' }, TP_ST = { new: '새로 들어옴', ok: '채택', hold: '보류', no: '반려' };
+function templeAdminLoad() {
+  TADM.busy = true; TADM.err = '';
+  Promise.all([wpost('/api/temple/admin', { op: 'list' }), wpost('/api/temple/admin', { op: 'status' }), fetch('/api/temple/list').then(function (r) { return r.json(); }).catch(function () { return null; })]).then(function (a) {
+    TADM.busy = false;
+    if (!a[0] || !a[0].ok) { TADM.err = a[0] && a[0].reason || 'fail'; TADM.items = []; } else TADM.items = a[0].items;
+    TADM.st = a[1] && a[1].ok ? a[1] : null; TADM.list = a[2] && a[2].ok ? a[2].list : [];
+    render();
+  }, function () { TADM.busy = false; TADM.err = 'net'; TADM.items = []; render(); });
+}
+function templeCover() {
+  if (!TEMPLE_COV) return '';
+  var have = {}; TEMPLE_COV.cur.forEach(function (k) { have[k] = 1; }); (TADM.list || []).forEach(function (r) { have[r[1] + '|' + r[2]] = 1; });
+  var tot = 0, got = 0, rows = Object.keys(TEMPLE_COV.reg).map(function (sd) { var all = TEMPLE_COV.reg[sd], c = all.filter(function (g) { return have[sd + '|' + g]; }); tot += all.length; got += c.length;
+    var miss = all.filter(function (g) { return !have[sd + '|' + g]; });
+    return '<tr><td><b>' + esc(sd) + '</b></td><td>' + c.length + ' / ' + all.length + '</td><td class="small muted">' + (miss.length ? esc(miss.slice(0, 12).join(', ')) + (miss.length > 12 ? ' 외 ' + (miss.length - 12) + '곳' : '') : '모두 채움') + '</td></tr>'; }).join('');
+  return '<div class="card"><h2>시·군·구별 채움 ' + got + ' / ' + tot + '</h2><p class="small muted">대표 사찰(이야기 있음) ' + TEMPLE_COV.n + '곳(' + TEMPLE_COV.cur.length + '개 시·군·구) + 공식 목록 ' + (TADM.list || []).length + '곳 기준이에요. 자치구 중 절이 없는 곳은 같은 광역시 안의 절로 추천돼요.</p><table class="tbl"><thead><tr><th>시·도</th><th>채움</th><th>아직 없는 곳</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+}
+function templeTab() {
+  if (TADM.items === null && !TADM.busy) templeAdminLoad();
+  var s0 = EVN('temple_start'), s1 = EVN('temple_finish'), s2 = EVN('temple_pick'), sg = EVN('temple_suggest'), x = (DATA.coin && DATA.coin.items && DATA.coin.items.templex) || null;
+  var top = Object.keys(TP_TYPE).map(function (k) { return [TP_TYPE[k], s1.sub[k] || 0]; }), mx = Math.max.apply(null, top.map(function (t) { return t[1]; }).concat([1]));
+  var sds = Object.keys(s2.sub).sort(function (a, b) { return s2.sub[b] - s2.sub[a]; }), mx2 = Math.max.apply(null, sds.map(function (k) { return s2.sub[k]; }).concat([1]));
+  var head = '<div class="kpis">' + kpi('테스트 시작', s0.n, s0.users + '명') + kpi('완료', s1.n, '완료율 ' + pct(s1.n, s0.n)) + kpi('절 추천 확인', s2.n, '지역 고르고 결과 본 횟수') + kpi('참여자 절 추천', sg.n, '접수 기준') + '</div>' +
+    '<div class="grid2"><div class="card"><h2>1위 쉼터 유형</h2>' + (s1.n ? top.map(function (t) { return hbar(t[0], t[1], mx, t[1] + '명'); }).join('') : '<p class="small muted">데이터 없음</p>') + '</div>' +
+    '<div class="card"><h2>사는 시·도</h2>' + (sds.length ? sds.map(function (k) { return hbar(esc(k), s2.sub[k], mx2, s2.sub[k] + '회'); }).join('') : '<p class="small muted">데이터 없음</p>') + '<p class="xs muted">시·군·구는 서버에 남기지 않아요.</p></div></div>' +
+    evDaily('일자별', [['temple_start', '시작'], ['temple_finish', '완료'], ['temple_suggest', '절 추천']]);
+  if (TADM.busy && TADM.items === null) return head + '<p class="small muted">불러오는 중…</p>';
+  var st = TADM.st, meta = st && st.meta;
+  var imp = '<div class="card col" style="gap:8px"><h2>전통사찰 공식 목록 (행정안전부)</h2>' +
+    (!st ? '<p class="small">상태를 확인하지 못했어요' + (TADM.err === 'auth' ? ' (관리자 확인 실패)' : '') + '.</p>' :
+      !st.key ? '<p class="small">아직 인증키가 서버에 없어요. Cloudflare → Workers & Pages → mymyme → 설정 → 변수 및 비밀(Variables and Secrets)에서 <b>비밀(Secret)</b> 이름 <code>TEMPLE_KEY</code>로 공공데이터포털 일반 인증키를 넣어 주세요. 키는 이 화면에도 앱에도 보이지 않아요.</p>' :
+      '<p class="small">인증키 연결됨 · ' + (meta ? '마지막 가져오기 ' + new Date(meta.at).toLocaleString('ko-KR') + ' · 받은 ' + meta.raw + '건 중 운영 중 ' + meta.n + '곳 (좌표 ' + meta.geo + '곳, 시·군·구 ' + meta.sgg + '곳)' : '아직 가져온 적이 없어요') + '</p>') +
+    (st && st.key ? '<button id="tpImport"' + (TADM.importing ? ' disabled' : '') + '>' + (TADM.importing ? '가져오는 중… (1분쯤)' : '공식 목록 가져오기 / 새로 고침') + '</button>' : '') +
+    (TADM.msg ? '<p class="small" style="color:#8A3520">' + esc(TADM.msg) + '</p>' : '') +
+    (meta && meta.keys && meta.keys.length ? '<details><summary class="small muted">받은 항목 이름 보기</summary><p class="xs muted">' + esc(meta.keys.join(', ')) + '</p></details>' : '') + '</div>';
+  var items = (TADM.items || []).filter(function (r) { return TADM.filter === 'all' || r.st === TADM.filter; });
+  var cnt = function (k) { return (TADM.items || []).filter(function (r) { return k === 'all' || r.st === k; }).length; };
+  var list = '<div class="card"><h2>참여자 절 추천</h2><p class="small muted">추천 글은 그대로 올리지 않아요. 사실은 출처로 확인한 뒤 우리 말로 다시 써서 대표 사찰 데이터(content/ko/temple.json)에 넣고, 주관적 느낌은 ‘다녀간 사람의 한마디’로 구분해요.</p>' +
+    '<div class="row" style="gap:6px;flex-wrap:wrap;margin:6px 0">' + ['new', 'hold', 'ok', 'no', 'all'].map(function (k) { return '<button class="sec" data-tpf="' + k + '" style="' + (TADM.filter === k ? 'border-color:#1E2140;font-weight:700' : '') + '">' + (TP_ST[k] || '전체') + ' ' + cnt(k) + '</button>'; }).join('') + '</div>' +
+    (items.length ? '<table class="tbl"><thead><tr><th>절</th><th>추천 내용</th><th>상태</th><th></th></tr></thead><tbody>' + items.map(function (r) {
+      return '<tr><td><b>' + esc(r.name) + '</b><div class="xs muted">' + esc(r.sd + ' ' + (r.sgg || '')) + '</div><div class="xs muted">' + new Date(r.at).toLocaleDateString('ko-KR') + (r.nick ? ' · ' + esc(r.nick) : '') + '</div></td>' +
+        '<td class="small">' + esc(r.why) + '<div class="xs muted" style="margin-top:4px">' + [r.types.map(function (t) { return TP_TYPE[t]; }).join('·'), TP_TER[r.ter], r.season, r.way].filter(Boolean).map(esc).join(' · ') + '</div>' + (r.link ? '<div class="xs"><a href="' + esc(r.link) + '" target="_blank" rel="noopener noreferrer">참고 링크 ↗</a></div>' : '') + '</td>' +
+        '<td>' + TP_ST[r.st] + '</td><td style="white-space:nowrap">' + ['ok', 'hold', 'no'].filter(function (k) { return k !== r.st; }).map(function (k) { return '<button class="sec" data-tps="' + k + '" data-id="' + r.id + '">' + TP_ST[k] + '</button>'; }).join(' ') + ' <button class="sec" data-tps="del" data-id="' + r.id + '">삭제</button></td></tr>'; }).join('') + '</tbody></table>' : '<p class="small muted">' + (TADM.err ? '불러오지 못했어요 (' + esc(TADM.err) + ')' : '이 상태의 추천이 없어요.') + '</p>') + '</div>';
+  return head + list + imp + templeCover();
+}
 /* ---------- 미리보기: 무작위 샘플 결과로 이용자 화면을 바로 연다 (저장·기록 없음) ---------- */
 var PV_LANG = 'ko';
 var PREVIEWS = [
@@ -684,10 +733,11 @@ var PREVIEWS = [
   ['세대 감각 (한국어)', [['gen', '세대 감각 결과 + 심층 리포트'], ['genq', '요즘 말 퀴즈 화면']]],
   ['AI 활용력', [['aiq', 'AI 활용력 결과 + 심층 리포트'], ['aiqq', '문항 화면']]],
   ['재테크 DNA', [['money', '재테크 DNA 결과 + 심층 리포트'], ['moneyq', '문항 화면']]],
+  ['나에게 맞는 우리나라의 절', [['temple', '결과 + 심층 리포트'], ['templeq', '문항 화면'], ['templesug', '절 추천하기 양식']]],
   ['마마미코인', [['wallet', '코인 지갑']]]
 ];
 function previewTab() {
-  var base = location.href.replace(/admin\.html.*$/, '').replace(/[?#].*$/, '');
+  var base = location.origin + location.pathname.replace(/admin(\.html)?\/?$/, '');
   return '<div class="card"><h2>서비스 화면 미리보기</h2><p class="small muted">누를 때마다 무작위 샘플(생년월일·응답·친구)로 새 탭에서 열려요. 미리보기에서는 저장·통계 기록·코인 지급이 모두 꺼져 있어서 실제 데이터에 영향이 없어요. 화면 아래의 \'다른 샘플\'을 누르면 새 샘플로 바뀌어요.</p>' +
     '<div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap"><span class="small" style="align-self:center">언어</span>' + [['ko', '한국어'], ['en', 'English'], ['ja', '日本語'], ['zh-TW', '繁體'], ['zh-CN', '简体']].map(function (l) { return '<button class="sec" data-pvlang="' + l[0] + '" style="' + (PV_LANG === l[0] ? 'border-color:var(--ink);font-weight:700' : '') + '">' + l[1] + '</button>'; }).join('') + '</div></div>' +
     PREVIEWS.map(function (g) { return '<div class="card"><h2>' + g[0] + '</h2><div class="row" style="gap:8px;flex-wrap:wrap">' + g[1].map(function (x) {
@@ -702,6 +752,7 @@ var SERVICES = [
   { id: 'aiq', name: 'AI 활용력', tab: function () { return aiqTab(); } },
   { id: 'gen', name: '세대 감각', tab: function () { return genTab(); } },
   { id: 'money', name: '재테크 DNA', tab: function () { return moneyTab(); } },
+  { id: 'temple', name: '나에게 맞는 절', tab: function () { return templeTab(); } },
   { id: 'forest', name: '대나무숲·상담', tab: function () { return forestTab(); } }
 ];
 function render() {
@@ -720,7 +771,7 @@ function render() {
   bindCharts();
   var pq = document.getElementById('pq');
   var uc = document.getElementById('utmCamp');
-  if (uc) uc.addEventListener('input', function () { UTM_CAMP = uc.value.trim().replace(/\s+/g, '_'); var base = location.origin + location.pathname.replace(/admin\.html$/, ''); document.getElementById('utmLink').textContent = base + '?utm_source=' + encodeURIComponent(UTM_SRC) + (UTM_CAMP ? '&utm_campaign=' + encodeURIComponent(UTM_CAMP) : ''); });
+  if (uc) uc.addEventListener('input', function () { UTM_CAMP = uc.value.trim().replace(/\s+/g, '_'); var base = location.origin + location.pathname.replace(/admin(\.html)?\/?$/, ''); document.getElementById('utmLink').textContent = base + '?utm_source=' + encodeURIComponent(UTM_SRC) + (UTM_CAMP ? '&utm_campaign=' + encodeURIComponent(UTM_CAMP) : ''); });
   if (pq) pq.addEventListener('input', function () { PQ = pq.value; var pos = pq.selectionStart; render(); var n = document.getElementById('pq'); n.focus(); n.setSelectionRange(pos, pos); });
 }
 document.addEventListener('change', function (e) {
@@ -748,6 +799,9 @@ document.addEventListener('click', function (e) {
   else if (b.id === 'csv') downloadCsv();
   else if (b.id === 'pushTest') pushSend(true);
   else if (b.id === 'madmReload') { MADM.d = null; render(); }
+  else if (b.id === 'tpImport') { TADM.importing = true; TADM.msg = ''; render(); wpost('/api/temple/admin', { op: 'import' }).then(function (j) { TADM.importing = false; TADM.msg = j && j.ok ? '가져왔어요: 운영 중 ' + j.n + '곳' : '가져오지 못했어요 (' + (j && j.reason) + (j && j.detail ? ' · ' + j.detail : '') + ')'; TADM.items = null; render(); }, function () { TADM.importing = false; TADM.msg = '가져오지 못했어요 (네트워크)'; render(); }); }
+  else if (b.dataset.tpf) { TADM.filter = b.dataset.tpf; render(); }
+  else if (b.dataset.tps) { var tps = b.dataset.tps; if (tps === 'del' && !confirm('이 추천을 삭제할까요? 되돌릴 수 없어요.')) return; b.disabled = true; wpost('/api/temple/admin', tps === 'del' ? { op: 'del', id: b.dataset.id } : { op: 'set', id: b.dataset.id, st: tps }).then(function () { TADM.items = null; render(); }); }
   else if (b.dataset.madm) { var op = b.dataset.madm; if (op === 'delete' && !confirm('이 소개를 삭제할까요? 되돌릴 수 없어요.')) return; b.disabled = true; wpost('/api/match/admin', { op: op, pid: b.dataset.pid }).then(function () { MADM.d = null; render(); }); }
   else if (b.id === 'pushAll') pushSend(false);
   else if (b.id === 'meSave') { var mk = (document.getElementById('meKey').value || '').trim(), mc = mk.toUpperCase().replace(/^MM-?/, ''); if (/^[2-9A-HJKMNP-Z]{6}$/.test(mc)) mk = 'MM-' + mc; try { if (mk) localStorage.setItem(ME_KEY, mk); else localStorage.removeItem(ME_KEY); } catch (e) {} render(); }
