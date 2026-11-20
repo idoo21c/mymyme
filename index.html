@@ -9266,33 +9266,36 @@ function pushCard() {
   if (!homeNew() || !pushOn()) return '';
   return '<p class="xs muted" style="text-align:center">새 기능·공지 알림을 받고 있어요 · <button data-act="pushOff" style="background:none;border:0;padding:0;color:var(--sub);text-decoration:underline;font-size:inherit;cursor:pointer">알림 끄기</button></p>';
 }
+var PUSH_DIAG = '';
 function pushSubscribe() {
   if (!pushSupported()) { toast('이 브라우저에서는 알림을 켤 수 없어요. 크롬이나 홈 화면 앱에서 열어 주세요'); return; }
   if (PUSH_BUSY) return; PUSH_BUSY = true; render();
-  var step = 'perm', done = false;
-  var fail = function (e) { if (done) return; done = true; PUSH_BUSY = false; var msg = (e && (e.name || e.message)) || ''; track('push_err', { step: step, msg: String(msg).slice(0, 80) }); render();
-    if (step === 'perm-timeout') pushHelp(); else toast('알림을 켜지 못했어요 (' + step + (msg ? ' · ' + msg : '') + '). 잠시 후 다시 시도해 주세요'); };
-  var timer = setTimeout(function () { if (step === 'perm') { step = 'perm-timeout'; fail(); } }, 9000);
-  var ask = function () { return new Promise(function (res) { if (Notification.permission === 'granted') return res('granted'); var r = Notification.requestPermission(function (x) { res(x); }); if (r && r.then) r.then(res); }); };
+  var step = 'start', done = false, reg0 = null;
+  var diag = function (extra) { PUSH_DIAG = ['권한 ' + Notification.permission, pwaStandalone() ? '설치 앱' : '브라우저', 'SW ' + (navigator.serviceWorker.controller ? '연결' : '없음'), '단계 ' + step + (extra ? ' · ' + extra : ''), ((navigator.userAgent.match(/(Chrome|SamsungBrowser|Version)\/[\d.]+/) || [''])[0])].join(' / '); };
+  var finish = function (ok, e) {
+    if (done) return; done = true; PUSH_BUSY = false;
+    var msg = e ? String((e && (e.name || e.message)) || e).slice(0, 80) : '';
+    if (ok) { try { localStorage.setItem(PUSH_KEY, '1'); } catch (er) {} track('push_on', { standalone: pwaStandalone() ? 1 : 0 }); toast('알림을 켰어요. 새 소식이 생기면 알려 드릴게요'); render(); return; }
+    diag(msg); track('push_err', { step: step, msg: msg, d: PUSH_DIAG.slice(0, 160) }); render();
+    if (Notification.permission === 'denied' || /NotAllowed|denied|시간 초과/.test(msg)) pushHelp(Notification.permission === 'denied'); else toast('알림을 켜지 못했어요 (' + step + (msg ? ' · ' + msg : '') + ')');
+  };
   var withTimeout = function (pr, ms, name) { return Promise.race([pr, new Promise(function (_, rej) { setTimeout(function () { rej(new Error(name + ' 시간 초과')); }, ms); })]); };
-  toast('알림 허용 창을 띄울게요');
-  ask().then(function (perm) {
-    clearTimeout(timer); if (done) return;
-    if (perm !== 'granted') { done = true; PUSH_BUSY = false; track('push_denied', { perm: perm }); render(); if (perm === 'denied') pushHelp(true); else toast('알림이 허용되지 않았어요'); return; }
-    step = 'sw';
-    return withTimeout(navigator.serviceWorker.getRegistration().then(function (reg) { return reg || navigator.serviceWorker.register('sw.js'); }).then(function () { return navigator.serviceWorker.ready; }), 8000, 'sw').then(function (reg) {
-      step = 'key'; return fetch('/api/push/key', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (k) {
-        if (!k || !k.key) throw new Error('key');
-        step = 'subscribe'; return reg.pushManager.getSubscription().then(function (old) { return old || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uBytes(k.key) }); });
-      });
-    }).then(function (sub) {
-      step = 'save'; return fetch('/api/push/sub', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sid: SID, sub: sub.toJSON() }) }).then(function (r) { return r.json(); });
-    }).then(function (j) {
-      if (!j || !j.ok) throw new Error('save');
-      done = true; PUSH_BUSY = false;
-      try { localStorage.setItem(PUSH_KEY, '1'); } catch (e) {} track('push_on', { standalone: pwaStandalone() ? 1 : 0 }); toast('알림을 켰어요. 새 소식이 생기면 알려 드릴게요'); render();
-    });
-  }).catch(fail);
+  if (Notification.permission === 'denied') { step = 'perm'; finish(false, 'denied'); return; }
+  toast('알림을 켜는 중이에요');
+  /* 1) 서비스 워커 2) 서버 키 3) 구독(필요하면 이때 허용 창이 뜸). 허용 창을 따로 먼저 띄우지 않는다: 설치 앱에서 Notification.requestPermission이 응답 없이 멈추는 경우가 있어서 */
+  step = 'sw';
+  withTimeout(navigator.serviceWorker.getRegistration().then(function (reg) { return reg || navigator.serviceWorker.register('sw.js'); }).then(function () { return navigator.serviceWorker.ready; }), 10000, 'sw').then(function (reg) {
+    reg0 = reg; step = 'key';
+    return withTimeout(fetch('/api/push/key', { cache: 'no-store' }).then(function (r) { return r.json(); }), 10000, 'key');
+  }).then(function (k) {
+    if (!k || !k.key) throw new Error('no key');
+    step = 'subscribe';
+    return withTimeout(reg0.pushManager.getSubscription().then(function (old) { return old || reg0.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uBytes(k.key) }); }), 20000, '구독');
+  }).then(function (sub) {
+    step = 'save';
+    return withTimeout(fetch('/api/push/sub', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sid: SID, sub: sub.toJSON() }) }).then(function (r) { return r.json(); }), 10000, 'save');
+  }).then(function (j) { if (!j || !j.ok) throw new Error('save ' + (j && j.reason || '')); finish(true); })
+    .catch(function (e) { finish(false, e); });
 }
 /* 허용 창이 안 뜨거나 차단된 경우: 직접 켜는 방법 안내 */
 function pushHelp(denied) {
@@ -9301,6 +9304,7 @@ function pushHelp(denied) {
     '<div class="card col" style="gap:8px"><b class="small">홈 화면에 설치한 MyMyMe 앱이라면</b><span class="small muted" style="line-height:1.6">휴대폰 설정 → 애플리케이션(앱) → MyMyMe → 알림 → 허용</span></div>' +
     '<div class="card col" style="gap:8px"><b class="small">크롬에서 보고 있다면</b><span class="small muted" style="line-height:1.6">주소창 왼쪽 아이콘(자물쇠·종) → 권한 → 알림 → 허용. 또는 크롬 설정 → 사이트 설정 → 알림 → mymyme.app 허용</span></div>' +
     '<div class="card col" style="gap:8px"><b class="small">아이폰이라면</b><span class="small muted" style="line-height:1.6">사파리 공유 버튼 → 홈 화면에 추가 → 그 아이콘으로 열어서 \'켜기\'. 이미 막혔다면 설정 → 알림 → MyMyMe → 알림 허용</span></div>' +
+    (PUSH_DIAG ? '<p class="xs muted" style="line-height:1.6;word-break:break-all">진단 정보 (안 되면 이 화면을 캡처해 주세요): ' + esc(PUSH_DIAG) + '</p>' : '') +
     '<button class="btn btn-pri" data-act="pushRetry">다시 시도</button>');
 }
 var PUSH_BUSY = false, PUSH_HIDE_KEY = 'mymyme_push_hide';
