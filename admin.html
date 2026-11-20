@@ -473,6 +473,12 @@ function newyearTab() {
 }
 var MSTYLE = { value: '📈 주식 · 가치투자형', trade: '⚡ 주식 · 단기 트레이딩형', estate: '🏠 부동산형', gold: '🥇 금 · 안전자산형', fx: '💱 환차익 · 외환형', crypto: '🪙 코인 · 디지털자산형', income: '🌱 적금 · 배당 현금흐름형' };
 var MTRAIT = { R: '위험 감수', H: '기다리는 힘', A: '분석력', C: '평정심', T: '활동성', I: '독립성', S: '실물 감각', G: '글로벌 감각' };
+function byCodeHtml(m) {
+  var bc = m.byCode || {}, codes = Object.keys(bc).sort();
+  if (!codes.length) return '';
+  return '<div class="card"><h2>성향 유형별 1위 스타일</h2><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>성향</th><th>인원</th><th>많이 나온 스타일</th></tr></thead><tbody>' + codes.map(function (c) { var o = bc[c], ks = Object.keys(o).sort(function (a, b) { return o[b] - o[a]; }), n = ks.reduce(function (a, k) { return a + o[k]; }, 0);
+    return '<tr><td>' + esc(c) + '</td><td>' + n + '</td><td>' + ks.map(function (k) { return (MSTYLE[k] || k) + ' ' + o[k]; }).join(' · ') + '</td></tr>'; }).join('') + '</tbody></table></div><p class="small muted">인원이 적은 유형은 우연일 수 있어요. 유형마다 수십 명이 쌓이면 성향과 재테크 스타일의 실제 관계를 볼 수 있어요.</p></div>';
+}
 function moneyTab() {
   var m = DATA.money, x = coinItem('moneyx');
   if (!m) return '<div class="card"><p class="small muted">Code.gs를 최신 버전으로 배포하면 이 날부터 재테크 DNA 기록이 쌓여요.</p></div>';
@@ -484,7 +490,7 @@ function moneyTab() {
   var items = '<div class="card"><h2>문항별 응답 분포</h2><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>#</th><th>문항</th><th>기질</th><th>보기별 응답 수</th></tr></thead><tbody>' + (m.items || []).map(function (it, i) {
       return '<tr><td>' + (i + 1) + '</td><td>' + esc(it.id) + '</td><td>' + (MTRAIT[it.t] || '') + '</td><td>' + it.c.join(' · ') + '</td></tr>'; }).join('') + '</tbody></table></div><p class="small muted">한 보기에 응답이 거의 다 몰리는 문항은 변별력이 낮아 바꿀 후보예요.</p></div>';
   return '<div class="kpis">' + kpi('테스트 시작', m.started, '') + kpi('완료', m.n, '완료율 ' + (m.started ? Math.round(m.n / m.started * 100) + '%' : '–')) + kpi('평균 일치도', m.avgM != null ? m.avgM + '%' : '–', '하이브리드형 ' + m.hybrid + '명') +
-    kpi('심층 리포트', x.spend, x.users + '명 · 코인 부족 ' + x.short + '회') + kpi('공유', EVN('share').sub.money || 0, '') + '</div>' + top + tr + items +
+    kpi('심층 리포트', x.spend, x.users + '명 · 코인 부족 ' + x.short + '회') + kpi('공유', EVN('share').sub.money || 0, '') + kpi('성향 연계 일관성', m.avgLk != null ? m.avgLk + '%' : '데이터 없음', '사주×성향 결과가 있는 ' + (m.linked || 0) + '명 평균') + '</div>' + top + byCodeHtml(m) + tr + items +
     evDaily('일자별', [['money_start', '시작'], ['money_finish', '완료']]) +
     '<p class="small muted">한 사람이 여러 번 하면 마지막 결과만 셌어요. 사주 보정이 들어간 결과 ' + m.saju + '명.</p>';
 }
