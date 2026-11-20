@@ -1,7 +1,21 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-
+<script>(function(){var NEW="https://mymyme.app",OH="idoo21c.github.io",OB="/mymyme",CARRY=false,K=/^mymyme_[a-z_]+$/;
+try{if(location.hostname===OH){var p=location.pathname;if(p.indexOf(OB)===0)p=p.slice(OB.length);if(!p)p='/';var h=location.hash||'';
+if(CARRY&&!localStorage.getItem('mymyme_moved')){var d={},n=0;for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(K.test(k)&&k!=='mymyme_moved'){d[k]=localStorage.getItem(k);n++;}}
+if(n){h='#mmimport='+btoa(unescape(encodeURIComponent(JSON.stringify(d)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');localStorage.setItem('mymyme_moved',String(Date.now()));}}
+document.documentElement.style.visibility='hidden';location.replace(NEW+p+location.search+h);return;}
+var m=/^#mmimport=([A-Za-z0-9_-]+)$/.exec(location.hash||'');if(!m)return;
+history.replaceState(null,'',location.pathname+location.search);
+if((document.referrer||'').indexOf('https://'+OH+'/')!==0)return;
+var b=m[1].replace(/-/g,'+').replace(/_/g,'/');while(b.length%4)b+='=';
+var d=JSON.parse(decodeURIComponent(escape(atob(b))));if(!d||typeof d!=='object')return;
+var mine=false,LIGHT={mymyme_sid:1,mymyme_src:1,mymyme_pwa_hide:1,mymyme_v:1};
+for(var j=0;j<localStorage.length;j++){var q=localStorage.key(j);if(K.test(q)&&!LIGHT[q]){mine=true;break;}}
+if(mine&&!confirm('이전 주소(github.io)에서 쓰던 MyMyMe 기록을 이 주소로 옮길까요?\n옮기면 이 기기의 지금 기록은 이전 기록으로 바뀌어요.'))return;
+for(var x in d){if(K.test(x)&&typeof d[x]==='string')localStorage.setItem(x,d[x]);}
+localStorage.setItem('mymyme_moved_in',String(Date.now()));}catch(e){}})();</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">

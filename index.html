@@ -1,6 +1,21 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+<script>(function(){var NEW="https://mymyme.app",OH="idoo21c.github.io",OB="/mymyme",CARRY=true,K=/^mymyme_[a-z_]+$/;
+try{if(location.hostname===OH){var p=location.pathname;if(p.indexOf(OB)===0)p=p.slice(OB.length);if(!p)p='/';var h=location.hash||'';
+if(CARRY&&!localStorage.getItem('mymyme_moved')){var d={},n=0;for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(K.test(k)&&k!=='mymyme_moved'){d[k]=localStorage.getItem(k);n++;}}
+if(n){h='#mmimport='+btoa(unescape(encodeURIComponent(JSON.stringify(d)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');localStorage.setItem('mymyme_moved',String(Date.now()));}}
+document.documentElement.style.visibility='hidden';location.replace(NEW+p+location.search+h);return;}
+var m=/^#mmimport=([A-Za-z0-9_-]+)$/.exec(location.hash||'');if(!m)return;
+history.replaceState(null,'',location.pathname+location.search);
+if((document.referrer||'').indexOf('https://'+OH+'/')!==0)return;
+var b=m[1].replace(/-/g,'+').replace(/_/g,'/');while(b.length%4)b+='=';
+var d=JSON.parse(decodeURIComponent(escape(atob(b))));if(!d||typeof d!=='object')return;
+var mine=false,LIGHT={mymyme_sid:1,mymyme_src:1,mymyme_pwa_hide:1,mymyme_v:1};
+for(var j=0;j<localStorage.length;j++){var q=localStorage.key(j);if(K.test(q)&&!LIGHT[q]){mine=true;break;}}
+if(mine&&!confirm('이전 주소(github.io)에서 쓰던 MyMyMe 기록을 이 주소로 옮길까요?\n옮기면 이 기기의 지금 기록은 이전 기록으로 바뀌어요.'))return;
+for(var x in d){if(K.test(x)&&typeof d[x]==='string')localStorage.setItem(x,d[x]);}
+localStorage.setItem('mymyme_moved_in',String(Date.now()));}catch(e){}})();</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MyMyMe · 사주 × 성향 심리로 보는 나 | 82문항 무료 성격 테스트</title>
@@ -8,32 +23,32 @@
 <meta property="og:title" content="MyMyMe · 나도 몰랐던 나, 13분이면 보여요">
 <meta property="og:description" content="사주 × 성향 82문항으로 보는 나만의 유형. 4글자 성격 코드, 혈액형 비교, 오늘의 타로까지 무료.">
 <meta property="og:type" content="website">
-<link rel="canonical" href="https://idoo21c.github.io/mymyme/">
-<meta property="og:url" content="https://idoo21c.github.io/mymyme/">
+<link rel="canonical" href="https://mymyme.app/">
+<meta property="og:url" content="https://mymyme.app/">
 <meta property="og:site_name" content="MyMyMe">
 <meta property="og:locale" content="ko_KR">
-<meta property="og:image" content="https://idoo21c.github.io/mymyme/og-v3.png">
-<meta property="og:image:secure_url" content="https://idoo21c.github.io/mymyme/og-v3.png">
+<meta property="og:image" content="https://mymyme.app/og-v3.png">
+<meta property="og:image:secure_url" content="https://mymyme.app/og-v3.png">
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="320가지 중 나는 누구일까? MyMyMe 사주 × 성향 테스트">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="MyMyMe · 사주 × 성향 심리로 보는 나 | 82문항 무료 성격 테스트">
 <meta name="twitter:description" content="동양의 명리학(사주)과 서양의 성향 심리학, 두 개의 렌즈로 보는 나. 82문항 약 13분, 320가지 유형 이름과 4글자 성격 코드(ENFP 등), 혈액형 비교, 오늘의 타로까지 무료로 확인하세요.">
-<meta name="twitter:image" content="https://idoo21c.github.io/mymyme/og-v3.png">
+<meta name="twitter:image" content="https://mymyme.app/og-v3.png">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="theme-color" content="#1E2140">
-<link rel="alternate" hreflang="ko" href="https://idoo21c.github.io/mymyme/?lang=ko">
-<link rel="alternate" hreflang="en" href="https://idoo21c.github.io/mymyme/?lang=en">
-<link rel="alternate" hreflang="ja" href="https://idoo21c.github.io/mymyme/?lang=ja">
-<link rel="alternate" hreflang="zh-Hant" href="https://idoo21c.github.io/mymyme/?lang=zh-TW">
-<link rel="alternate" hreflang="zh-Hans" href="https://idoo21c.github.io/mymyme/?lang=zh-CN">
-<link rel="alternate" hreflang="x-default" href="https://idoo21c.github.io/mymyme/">
+<link rel="alternate" hreflang="ko" href="https://mymyme.app/?lang=ko">
+<link rel="alternate" hreflang="en" href="https://mymyme.app/?lang=en">
+<link rel="alternate" hreflang="ja" href="https://mymyme.app/?lang=ja">
+<link rel="alternate" hreflang="zh-Hant" href="https://mymyme.app/?lang=zh-TW">
+<link rel="alternate" hreflang="zh-Hans" href="https://mymyme.app/?lang=zh-CN">
+<link rel="alternate" hreflang="x-default" href="https://mymyme.app/">
 <meta property="og:locale:alternate" content="en_US">
 <meta property="og:locale:alternate" content="ja_JP">
 <meta property="og:locale:alternate" content="zh_TW">
 <meta property="og:locale:alternate" content="zh_CN">
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "MyMyMe", "url": "https://idoo21c.github.io/mymyme/", "inLanguage": "ko", "applicationCategory": "LifestyleApplication", "operatingSystem": "Web", "description": "동양의 명리학(사주)과 서양의 성향 심리학, 두 개의 렌즈로 보는 나. 82문항 약 13분, 320가지 유형 이름과 4글자 성격 코드(ENFP 등), 혈액형 비교, 오늘의 타로까지 무료로 확인하세요.", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "KRW", "description": "참여와 기본 결과 무료"}, "publisher": {"@type": "Organization", "name": "㈜칼렛바이오", "alternateName": "Caretbio", "address": {"@type": "PostalAddress", "streetAddress": "선유서로25길 28, 디스테이트 10층", "addressLocality": "영등포구", "addressRegion": "서울특별시", "addressCountry": "KR"}}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "MyMyMe", "url": "https://mymyme.app/", "inLanguage": "ko", "applicationCategory": "LifestyleApplication", "operatingSystem": "Web", "description": "동양의 명리학(사주)과 서양의 성향 심리학, 두 개의 렌즈로 보는 나. 82문항 약 13분, 320가지 유형 이름과 4글자 성격 코드(ENFP 등), 혈액형 비교, 오늘의 타로까지 무료로 확인하세요.", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "KRW", "description": "참여와 기본 결과 무료"}, "publisher": {"@type": "Organization", "name": "㈜칼렛바이오", "alternateName": "Caretbio", "address": {"@type": "PostalAddress", "streetAddress": "선유서로25길 28, 디스테이트 10층", "addressLocality": "영등포구", "addressRegion": "서울특별시", "addressCountry": "KR"}}}</script>
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "MyMyMe는 무료인가요?", "acceptedAnswer": {"@type": "Answer", "text": "참여와 기본 결과(유형 이름, 4글자 성격 코드, 성향 그래프, 혈액형 비교, 오늘의 타로)는 무료예요. 베타 기간에는 심층 리포트도 무료로 열 수 있고, 정식 출시 후 심층 리포트 가격은 990원이에요."}}, {"@type": "Question", "name": "테스트는 얼마나 걸리나요?", "acceptedAnswer": {"@type": "Answer", "text": "모두 82문항으로 약 13분 걸려요. 성향 문항 60개, 상황 판단 12개, 오행 체감 10개로 이루어져 있고, 중간에 나가도 이어서 할 수 있어요."}}, {"@type": "Question", "name": "사주는 어떻게 계산하나요?", "acceptedAnswer": {"@type": "Answer", "text": "생년월일과 태어난 시간으로 절기 기준 네 기둥(8글자)을 계산해요. 음력과 윤달 입력을 지원하고, 태어난 시간을 모르면 연·월·일 6글자로 풀이해요."}}, {"@type": "Question", "name": "MBTI처럼 4글자 성격 코드도 나오나요?", "acceptedAnswer": {"@type": "Answer", "text": "네. 에너지·인식·판단·생활 4개 축의 결과를 ENFP 같은 4글자 코드로 알려드리고, '자유로운 탐험가'처럼 MyMyMe만의 유형 이름도 함께 보여드려요."}}, {"@type": "Question", "name": "결과 유형은 몇 가지인가요?", "acceptedAnswer": {"@type": "Answer", "text": "사주의 일간 10가지, 성향 16가지, 마음의 결(단단함·섬세함) 2가지를 조합해 320가지 결과가 나와요. 예: 갑목 일간 + 자유로운 탐험가 = '새벽 숲의 탐험가'."}}, {"@type": "Question", "name": "심층 리포트에는 무엇이 있나요?", "acceptedAnswer": {"@type": "Answer", "text": "사주 원국 8글자 풀이, 10년 대운 인생 그래프, 도화살·역마살 같은 신살, 연애·재물·직업, 올해 월별 흐름, 타로 인생 카드, 행운 요소, 대나무숲, 친구와의 심층 궁합이 담겨 있어요."}}, {"@type": "Question", "name": "친구와 궁합은 어떻게 보나요?", "acceptedAnswer": {"@type": "Answer", "text": "결과 화면에서 '카카오톡으로 보내기'를 누르면 궁합 링크가 만들어져요. 친구가 그 링크로 참여를 마치면 두 사람의 궁합이 바로 열려요."}}, {"@type": "Question", "name": "생년월일 같은 개인정보가 저장되나요?", "acceptedAnswer": {"@type": "Answer", "text": "생년월일과 문항 응답은 이용자의 기기(브라우저)에만 저장되고 서버로 보내지 않아요. 서비스 개선을 위한 익명 통계만 수집해요."}}, {"@type": "Question", "name": "결과는 과학적으로 정확한가요?", "acceptedAnswer": {"@type": "Answer", "text": "명리학과 성향 심리 이론에 기반한 해석으로, 재미와 자기이해를 위한 콘텐츠예요. 혈액형 성격설은 과학적 근거가 부족해 '혈액형 이미지와 실제 나'를 비교하는 방식으로만 보여드려요."}}]}</script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#161632">
@@ -9014,7 +9029,7 @@ var DEMO = (function () { try { return new URLSearchParams(location.search).get(
 if (DEMO) { try { Storage.prototype.setItem = function () {}; Storage.prototype.getItem = function () { return null; }; Storage.prototype.removeItem = function () {}; } catch (e) {} }
 var PUBLIC = true;
 var ENDPOINT = "https://script.google.com/macros/s/AKfycbx2G0QG_yhq32sInKS2ScJDQsfuMxgpo4yIwiy5BEvhhK5LCy239wUOnT-Dz-FZsfGE/exec";
-var SITE_URL = "https://idoo21c.github.io/mymyme/";
+var SITE_URL = "https://mymyme.app/";
 var SID = (function () { try { var v = localStorage.getItem('mymyme_sid'); if (!v) { v = Math.random().toString(36).slice(2, 12); localStorage.setItem('mymyme_sid', v); } return v; } catch (e) { return 'anon'; } })();
 function post(body) { if (!ENDPOINT || DEMO) return Promise.resolve(null); body.sid = SID; return fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(body) }).then(function (r) { return r.json(); }).catch(function () { return null; }); }
 function track(type, data) { post({ kind: 'event', type: type, data: data || {} }); if (REF_FINISH.indexOf(type) >= 0) refDone(); }
