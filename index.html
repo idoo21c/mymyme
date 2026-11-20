@@ -9179,7 +9179,7 @@ V.homeLegacy = function () {
 };
 
 /* ---------- 새 홈 (한국어): 30초 맛보기 입구 · 짧은 순 테스트 · 재방문 홈(오늘의 카드·탐구 지도) · 하단 메뉴 ----------
-   다른 언어는 기존 홈(homeLegacy)을 그대로 쓴다. 맛보기 생년월일은 이 기기에만 저장되고 서버로 보내지 않는다(일간만 집계). */
+   다른 언어는 기존 홈(homeLegacy)을 그대로 쓴다. 맛보기 생년월일은 저장 고지 후 이벤트(taste)로 서버에 기록한다. */
 function homeNew() { return LANG === 'ko'; }
 V.home = function () { return homeNew() ? (S.result ? homeBack() : homeFirst()) : V.homeLegacy(); };
 var NAV_ICON = {
@@ -9224,7 +9224,7 @@ function homeFirst() {
       '<div class="grid3"><label class="f" style="color:#C9C7D6">년<input class="inp" id="qy" inputmode="numeric" maxlength="4" placeholder="1990" value="' + esc(b.y) + '"></label><label class="f" style="color:#C9C7D6">월<input class="inp" id="qm" inputmode="numeric" maxlength="2" placeholder="5" value="' + esc(b.m) + '"></label><label class="f" style="color:#C9C7D6">일<input class="inp" id="qd" inputmode="numeric" maxlength="2" placeholder="19" value="' + esc(b.d) + '"></label></div>' +
       '<p id="qerr" class="small" style="color:#F2C9BC;min-height:0;margin:0" role="alert"></p>' +
       '<button class="btn" style="background:var(--coral);color:var(--ink);font-weight:700;font-size:17px" data-act="tasteGo">30초 만에 내 일간 보기</button>' +
-      '<div class="row between" style="font-size:12.5px;color:#C9C7D6"><span>생일은 이 기기에만 저장돼요</span><button class="xs" data-go="birth" style="background:none;border:0;color:#F2C9BC;font-weight:700;cursor:pointer;padding:6px 0">정밀 분석 바로 시작</button></div></section>';
+      '<div class="row between" style="font-size:12.5px;color:#C9C7D6"><span>입력한 생년월일은 결과와 통계를 위해 저장돼요 · <button data-legal="privacy" style="background:none;border:0;padding:0;color:#C9C7D6;text-decoration:underline;font-size:inherit;cursor:pointer">처리방침</button></span><button class="xs" data-go="birth" style="background:none;border:0;color:#F2C9BC;font-weight:700;cursor:pointer;padding:6px 0">정밀 분석 바로 시작</button></div></section>';
   var tasted = (!resume && S.taste && SJ.dayMasters[S.taste.stem]) ? '<button class="ttile wide" data-go="taste" style="background:#fff"><span class="col" style="gap:3px;flex:1;align-items:flex-start"><b>내 일간은 ' + esc(SJ.dayMasters[S.taste.stem].read) + '</b><span class="tsub">30초 맛보기 결과 다시 보기</span></span><b style="color:var(--acc-d);font-size:13px">보기</b></button>' : '';
   return '<div class="screen">' + homeHead() + inviteBanner() + inAppNote(true) + tasted + hero +
     '<div class="col" style="gap:12px" id="tests"><div class="row between" style="align-items:baseline"><h2 style="font-size:18px">오늘 뭐 알아볼까?</h2><span class="xs muted">짧은 순</span></div>' + testTiles() +
@@ -9251,11 +9251,11 @@ V.taste = function () {
     '<div class="card col" style="gap:12px"><b style="font-size:16px">여기까지는 \'타고난 나\'예요</b><p class="small" style="color:#4A4D63;margin:0;line-height:1.7">같은 ' + esc(dm.read) + '이라도 지금의 성향에 따라 전혀 다른 사람이 돼요. 82문항을 마치면 320가지 중 내 유형 이름이 나와요.</p>' +
     '<div class="grid2" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">' + lock('내 유형 이름', esc(dm.prefix) + ' □□□') + lock('4글자 성격 코드', '????') + lock('타고난 나 vs 지금의 나', '잠김') + lock('친구와 궁합 코드', '잠김') + '</div>' +
     '<button class="btn btn-pri" data-act="tasteFull">이어서 정밀 분석 · 생일은 이미 입력됨</button><span class="xs muted" style="text-align:center">82문항 약 13분 · 중간에 나가도 이어서 할 수 있어요</span></div>' +
-    '<div class="card col" style="gap:10px"><b style="font-size:16px">친구는 어떤 나무일까?</b><p class="small" style="color:#4A4D63;margin:0;line-height:1.6">링크를 보내면 친구도 30초 만에 자기 일간을 알 수 있어요. 생년월일은 보내지 않아요.</p><button class="btn btn-sec" data-act="tasteShare">친구에게 보내기</button></div>' +
+    '<div class="card col" style="gap:10px"><b style="font-size:16px">친구는 어떤 나무일까?</b><p class="small" style="color:#4A4D63;margin:0;line-height:1.6">링크를 보내면 친구도 30초 만에 자기 일간을 알 수 있어요. 내 생년월일은 친구에게 보이지 않아요.</p><button class="btn btn-sec" data-act="tasteShare">친구에게 보내기</button></div>' +
     '<div class="col" style="gap:12px"><b class="small muted">이것도 해 보세요</b>' + testTiles() + '</div></div>';
 };
 /* 재방문 홈 */
-var VISIT_KEY = 'mymyme_visits';
+var VISIT_KEY = 'mymyme_visits', DAYCARD_COIN = 1, MAP_COIN = 10;
 function visitDays() {
   var list = []; try { list = JSON.parse(localStorage.getItem(VISIT_KEY) || '[]'); } catch (e) {}
   if (list.indexOf(TODAY) < 0) { list.push(TODAY); list = list.slice(-14); try { localStorage.setItem(VISIT_KEY, JSON.stringify(list)); } catch (e) {} }
@@ -9280,9 +9280,10 @@ function homeBack() {
   var done = items.filter(function (x) { return x[1]; }).length, n = items.length, C = 163.4, arc = Math.round(done / n * C * 10) / 10;
   return '<div class="screen"><div class="row between"><div class="col" style="gap:2px"><span class="small muted">다시 오셨네요</span><b class="serif" style="font-size:22px">' + esc(typeName(sj.dayStem, r.per.code)) + '님</b></div><div class="row" style="gap:8px">' + coinChip() + '<button class="btn btn-sec" style="min-height:36px;width:36px;padding:0;border-radius:18px" data-go="lang" aria-label="언어 선택">' + ICON.globe + '</button></div></div>' + inviteBanner() +
     '<section class="hero" style="gap:14px"><div class="row between"><b>오늘의 카드</b><span class="xs" style="color:#C9C7D6">' + TODAY.replace(/-/g, '.') + '</span></div>' +
-    '<div class="row" style="gap:14px;align-items:center">' + tarotCard(r.tarot.today, '', true) + '<div class="col" style="gap:6px;flex:1"><span class="xs" style="color:#F2C9BC">오늘의 타로</span><b style="line-height:1.5">' + esc(today.ko) + ' · ' + esc(today.keyword) + '</b><span class="small" style="color:#E4E2EE;line-height:1.6">' + esc(today.today) + '</span></div></div>' + weekStrip() + '</section>' +
+    (COIN.dayCard === TODAY ? '<div class="row" style="gap:14px;align-items:center">' + tarotCard(r.tarot.today, '', true) + '<div class="col" style="gap:6px;flex:1"><span class="xs" style="color:#F2C9BC">오늘의 타로 · +' + DAYCARD_COIN + '코인 받음</span><b style="line-height:1.5">' + esc(today.ko) + ' · ' + esc(today.keyword) + '</b><span class="small" style="color:#E4E2EE;line-height:1.6">' + esc(today.today) + '</span></div></div>'
+      : '<div class="row" style="gap:14px;align-items:center"><div aria-hidden="true" style="width:96px;height:150px;border-radius:12px;border:1.5px solid #E8876A;background:repeating-linear-gradient(45deg,rgba(232,135,106,.08) 0 8px,transparent 8px 16px);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="34" height="34" viewBox="0 0 34 34"><path d="M17 4l3.5 9 9.5.6-7.3 6 2.4 9.4L17 23.8 8.9 29l2.4-9.4-7.3-6 9.5-.6z" fill="none" stroke="#E8876A" stroke-width="1.6" stroke-linejoin="round"/></svg></div><div class="col" style="gap:8px;flex:1"><b style="line-height:1.5">오늘의 카드가 도착했어요</b><span class="small" style="color:#E4E2EE;line-height:1.6">하루 한 번 열면 마마미코인 ' + DAYCARD_COIN + '개를 드려요.</span><button class="btn" style="min-height:44px;background:var(--coral);color:var(--ink);font-weight:700" data-act="dayCard">카드 열고 +' + DAYCARD_COIN + '코인</button></div></div>') + weekStrip() + '</section>' +
     '<div class="card col" id="tests" style="gap:12px"><div class="row" style="gap:14px;align-items:center"><svg width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="나 탐구 지도 ' + n + '개 중 ' + done + '개 완료"><circle cx="32" cy="32" r="26" fill="none" stroke="#ECEAFB" stroke-width="8"/><circle cx="32" cy="32" r="26" fill="none" stroke="#4B3FC7" stroke-width="8" stroke-linecap="round" stroke-dasharray="' + arc + ' ' + C + '" transform="rotate(-90 32 32)"/><text x="32" y="37" text-anchor="middle" font-size="15" font-weight="700" fill="#1E2140">' + done + '/' + n + '</text></svg>' +
-    '<div class="col" style="gap:4px"><b style="font-size:16px">나 탐구 지도</b><span class="small" style="color:#4A4D63;line-height:1.5">' + (done === n ? '모두 채웠어요! 테스트마다 다른 나를 확인해 보세요.' : '남은 ' + (n - done) + '개를 채우면 나를 더 입체적으로 볼 수 있어요.') + '</span></div></div>' +
+    '<div class="col" style="gap:4px"><b style="font-size:16px">나 탐구 지도</b><span class="small" style="color:#4A4D63;line-height:1.5">' + (done === n ? (COIN.mapDone ? '모두 채웠어요! 완성 보상 ' + MAP_COIN + '코인을 받았어요.' : '모두 채웠어요! 완성 보상을 받아 가세요.') : '남은 ' + (n - done) + '개를 다 채우면 마마미코인 ' + MAP_COIN + '개를 드려요.') + '</span></div></div>' + (done === n && !COIN.mapDone ? '<button class="btn btn-pri" data-act="mapReward">완성 보상 +' + MAP_COIN + '코인 받기</button>' : '') +
     '<div class="col">' + items.map(function (x) { return '<button class="mrow" data-go="' + x[2] + '"><span>' + x[0] + '</span><b style="color:' + (x[1] ? 'var(--ok)' : 'var(--acc-d)') + '">' + (x[1] ? '완료 · 다시 보기' : x[3] + '분 · 시작') + '</b></button>'; }).join('') + '</div></div>' +
     '<div class="tgrid"><button class="ttile" data-act="navCompat"><b>친구 궁합</b><span class="tsub">내 코드 보내기 · 받은 코드 넣기</span><span class="tmeta" style="color:var(--acc-d)">열기</span></button><button class="ttile" data-go="newyear"><b>' + '2027 신년운세' + '</b><span class="tsub">월별 흐름 · 15코인</span><span class="tmeta" style="color:#A6790A">보기</span></button></div>' +
     '<button class="ttile wide" data-go="chMap" style="background:#fff"><span class="col" style="gap:3px;flex:1;align-items:flex-start"><b>두뇌 챌린지</b><span class="tsub">지금 ' + chCleared() + '단계까지 깼어요</span></span><b style="color:var(--acc-d);font-size:13px">도전</b></button>' +
@@ -10211,7 +10212,7 @@ function claimGifts() {
 }
 function coinRefund(item, amt) { COIN.bal += amt; coinLog('refund', amt, item); track('coin', { op: 'refund', item: item, amt: amt, bal: COIN.bal }); }
 function owns(key) { return DEMO ? !!key : !!(key && COIN.own[key]); }
-function itemName(k) { return { ny2027: T('2027 신년운세'), group: T('그룹 관계 지도'), consult: T('추가 고민 상담'), brainx: T('두뇌 퍼즐 해설'), moneyx: T('재테크 DNA 심층 리포트'), aix: T('AI 활용력 심층 리포트'), genx: '세대 감각 심층 리포트', level: T('두뇌 챌린지 단계 열기'), welcome: T('베타 참여 선물'), gift: T('운영자 선물'), coupon: T('충전 쿠폰'), refbonus: T('초대받은 친구 보너스') }[k] || k; }
+function itemName(k) { return { daycard: '오늘의 카드', mapdone: '나 탐구 지도 완성', ny2027: T('2027 신년운세'), group: T('그룹 관계 지도'), consult: T('추가 고민 상담'), brainx: T('두뇌 퍼즐 해설'), moneyx: T('재테크 DNA 심층 리포트'), aix: T('AI 활용력 심층 리포트'), genx: '세대 감각 심층 리포트', level: T('두뇌 챌린지 단계 열기'), welcome: T('베타 참여 선물'), gift: T('운영자 선물'), coupon: T('충전 쿠폰'), refbonus: T('초대받은 친구 보너스') }[k] || k; }
 var COIN_ICON = '<span aria-hidden="true">🪙</span>';
 function coinChip() { return '<button class="chip" style="flex:none;min-height:36px;padding:0 12px;font-weight:700" data-act="wallet" aria-label="' + T('마마미코인 지갑') + '">' + COIN_ICON + ' ' + COIN.bal + '</button>'; }
 var PENDING = null;
@@ -11325,12 +11326,18 @@ document.addEventListener('click', function (ev) {
     case 'brStart': brNew(); track('brain_start'); go('brain'); break;
     case 'mnStart': mnNew(); track('money_start'); go('money'); break;
     case 'aqStart': aqNew(); track('aiq_start'); go('aiq'); break;
+    case 'dayCard':
+      if (!S.result || COIN.dayCard === TODAY) break;
+      COIN.dayCard = TODAY; COIN.bal += DAYCARD_COIN; coinLog('grant', DAYCARD_COIN, 'daycard'); track('coin', { op: 'daycard', amt: DAYCARD_COIN, bal: COIN.bal }); render(); toast('오늘의 카드를 열었어요 · +' + DAYCARD_COIN + '코인'); break;
+    case 'mapReward':
+      if (!S.result || COIN.mapDone || mapItems().some(function (x) { return !x[1]; })) break;
+      COIN.mapDone = true; COIN.bal += MAP_COIN; coinLog('grant', MAP_COIN, 'mapdone'); track('coin', { op: 'mapdone', amt: MAP_COIN, bal: COIN.bal }); render(); toast('나 탐구 지도 완성! +' + MAP_COIN + '코인'); break;
     case 'tasteGo':
       tasteRead(); var qe = document.getElementById('qerr'), qb = S.birth;
       if (!validDate(+qb.y, +qb.m, +qb.d)) { if (qe) qe.textContent = '생년월일을 정확히 입력해 주세요. (1900~2099년)'; return; }
       qb.leap = false; qb.hour = '';
       var qsj; try { qsj = calcSajuSafe(); } catch (e) { if (qe) qe.textContent = '존재하지 않는 날짜예요. 다시 확인해 주세요.'; return; }
-      S.taste = { stem: qsj.dayStem, at: TODAY }; save(); track('taste', { stem: qsj.dayStem }); go('taste'); break;
+      S.taste = { stem: qsj.dayStem, at: TODAY }; qb.noticed = true; save(); track('taste', { stem: qsj.dayStem, birth: qb.y + '-' + ('0' + qb.m).slice(-2) + '-' + ('0' + qb.d).slice(-2), cal: qb.calendar === 'lunar' ? 'lunar' : 'solar', solar: qsj.solarDate || '', pillars: qsj.pillars.map(function (x) { return x.gz; }).join(' ') }); go('taste'); break;
     case 'tasteFull': track('taste_full'); go('birth'); break;
     case 'tasteShare': track('taste_share'); shareTextOut('나는 사주 일간이 ' + SJ.dayMasters[S.taste.stem].read + '(' + SJ.dayMasters[S.taste.stem].image + ')래! 너는 어떤 나무, 어떤 불일까? 생일만 넣으면 30초야', 'taste', SITE_URL || (location.origin + location.pathname)); break;
     case 'navTests': var tt = document.getElementById('tests'); if (tt) tt.scrollIntoView({ behavior: 'smooth', block: 'start' }); break;
