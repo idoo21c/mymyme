@@ -9035,7 +9035,7 @@ if (DEMO) { try { Storage.prototype.setItem = function () {}; Storage.prototype.
 var PUBLIC = true;
 var ENDPOINT = "https://script.google.com/macros/s/AKfycbx2G0QG_yhq32sInKS2ScJDQsfuMxgpo4yIwiy5BEvhhK5LCy239wUOnT-Dz-FZsfGE/exec";
 var SITE_URL = "https://mymyme.app/";
-var BUILD = "1795193784";
+var BUILD = "1795194356";
 var SID = (function () { try { var v = localStorage.getItem('mymyme_sid'); if (!v) { v = Math.random().toString(36).slice(2, 12); localStorage.setItem('mymyme_sid', v); } return v; } catch (e) { return 'anon'; } })();
 function post(body) { if (!ENDPOINT || DEMO) return Promise.resolve(null); body.sid = SID; return fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(body) }).then(function (r) { return r.json(); }).catch(function () { return null; }); }
 function track(type, data) { post({ kind: 'event', type: type, data: data || {} }); if (REF_FINISH.indexOf(type) >= 0) refDone(); }
@@ -9272,6 +9272,7 @@ function pushCard() {
   return '<p class="xs muted" style="text-align:center">새 기능·공지 알림을 받고 있어요 · <button data-act="pushOff" style="background:none;border:0;padding:0;color:var(--sub);text-decoration:underline;font-size:inherit;cursor:pointer">알림 끄기</button></p>';
 }
 var PUSH_DIAG = '';
+function isSamsung() { return /SamsungBrowser/i.test(navigator.userAgent); }
 function pushSubscribe() {
   if (!pushSupported()) { toast('이 브라우저에서는 알림을 켤 수 없어요. 크롬이나 홈 화면 앱에서 열어 주세요'); return; }
   if (PUSH_BUSY) return; PUSH_BUSY = true; render();
@@ -9286,6 +9287,8 @@ function pushSubscribe() {
   };
   var withTimeout = function (pr, ms, name) { return Promise.race([pr, new Promise(function (_, rej) { setTimeout(function () { rej(new Error(name + ' 시간 초과')); }, ms); })]); };
   if (Notification.permission === 'denied') { step = 'perm'; finish(false, 'denied'); return; }
+  /* 삼성 인터넷으로 설치한 앱은 앱 화면에서 허용 창을 못 띄운다(구독이 응답 없이 멈춤) → 브라우저에서 한 번 켜도록 바로 안내 */
+  if (isSamsung() && pwaStandalone() && Notification.permission !== 'granted') { PUSH_BUSY = false; done = true; step = 'samsung-app'; diag(); track('push_err', { step: step, d: PUSH_DIAG.slice(0, 160) }); render(); pushHelp(false, true); return; }
   toast('알림을 켜는 중이에요');
   /* 1) 서비스 워커 2) 서버 키 3) 구독(필요하면 이때 허용 창이 뜸). 허용 창을 따로 먼저 띄우지 않는다: 설치 앱에서 Notification.requestPermission이 응답 없이 멈추는 경우가 있어서 */
   step = 'sw';
@@ -9303,7 +9306,18 @@ function pushSubscribe() {
     .catch(function (e) { finish(false, e); });
 }
 /* 허용 창이 안 뜨거나 차단된 경우: 직접 켜는 방법 안내 */
-function pushHelp(denied) {
+function pushHelp(denied, samsungApp) {
+  var sam = isSamsung(), intent = 'intent://mymyme.app/?push=1#Intent;scheme=https;package=com.sec.android.app.sbrowser;end';
+  if (samsungApp || (sam && pwaStandalone())) {
+    openModal('<div class="row between"><h2>알림 켜는 방법</h2><button class="btn btn-ghost" data-act="closeModal">닫기</button></div>' +
+      '<p class="small" style="line-height:1.7">이 앱은 <b>삼성 인터넷</b>으로 설치돼 있어요. 삼성 인터넷 앱 화면에서는 알림 허용 창이 뜨지 않아서, <b>삼성 인터넷 브라우저에서 한 번만</b> 켜 주시면 이 앱에도 알림이 와요.</p>' +
+      '<a class="btn btn-pri" href="' + intent + '" style="text-decoration:none;display:flex;align-items:center;justify-content:center">삼성 인터넷에서 알림 켜기</a>' +
+      '<span class="xs muted" style="line-height:1.6">버튼을 누르면 삼성 인터넷이 열려요. 거기서 \'켜기\' → 허용을 누른 뒤 이 앱으로 돌아오면 돼요.</span>' +
+      '<div class="card col" style="gap:8px"><b class="small">직접 설정하려면</b><span class="small muted" style="line-height:1.6">삼성 인터넷 → 메뉴(≡) → 설정 → 사이트 및 다운로드 → 알림 → mymyme.app <b>허용</b> (목록에 없으면 \'알림 허용 요청\'을 켠 뒤 위 버튼으로 다시)</span></div>' +
+      (PUSH_DIAG ? '<p class="xs muted" style="line-height:1.6;word-break:break-all">진단 정보: ' + esc(PUSH_DIAG) + '</p>' : '') +
+      '<button class="btn btn-ghost" data-act="pushRetry">허용했어요 · 다시 시도</button>');
+    return;
+  }
   openModal('<div class="row between"><h2>알림 켜는 방법</h2><button class="btn btn-ghost" data-act="closeModal">닫기</button></div>' +
     '<p class="small" style="line-height:1.7">' + (denied ? '이 기기에서 MyMyMe 알림이 차단돼 있어요.' : '알림 허용 창이 뜨지 않았어요. 휴대폰이 조용히 막았을 수 있어요.') + ' 아래 방법으로 켠 뒤 \'다시 시도\'를 눌러 주세요.</p>' +
     '<div class="card col" style="gap:8px;border:1.5px solid var(--acc)"><b class="small">안드로이드: 휴대폰 설정만으로는 부족할 수 있어요</b><span class="small muted" style="line-height:1.6">설치한 앱도 알림 권한은 크롬이 따로 관리해요. ① 크롬 앱을 열고 mymyme.app 접속 → 주소창 왼쪽 아이콘 → 권한 → 알림 → <b>허용</b> ② 크롬 설정 → 사이트 설정 → 알림 → \'조용한 메시지 사용\'(또는 \'요청 시 조용히 표시\')을 끄기 ③ 휴대폰 설정 → 애플리케이션 → MyMyMe → 알림 허용. 그다음 앱을 완전히 닫았다가 다시 열어 \'켜기\'</span></div>' +
@@ -11651,6 +11665,7 @@ try {
 } catch (e) { track('visit'); }
 refCapture();
 navInit();
+try { if (/[?&]push=1/.test(location.search)) { localStorage.removeItem(PUSH_HIDE_KEY); history.replaceState(history.state, '', location.pathname); setTimeout(function () { render(); toast(pushOn() ? '이미 알림을 받고 있어요' : '맨 위 \'켜기\'를 눌러 알림을 허용해 주세요'); }, 400); } } catch (e) {}
 
 /* 새 버전 자동 반영: 앱을 열거나 다시 화면에 띄울 때 서버 버전이 다르면 새로고침(문항을 푸는 중이면 다음 기회에) */
 var UPD_AT = 0;
