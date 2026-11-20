@@ -9620,7 +9620,7 @@ function peersCard(r) {
   loadPeers();
   var d = PEERS.data;
   if (!d) return '<div class="card col" style="gap:8px">' + head + '<p class="small muted">' + T('통계를 불러오는 중…') + '</p></div>';
-  if (!d.ok) return '<div class="card col" style="gap:8px">' + head + '<p class="small muted">' + T('통계를 불러오지 못했어요. 잠시 후 다시 확인해 주세요.') + '</p></div>';
+  if (!d.ok || (!d.warming && !d.combo)) return '<div class="card col" style="gap:8px">' + head + '<p class="small muted">' + T('통계를 불러오지 못했어요. 잠시 후 다시 확인해 주세요.') + '</p></div>';
   if (d.warming) return '<div class="card col" style="gap:8px">' + head + '<p class="small muted">' + T('참여자가 조금 더 모이면 통계가 열려요.') + ' (' + d.total + T('명') + ')</p></div>';
   var bl = b.blood ? b.blood + T('형') : '', gd = b.gender === 'f' ? T('여성') : b.gender === 'm' ? T('남성') : '';
   return '<div class="card col" style="gap:12px">' + head +
