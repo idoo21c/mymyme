@@ -285,6 +285,14 @@ function giftHtml() {
       '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>보낸 시각</th><th>받는 사람</th><th>코인</th><th>한마디</th><th>상태</th><th></th></tr></thead><tbody>' + gr.map(function (g) {
         return '<tr><td>' + esc(g.date) + '</td><td>' + esc(g.sid) + '</td><td>' + g.amt + '</td><td>' + esc(g.memo) + '</td><td>' + esc(g.status) + (g.claimed ? '<br><span class="xs muted">' + esc(g.claimed) + '</span>' : '') + '</td><td>' + (g.status === '대기' ? '<button class="sec" data-gcancel="' + esc(g.id) + '">취소</button>' : '') + '</td></tr>'; }).join('') + '</tbody></table></div>') + '</div>';
 }
+function inviteHtml() {
+  var v = DATA.invite; if (!v) return '';
+  var r = v.result || {}, why = { self: '자기 링크', dup: '이미 인정된 친구', old: '기존 이용자', nocode: '등록 안 된 코드', cap: '이번 달 상한 초과' };
+  return '<div class="card"><h2>친구 초대 충전 쿠폰</h2><div class="kpis">' + kpi('초대 링크 만든 사람', v.codes, '공유 ' + v.shares + '회') + kpi('초대 링크로 방문', v.opens, '') +
+    kpi('초대 성공(친구 완료)', r.ok || 0, '') + kpi('발급한 쿠폰', v.issued, '수령 ' + v.claimed + '장') + '</div>' +
+    '<p class="small muted">인정 안 됨: ' + Object.keys(why).map(function (k) { return why[k] + ' ' + (r[k] || 0); }).join(' · ') + '</p>' +
+    (v.top.length ? '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>초대를 많이 한 사람 (내 번호)</th><th>성공</th></tr></thead><tbody>' + v.top.map(function (x) { return '<tr><td>' + esc(x[0]) + '</td><td>' + x[1] + '</td></tr>'; }).join('') + '</tbody></table></div>' : '') + '</div>';
+}
 function coinTab() {
   var c = DATA.coin;
   if (!c) return giftHtml() + '<div class="card"><p class="small muted">Code.gs를 최신 버전으로 배포하면 이 날부터 마마미코인 기록이 쌓여요.</p></div>';
@@ -295,7 +303,7 @@ function coinTab() {
   var daily = '<div class="card"><h2>일자별</h2><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>날짜</th><th>구매</th><th>사용 코인</th><th>코인 부족</th></tr></thead><tbody>' +
     ((c.daily || []).length ? c.daily.slice().reverse().map(function (d) { return '<tr><td>' + d.date + '</td><td>' + d.spend + '</td><td>' + d.coins + '</td><td>' + d.short + '</td></tr>'; }).join('') : '<tr><td colspan="4" class="muted">데이터 없음</td></tr>') + '</tbody></table></div></div>';
   return giftHtml() + '<div class="kpis">' + kpi('지급한 코인', num(c.granted), '받은 사람 ' + c.grantUsers + '명' + (c.gifted ? ' · 운영자 선물 ' + num(c.gifted) : '')) + kpi('사용한 코인', num(c.spent), '사용한 사람 ' + c.spenders + '명') +
-    kpi('사용률', c.grantUsers ? Math.round(c.spenders / c.grantUsers * 100) + '%' : '–', '받은 사람 중 한 번이라도 쓴 비율') + '</div>' + table + daily +
+    kpi('사용률', c.grantUsers ? Math.round(c.spenders / c.grantUsers * 100) + '%' : '–', '받은 사람 중 한 번이라도 쓴 비율') + '</div>' + inviteHtml() + table + daily +
     '<p class="small muted">마마미코인은 베타 체험용(실제 돈 아님)이에요. 지갑은 이용자 기기에 저장되고, 여기에는 지급·사용·부족 기록만 모여요.</p>';
 }
 function peopleRows() {
