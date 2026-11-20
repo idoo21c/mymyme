@@ -153,6 +153,7 @@ body.hasfab{padding-bottom:84px}
 
 .step-ok{color:var(--ok);font-weight:700}
 .legal h3{font-size:15px;margin-top:6px}.legal p,.legal li{font-size:14px;color:#33364F;line-height:1.75}
+.tband{position:sticky;top:0;z-index:15;display:flex;align-items:center;gap:10px;background:var(--ink);color:var(--bg);padding:10px 12px 10px 16px;font-size:13.5px}.tband-t{flex:1;font-weight:700;line-height:1.4}.tband-b{border:0;border-radius:999px;background:var(--coral);color:var(--ink);font-weight:700;font-size:13px;min-height:36px;padding:0 16px;cursor:pointer}.tband-b:disabled{opacity:.7}.tband-x{border:0;background:none;color:#C9C7D6;font-size:20px;width:36px;min-height:36px;cursor:pointer}
 body:has(.bnav){padding-bottom:72px}.bnav{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:440px;height:72px;background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding-bottom:env(safe-area-inset-bottom);z-index:20}.bnav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:0;color:var(--muted);font-size:11px;cursor:pointer;min-height:56px}.bnav button.on{color:var(--ink);font-weight:700}
 .tgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ttile{position:relative;text-align:left;background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-height:118px;cursor:pointer;color:var(--ink)}.ttile b{font-size:15px}.ttile.wide{flex-direction:row;align-items:center;min-height:0;gap:12px;background:var(--acc-l);border:1.5px solid var(--acc);width:100%}.tsub{font-size:12px;color:var(--sub);line-height:1.5}.tmeta{margin-top:auto;font-size:12px;font-weight:700}.tbadge{position:absolute;top:10px;right:10px;font-size:10.5px;font-weight:700;color:var(--ok);background:var(--ok-l);padding:3px 7px;border-radius:999px}.tbadge.done{color:var(--acc-d);background:var(--acc-ll)}
 .wday{width:26px;height:26px;border-radius:13px;background:rgba(247,245,240,.12);color:#C9C7D6;font-size:11px;display:flex;align-items:center;justify-content:center;box-sizing:border-box}.wday.on{background:var(--coral);color:var(--ink);font-weight:700}.wday.today:not(.on){border:1.5px solid var(--coral);color:var(--bg)}
@@ -9244,7 +9245,7 @@ function homeFirst() {
       '<button class="btn" style="background:var(--coral);color:var(--ink);font-weight:700;font-size:17px" data-act="tasteGo">30초 만에 내 일간 보기</button>' +
       '<div class="row between" style="font-size:12.5px;color:#C9C7D6"><span>입력한 생년월일은 결과와 통계를 위해 저장돼요 · <button data-legal="privacy" style="background:none;border:0;padding:0;color:#C9C7D6;text-decoration:underline;font-size:inherit;cursor:pointer">처리방침</button></span><button class="xs" data-go="birth" style="background:none;border:0;color:#F2C9BC;font-weight:700;cursor:pointer;padding:6px 0">정밀 분석 바로 시작</button></div></section>';
   var tasted = (!resume && S.taste && SJ.dayMasters[S.taste.stem]) ? '<button class="ttile wide" data-go="taste" style="background:#fff"><span class="col" style="gap:3px;flex:1;align-items:flex-start"><b>내 일간은 ' + esc(SJ.dayMasters[S.taste.stem].read) + '</b><span class="tsub">30초 맛보기 결과 다시 보기</span></span><b style="color:var(--acc-d);font-size:13px">보기</b></button>' : '';
-  return '<div class="screen">' + homeHead() + inviteBanner() + inAppNote(true) + tasted + hero +
+  return topBanner() + '<div class="screen">' + homeHead() + inviteBanner() + inAppNote(true) + tasted + hero +
     '<div class="col" style="gap:12px" id="tests"><div class="row between" style="align-items:baseline"><h2 style="font-size:18px">오늘 뭐 알아볼까?</h2><span class="xs muted">짧은 순</span></div>' + testTiles() +
     '<button class="ttile wide" data-go="birth"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><circle cx="16" cy="20" r="11" fill="none" stroke="#4B3FC7" stroke-width="2.4"/><circle cx="24" cy="20" r="11" fill="none" stroke="#E07A5F" stroke-width="2.4"/></svg><span class="col" style="gap:3px;flex:1;align-items:flex-start"><b>사주 × 성향 정밀 분석</b><span class="tsub" style="color:var(--acc-d)">320가지 유형 중 나 · 82문항 약 13분</span></span><b style="color:var(--acc-d);font-size:13px">시작</b></button>' +
     '<button class="ttile wide" data-go="chMap" style="background:#fff"><span class="col" style="gap:3px;flex:1;align-items:flex-start"><b>두뇌 챌린지</b><span class="tsub">1~10단계 · 10문제 중 7개를 맞히면 다음 단계</span></span><b style="color:var(--acc-d);font-size:13px">도전</b></button></div>' +
@@ -9262,26 +9263,59 @@ var PUSH_KEY = 'mymyme_push';
 function pushOn() { try { return localStorage.getItem(PUSH_KEY) === '1'; } catch (e) { return false; } }
 function pushSupported() { return PUBLIC && location.protocol === 'https:' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; }
 function pushCard() {
-  if (!homeNew()) return '';
-  if (pushOn()) return '<p class="xs muted" style="text-align:center">새 기능·공지 알림을 받고 있어요 · <button data-act="pushOff" style="background:none;border:0;padding:0;color:var(--sub);text-decoration:underline;font-size:inherit;cursor:pointer">알림 끄기</button></p>';
-  if (!pushSupported()) return pwaIOS() && !pwaStandalone() ? '<div class="card col" style="gap:6px"><b class="small">새 기능 알림을 받고 싶다면</b><span class="xs muted" style="line-height:1.6">아이폰은 MyMyMe를 홈 화면에 추가한 뒤, 그 아이콘으로 열었을 때 알림을 켤 수 있어요.</span></div>' : '';
-  if (Notification.permission === 'denied') return '';
-  return '<div class="card row" style="gap:12px;align-items:center"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path d="M15 5a7 7 0 0 0-7 7v5l-2 3h18l-2-3v-5a7 7 0 0 0-7-7zM12 23a3 3 0 0 0 6 0" fill="none" stroke="#4B3FC7" stroke-width="2" stroke-linejoin="round"/></svg><span class="col" style="gap:3px;flex:1"><b class="small">새 기능·공지 알림 받기</b><span class="xs muted">새 테스트가 열리거나 중요한 공지가 있을 때만 보내요</span></span><button class="btn btn-pri" style="min-height:40px;padding:0 14px;font-size:13px;width:auto" data-act="pushSub">켜기</button></div>';
+  if (!homeNew() || !pushOn()) return '';
+  return '<p class="xs muted" style="text-align:center">새 기능·공지 알림을 받고 있어요 · <button data-act="pushOff" style="background:none;border:0;padding:0;color:var(--sub);text-decoration:underline;font-size:inherit;cursor:pointer">알림 끄기</button></p>';
 }
 function pushSubscribe() {
-  if (!pushSupported()) { toast('이 브라우저에서는 알림을 켤 수 없어요'); return; }
-  Notification.requestPermission().then(function (perm) {
-    if (perm !== 'granted') { toast('알림이 허용되지 않았어요. 휴대폰 설정에서 바꿀 수 있어요'); track('push_denied'); render(); return; }
-    return Promise.all([navigator.serviceWorker.ready, fetch('/api/push/key').then(function (r) { return r.json(); })]).then(function (x) {
-      var reg = x[0], key = x[1] && x[1].key; if (!key) throw new Error('key');
-      return reg.pushManager.getSubscription().then(function (old) { return old || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uBytes(key) }); });
+  if (!pushSupported()) { toast('이 브라우저에서는 알림을 켤 수 없어요. 크롬이나 홈 화면 앱에서 열어 주세요'); return; }
+  if (PUSH_BUSY) return; PUSH_BUSY = true; render();
+  var step = 'perm', done = false;
+  var fail = function (e) { if (done) return; done = true; PUSH_BUSY = false; var msg = (e && (e.name || e.message)) || ''; track('push_err', { step: step, msg: String(msg).slice(0, 80) }); render();
+    if (step === 'perm-timeout') pushHelp(); else toast('알림을 켜지 못했어요 (' + step + (msg ? ' · ' + msg : '') + '). 잠시 후 다시 시도해 주세요'); };
+  var timer = setTimeout(function () { if (step === 'perm') { step = 'perm-timeout'; fail(); } }, 9000);
+  var ask = function () { return new Promise(function (res) { if (Notification.permission === 'granted') return res('granted'); var r = Notification.requestPermission(function (x) { res(x); }); if (r && r.then) r.then(res); }); };
+  var withTimeout = function (pr, ms, name) { return Promise.race([pr, new Promise(function (_, rej) { setTimeout(function () { rej(new Error(name + ' 시간 초과')); }, ms); })]); };
+  toast('알림 허용 창을 띄울게요');
+  ask().then(function (perm) {
+    clearTimeout(timer); if (done) return;
+    if (perm !== 'granted') { done = true; PUSH_BUSY = false; track('push_denied', { perm: perm }); render(); if (perm === 'denied') pushHelp(true); else toast('알림이 허용되지 않았어요'); return; }
+    step = 'sw';
+    return withTimeout(navigator.serviceWorker.getRegistration().then(function (reg) { return reg || navigator.serviceWorker.register('sw.js'); }).then(function () { return navigator.serviceWorker.ready; }), 8000, 'sw').then(function (reg) {
+      step = 'key'; return fetch('/api/push/key', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (k) {
+        if (!k || !k.key) throw new Error('key');
+        step = 'subscribe'; return reg.pushManager.getSubscription().then(function (old) { return old || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uBytes(k.key) }); });
+      });
     }).then(function (sub) {
-      return fetch('/api/push/sub', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sid: SID, sub: sub.toJSON() }) }).then(function (r) { return r.json(); });
+      step = 'save'; return fetch('/api/push/sub', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sid: SID, sub: sub.toJSON() }) }).then(function (r) { return r.json(); });
     }).then(function (j) {
       if (!j || !j.ok) throw new Error('save');
+      done = true; PUSH_BUSY = false;
       try { localStorage.setItem(PUSH_KEY, '1'); } catch (e) {} track('push_on', { standalone: pwaStandalone() ? 1 : 0 }); toast('알림을 켰어요. 새 소식이 생기면 알려 드릴게요'); render();
     });
-  }).catch(function () { toast('알림을 켜지 못했어요. 잠시 후 다시 시도해 주세요'); });
+  }).catch(fail);
+}
+/* 허용 창이 안 뜨거나 차단된 경우: 직접 켜는 방법 안내 */
+function pushHelp(denied) {
+  openModal('<div class="row between"><h2>알림 켜는 방법</h2><button class="btn btn-ghost" data-act="closeModal">닫기</button></div>' +
+    '<p class="small" style="line-height:1.7">' + (denied ? '이 기기에서 MyMyMe 알림이 차단돼 있어요.' : '알림 허용 창이 뜨지 않았어요. 휴대폰이 조용히 막았을 수 있어요.') + ' 아래 방법으로 켠 뒤 \'다시 시도\'를 눌러 주세요.</p>' +
+    '<div class="card col" style="gap:8px"><b class="small">홈 화면에 설치한 MyMyMe 앱이라면</b><span class="small muted" style="line-height:1.6">휴대폰 설정 → 애플리케이션(앱) → MyMyMe → 알림 → 허용</span></div>' +
+    '<div class="card col" style="gap:8px"><b class="small">크롬에서 보고 있다면</b><span class="small muted" style="line-height:1.6">주소창 왼쪽 아이콘(자물쇠·종) → 권한 → 알림 → 허용. 또는 크롬 설정 → 사이트 설정 → 알림 → mymyme.app 허용</span></div>' +
+    '<div class="card col" style="gap:8px"><b class="small">아이폰이라면</b><span class="small muted" style="line-height:1.6">사파리 공유 버튼 → 홈 화면에 추가 → 그 아이콘으로 열어서 \'켜기\'. 이미 막혔다면 설정 → 알림 → MyMyMe → 알림 허용</span></div>' +
+    '<button class="btn btn-pri" data-act="pushRetry">다시 시도</button>');
+}
+var PUSH_BUSY = false, PUSH_HIDE_KEY = 'mymyme_push_hide';
+/* 상단 띠배너: 알림 켜기 같은 주요 안내를 맨 위에 한 줄로 */
+function topBanner() {
+  if (!homeNew() || pushOn()) return '';
+  var hide = 0; try { hide = +localStorage.getItem(PUSH_HIDE_KEY) || 0; } catch (e) {}
+  if (Date.now() < hide) return '';
+  var ios = pwaIOS() && !pwaStandalone();
+  if (!pushSupported() && !ios) return '';
+  if (!ios && Notification.permission === 'denied') return '';
+  return '<div class="tband" role="region" aria-label="알림 안내"><svg width="20" height="20" viewBox="0 0 30 30" aria-hidden="true"><path d="M15 5a7 7 0 0 0-7 7v5l-2 3h18l-2-3v-5a7 7 0 0 0-7-7zM12 23a3 3 0 0 0 6 0" fill="none" stroke="#F2C9BC" stroke-width="2.2" stroke-linejoin="round"/></svg>' +
+    '<span class="tband-t">' + (ios ? '홈 화면에 추가하면 새 기능 알림을 받을 수 있어요' : '새 기능·공지 알림 받기') + '</span>' +
+    (ios ? '' : '<button class="tband-b" data-act="pushSub"' + (PUSH_BUSY ? ' disabled' : '') + '>' + (PUSH_BUSY ? '여는 중…' : '켜기') + '</button>') +
+    '<button class="tband-x" data-act="pushHide" aria-label="일주일 동안 닫기">×</button></div>';
 }
 function pushUnsubscribe() {
   try { localStorage.removeItem(PUSH_KEY); } catch (e) {}
@@ -9332,7 +9366,7 @@ function mapItems() {
 function homeBack() {
   var r = S.result, sj = r.saju, today = EX.tarot.cards[r.tarot.today], items = mapItems();
   var done = items.filter(function (x) { return x[1]; }).length, n = items.length, C = 163.4, arc = Math.round(done / n * C * 10) / 10;
-  return '<div class="screen"><div class="row between"><div class="col" style="gap:2px"><span class="small muted">다시 오셨네요</span><b class="serif" style="font-size:22px">' + esc(typeName(sj.dayStem, r.per.code)) + '님</b></div><div class="row" style="gap:8px">' + coinChip() + '<button class="btn btn-sec" style="min-height:36px;width:36px;padding:0;border-radius:18px" data-go="lang" aria-label="언어 선택">' + ICON.globe + '</button></div></div>' + inviteBanner() +
+  return topBanner() + '<div class="screen"><div class="row between"><div class="col" style="gap:2px"><span class="small muted">다시 오셨네요</span><b class="serif" style="font-size:22px">' + esc(typeName(sj.dayStem, r.per.code)) + '님</b></div><div class="row" style="gap:8px">' + coinChip() + '<button class="btn btn-sec" style="min-height:36px;width:36px;padding:0;border-radius:18px" data-go="lang" aria-label="언어 선택">' + ICON.globe + '</button></div></div>' + inviteBanner() +
     '<section class="hero" style="gap:14px"><div class="row between"><b>오늘의 카드</b><span class="xs" style="color:#C9C7D6">' + TODAY.replace(/-/g, '.') + '</span></div>' +
     (COIN.dayCard === TODAY ? '<div class="row" style="gap:14px;align-items:center">' + tarotCard(r.tarot.today, '', true) + '<div class="col" style="gap:6px;flex:1"><span class="xs" style="color:#F2C9BC">오늘의 타로 · +' + DAYCARD_COIN + '코인 받음</span><b style="line-height:1.5">' + esc(today.ko) + ' · ' + esc(today.keyword) + '</b><span class="small" style="color:#E4E2EE;line-height:1.6">' + esc(today.today) + '</span></div></div>'
       : '<div class="row" style="gap:14px;align-items:center"><div aria-hidden="true" style="width:96px;height:150px;border-radius:12px;border:1.5px solid #E8876A;background:repeating-linear-gradient(45deg,rgba(232,135,106,.08) 0 8px,transparent 8px 16px);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="34" height="34" viewBox="0 0 34 34"><path d="M17 4l3.5 9 9.5.6-7.3 6 2.4 9.4L17 23.8 8.9 29l2.4-9.4-7.3-6 9.5-.6z" fill="none" stroke="#E8876A" stroke-width="1.6" stroke-linejoin="round"/></svg></div><div class="col" style="gap:8px;flex:1"><b style="line-height:1.5">오늘의 카드가 도착했어요</b><span class="small" style="color:#E4E2EE;line-height:1.6">하루 한 번 열면 마마미코인 ' + DAYCARD_COIN + '개를 드려요.</span><button class="btn" style="min-height:44px;background:var(--coral);color:var(--ink);font-weight:700" data-act="dayCard">카드 열고 +' + DAYCARD_COIN + '코인</button></div></div>') + weekStrip() + '</section>' +
@@ -11426,6 +11460,8 @@ document.addEventListener('click', function (ev) {
     case 'walletNeed': toast('사주×성향 정밀 분석부터 시작할게요 · 82문항 약 13분'); go(S.startedAt && !S.result ? 'home' : 'birth'); break;
     case 'pushSub': pushSubscribe(); break;
     case 'pushOff': pushUnsubscribe(); break;
+    case 'pushRetry': closeModal(); pushSubscribe(); break;
+    case 'pushHide': try { localStorage.setItem(PUSH_HIDE_KEY, String(Date.now() + 7 * 864e5)); } catch (e) {} track('push_hide'); render(); break;
     case 'invite': track('ref_invite_open'); inviteModal(); break;
     case 'inviteShare': track('ref_share'); shareTextOut(T('나 MyMyMe에서 테스트하는데 너도 해 봐! 사주×성향, 두뇌 퍼즐, AI 활용력, 세대 감각까지 무료야. 이 링크로 들어오면 너도 보너스 코인 받아 🎁'), 'ref', invLink()); break;
     case 'couponUse':
