@@ -267,7 +267,7 @@ function brainTab() {
   return '<div class="kpis">' + kpi('퍼즐 시작', b.started, '') + kpi('퍼즐 완료', b.n, '완료율 ' + (b.started ? Math.round(b.n / b.started * 100) + '%' : '–')) + kpi('평균 점수', b.avg + ' / 20', '') + kpi('풀이 시간 중앙값', b.medSec ? Math.floor(b.medSec / 60) + '분 ' + (b.medSec % 60) + '초' : '–', '') + '</div>' +
     challengeHtml() + hist + dom + types + items + '<p class="small muted">한 사람이 여러 번 풀면 마지막 결과만 셌어요. "상위 몇 %"는 참여자가 충분히 쌓인 뒤 이용자 화면에 보여줄 예정이에요.</p>';
 }
-var ITEMN = { ny2027: '2027 신년운세', group: '그룹 관계 지도', consult: '추가 고민 상담', brainx: '두뇌 퍼즐 해설', level: '두뇌 챌린지 단계 열기' };
+var ITEMN = { ny2027: '2027 신년운세', group: '그룹 관계 지도', consult: '추가 고민 상담', brainx: '두뇌 퍼즐 해설', level: '두뇌 챌린지 단계 열기', moneyx: '재테크 DNA 심층 리포트' };
 function giftTo(sids, amt, memo) {
   sids = (sids || []).filter(Boolean); if (!sids.length) { alert('받을 사람의 익명번호를 넣어 주세요.'); return; }
   if (!amt) { var a = prompt(sids.length + '명에게 줄 마마미코인 개수 (1~1000)', '10'); if (a === null) return; amt = +a; }
@@ -471,6 +471,23 @@ function newyearTab() {
     kpi('구매 전환', (DATA.totals || {}).finish ? Math.round(n.users / DATA.totals.finish * 100) + '%' : '–', '결과를 본 사람 중') + '</div>' +
     '<div class="card"><p class="small muted">신년운세는 마마미코인 15개로 열어요. \'못 산 시도\'가 많으면 정식 유료 전환 때 가장 먼저 팔릴 후보예요.</p></div>';
 }
+var MSTYLE = { value: '📈 주식 · 가치투자형', trade: '⚡ 주식 · 단기 트레이딩형', estate: '🏠 부동산형', gold: '🥇 금 · 안전자산형', fx: '💱 환차익 · 외환형', crypto: '🪙 코인 · 디지털자산형', income: '🌱 적금 · 배당 현금흐름형' };
+var MTRAIT = { R: '위험 감수', H: '기다리는 힘', A: '분석력', C: '평정심', T: '활동성', I: '독립성', S: '실물 감각', G: '글로벌 감각' };
+function moneyTab() {
+  var m = DATA.money, x = coinItem('moneyx');
+  if (!m) return '<div class="card"><p class="small muted">Code.gs를 최신 버전으로 배포하면 이 날부터 재테크 DNA 기록이 쌓여요.</p></div>';
+  if (!m.n) return '<div class="kpis">' + kpi('테스트 시작', m.started, '') + kpi('완료', 0, '') + '</div><div class="card"><p class="small muted">재테크 DNA를 완료한 사람이 아직 없어요 (데이터 없음).</p></div>';
+  var tmax = Math.max.apply(null, Object.keys(MSTYLE).map(function (k) { return m.top[k] || 0; }).concat([1]));
+  var top = '<div class="card"><h2>1위 스타일 분포</h2>' + Object.keys(MSTYLE).map(function (k) { var v = m.top[k] || 0; return hbar(MSTYLE[k], v, tmax, v + '명 · ' + Math.round(v / m.n * 100) + '%'); }).join('') +
+    '<p class="small muted">한 스타일이 40% 넘게 몰리면 기질 프로필 수치를 다시 조정할 때예요.</p></div>';
+  var tr = '<div class="card"><h2>기질 평균 (0~100)</h2>' + Object.keys(MTRAIT).map(function (k) { var v = m.traits[k]; return hbar(MTRAIT[k], v == null ? 0 : v, 100, v == null ? '–' : String(v)); }).join('') + '</div>';
+  var items = '<div class="card"><h2>문항별 응답 분포</h2><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>#</th><th>문항</th><th>기질</th><th>보기별 응답 수</th></tr></thead><tbody>' + (m.items || []).map(function (it, i) {
+      return '<tr><td>' + (i + 1) + '</td><td>' + esc(it.id) + '</td><td>' + (MTRAIT[it.t] || '') + '</td><td>' + it.c.join(' · ') + '</td></tr>'; }).join('') + '</tbody></table></div><p class="small muted">한 보기에 응답이 거의 다 몰리는 문항은 변별력이 낮아 바꿀 후보예요.</p></div>';
+  return '<div class="kpis">' + kpi('테스트 시작', m.started, '') + kpi('완료', m.n, '완료율 ' + (m.started ? Math.round(m.n / m.started * 100) + '%' : '–')) + kpi('평균 일치도', m.avgM != null ? m.avgM + '%' : '–', '하이브리드형 ' + m.hybrid + '명') +
+    kpi('심층 리포트', x.spend, x.users + '명 · 코인 부족 ' + x.short + '회') + kpi('공유', EVN('share').sub.money || 0, '') + '</div>' + top + tr + items +
+    evDaily('일자별', [['money_start', '시작'], ['money_finish', '완료']]) +
+    '<p class="small muted">한 사람이 여러 번 하면 마지막 결과만 셌어요. 사주 보정이 들어간 결과 ' + m.saju + '명.</p>';
+}
 /* ---------- 미리보기: 무작위 샘플 결과로 이용자 화면을 바로 연다 (저장·기록 없음) ---------- */
 var PV_LANG = 'ko';
 var PREVIEWS = [
@@ -479,6 +496,7 @@ var PREVIEWS = [
   ['2027 신년운세', [['newyear', '신년운세 전체']]],
   ['두뇌 퍼즐', [['brain', '두뇌 퍼즐 결과'], ['combo', '사주×성향 + 두뇌 퍼즐 종합 카드'], ['challenge', '챌린지 단계 지도'], ['chresult', '챌린지 단계 결과']]],
   ['두뇌 챌린지 단계별 문제 풀어보기', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(function (n) { return ['ch' + n, n + '단계']; })],
+  ['재테크 DNA', [['money', '재테크 DNA 결과 + 심층 리포트'], ['moneyq', '문항 화면']]],
   ['마마미코인', [['wallet', '코인 지갑']]]
 ];
 function previewTab() {
@@ -494,6 +512,7 @@ var SERVICES = [
   { id: 'compat', name: '궁합·리포트 코드', tab: compatTab },
   { id: 'newyear', name: '2027 신년운세', tab: newyearTab },
   { id: 'brain', name: '두뇌 퍼즐', tab: function () { return brainTab(); } },
+  { id: 'money', name: '재테크 DNA', tab: function () { return moneyTab(); } },
   { id: 'forest', name: '대나무숲·상담', tab: function () { return forestTab(); } }
 ];
 function render() {
