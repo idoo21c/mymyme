@@ -9035,7 +9035,7 @@ if (DEMO) { try { Storage.prototype.setItem = function () {}; Storage.prototype.
 var PUBLIC = true;
 var ENDPOINT = "https://script.google.com/macros/s/AKfycbx2G0QG_yhq32sInKS2ScJDQsfuMxgpo4yIwiy5BEvhhK5LCy239wUOnT-Dz-FZsfGE/exec";
 var SITE_URL = "https://mymyme.app/";
-var BUILD = "1795193476";
+var BUILD = "1795193784";
 var SID = (function () { try { var v = localStorage.getItem('mymyme_sid'); if (!v) { v = Math.random().toString(36).slice(2, 12); localStorage.setItem('mymyme_sid', v); } return v; } catch (e) { return 'anon'; } })();
 function post(body) { if (!ENDPOINT || DEMO) return Promise.resolve(null); body.sid = SID; return fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(body) }).then(function (r) { return r.json(); }).catch(function () { return null; }); }
 function track(type, data) { post({ kind: 'event', type: type, data: data || {} }); if (REF_FINISH.indexOf(type) >= 0) refDone(); }
@@ -9264,7 +9264,11 @@ var PUSH_KEY = 'mymyme_push';
 function pushOn() { try { return localStorage.getItem(PUSH_KEY) === '1'; } catch (e) { return false; } }
 function pushSupported() { return PUBLIC && location.protocol === 'https:' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; }
 function pushCard() {
-  if (!homeNew() || !pushOn()) return '';
+  if (!homeNew()) return '';
+  if (!pushOn()) {  /* 띠배너를 닫은 사람도 다시 켤 수 있게 아래쪽에 작은 줄로 남긴다 */
+    if (topBanner() || !(pushSupported() || (pwaIOS() && !pwaStandalone()))) return '';
+    return '<button class="ttile wide" data-act="pushReopen" style="background:#fff"><svg width="26" height="26" viewBox="0 0 30 30" aria-hidden="true"><path d="M15 5a7 7 0 0 0-7 7v5l-2 3h18l-2-3v-5a7 7 0 0 0-7-7zM12 23a3 3 0 0 0 6 0" fill="none" stroke="#4B3FC7" stroke-width="2" stroke-linejoin="round"/></svg><span class="col" style="gap:3px;flex:1;align-items:flex-start"><b>새 기능·공지 알림</b><span class="tsub">' + (pushSupported() && Notification.permission === 'denied' ? '지금 꺼져 있어요 · 눌러서 켜는 방법 보기' : '지금 꺼져 있어요 · 눌러서 켜기') + '</span></span><b style="color:var(--acc-d);font-size:13px">켜기</b></button>';
+  }
   return '<p class="xs muted" style="text-align:center">새 기능·공지 알림을 받고 있어요 · <button data-act="pushOff" style="background:none;border:0;padding:0;color:var(--sub);text-decoration:underline;font-size:inherit;cursor:pointer">알림 끄기</button></p>';
 }
 var PUSH_DIAG = '';
@@ -9320,7 +9324,7 @@ function topBanner() {
   return '<div class="tband" role="region" aria-label="알림 안내"><svg width="20" height="20" viewBox="0 0 30 30" aria-hidden="true"><path d="M15 5a7 7 0 0 0-7 7v5l-2 3h18l-2-3v-5a7 7 0 0 0-7-7zM12 23a3 3 0 0 0 6 0" fill="none" stroke="#F2C9BC" stroke-width="2.2" stroke-linejoin="round"/></svg>' +
     '<span class="tband-t">' + (ios ? '홈 화면에 추가하면 새 기능 알림을 받을 수 있어요' : '새 기능·공지 알림 받기') + '</span>' +
     (ios ? '' : '<button class="tband-b" data-act="pushSub"' + (PUSH_BUSY ? ' disabled' : '') + '>' + (PUSH_BUSY ? '여는 중…' : '켜기') + '</button>') +
-    '<button class="tband-x" data-act="pushHide" aria-label="일주일 동안 닫기">×</button></div>';
+    '<button class="tband-x" data-act="pushHide" aria-label="띠배너 닫기 (아래 알림 버튼으로 언제든 켤 수 있어요)">×</button></div>';
 }
 function pushUnsubscribe() {
   try { localStorage.removeItem(PUSH_KEY); } catch (e) {}
@@ -11466,7 +11470,8 @@ document.addEventListener('click', function (ev) {
     case 'pushSub': pushSubscribe(); break;
     case 'pushOff': pushUnsubscribe(); break;
     case 'pushRetry': closeModal(); pushSubscribe(); break;
-    case 'pushHide': try { localStorage.setItem(PUSH_HIDE_KEY, String(Date.now() + 7 * 864e5)); } catch (e) {} track('push_hide'); render(); break;
+    case 'pushReopen': try { localStorage.removeItem(PUSH_HIDE_KEY); } catch (e) {} if (pushSupported() && Notification.permission !== 'denied') pushSubscribe(); else { if (pushSupported()) PUSH_DIAG = '권한 ' + Notification.permission; pushHelp(pushSupported()); } render(); break;
+    case 'pushHide': try { localStorage.setItem(PUSH_HIDE_KEY, String(Date.now() + 7 * 864e5)); } catch (e) {} track('push_hide'); render(); toast('알림은 홈 아래쪽 \'새 기능·공지 알림\'에서 언제든 켤 수 있어요'); break;
     case 'invite': track('ref_invite_open'); inviteModal(); break;
     case 'inviteShare': track('ref_share'); shareTextOut(T('나 MyMyMe에서 테스트하는데 너도 해 봐! 사주×성향, 두뇌 퍼즐, AI 활용력, 세대 감각까지 무료야. 이 링크로 들어오면 너도 보너스 코인 받아 🎁'), 'ref', invLink()); break;
     case 'couponUse':
