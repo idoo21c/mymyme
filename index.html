@@ -9036,7 +9036,7 @@ if (DEMO) { try { Storage.prototype.setItem = function () {}; Storage.prototype.
 var PUBLIC = true;
 var ENDPOINT = "https://script.google.com/macros/s/AKfycbx2G0QG_yhq32sInKS2ScJDQsfuMxgpo4yIwiy5BEvhhK5LCy239wUOnT-Dz-FZsfGE/exec";
 var SITE_URL = "https://mymyme.app/";
-var BUILD = "1795223282";
+var BUILD = "1795223761";
 var SID = (function () { try { var v = localStorage.getItem('mymyme_sid'); if (!v) { v = Math.random().toString(36).slice(2, 12); localStorage.setItem('mymyme_sid', v); } return v; } catch (e) { return 'anon'; } })();
 function post(body) { if (!ENDPOINT || DEMO) return Promise.resolve(null); body.sid = SID; return fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(body) }).then(function (r) { return r.json(); }).catch(function () { return null; }); }
 function track(type, data) { post({ kind: 'event', type: type, data: data || {} }); if (REF_FINISH.indexOf(type) >= 0) refDone(); }
@@ -9401,7 +9401,7 @@ function homeBack() {
     '<div class="col">' + items.map(function (x) { return '<button class="mrow" data-go="' + x[2] + '"><span>' + x[0] + '</span><b style="color:' + (x[1] ? 'var(--ok)' : 'var(--acc-d)') + '">' + (x[1] ? '완료 · 다시 보기' : x[3] + '분 · 시작') + '</b></button>'; }).join('') + '</div></div>' +
     matchHomeCard() + tpCardHome() + '<div class="tgrid"><button class="ttile" data-act="navCompat"><b>친구 궁합</b><span class="tsub">내 코드 보내기 · 받은 코드 넣기</span><span class="tmeta" style="color:var(--acc-d)">열기</span></button><button class="ttile" data-go="newyear"><b>' + '2027 신년운세' + '</b><span class="tsub">월별 흐름 · 15코인</span><span class="tmeta" style="color:#A6790A">보기</span></button></div>' +
     '<button class="ttile wide" data-go="chMap" style="background:#fff"><span class="col" style="gap:3px;flex:1;align-items:flex-start"><b>두뇌 챌린지</b><span class="tsub">지금 ' + chCleared() + '단계까지 깼어요</span></span><b style="color:var(--acc-d);font-size:13px">도전</b></button>' +
-    (COIN.bal < 10 ? '<div class="card row" style="gap:12px;align-items:center;background:var(--coral-l);border:0"><span class="col" style="gap:3px;flex:1"><b class="small" style="color:var(--coral-d)">코인이 ' + COIN.bal + '개 남았어요</b><span class="xs" style="color:#6A2A18">친구를 초대하면 ' + COUPON_FILL + '코인으로 채우는 쿠폰을 받아요</span></span><button class="btn" style="min-height:40px;padding:0 14px;font-size:13px;background:var(--coral-d);color:#fff;width:auto" data-act="invite">초대</button></div>' : '') +
+    (COIN.bal < 10 ? '<div class="card row" style="gap:12px;align-items:center;background:var(--coral-l);border:0"><span class="col" style="gap:3px;flex:1"><b class="small" style="color:var(--coral-d)">코인이 ' + COIN.bal + '개 남았어요</b><span class="xs" style="color:#6A2A18">' + (shopDone() ? '친구를 초대하면 ' + COUPON_FILL + '코인으로 채우는 쿠폰을 받아요' : '칼렛스토어 둘러보면 +' + SHOP_COIN + ' · 친구 초대하면 충전 쿠폰') + '</span></span><button class="btn" style="min-height:40px;padding:0 14px;font-size:13px;background:var(--coral-d);color:#fff;width:auto" data-act="wallet">채우기</button></div>' : '') +
     pushCard() + pwaCard() + bottomNav() + '</div>';
 }
 
@@ -10408,7 +10408,7 @@ function claimGifts() {
 }
 function coinRefund(item, amt) { COIN.bal += amt; coinLog('refund', amt, item); track('coin', { op: 'refund', item: item, amt: amt, bal: COIN.bal }); }
 function owns(key) { return DEMO ? !!key : !!(key && COIN.own[key]); }
-function itemName(k) { return { daycard: '오늘의 카드', mapdone: '나 탐구 지도 완성', ny2027: T('2027 신년운세'), group: T('그룹 관계 지도'), consult: T('추가 고민 상담'), brainx: T('두뇌 퍼즐 해설'), moneyx: T('재테크 DNA 심층 리포트'), aix: T('AI 활용력 심층 리포트'), genx: '세대 감각 심층 리포트', templex: '나의 절 여행 지도', level: T('두뇌 챌린지 단계 열기'), welcome: T('베타 참여 선물'), gift: T('운영자 선물'), coupon: T('충전 쿠폰'), refbonus: T('초대받은 친구 보너스') }[k] || k; }
+function itemName(k) { return { daycard: '오늘의 카드', mapdone: '나 탐구 지도 완성', ny2027: T('2027 신년운세'), group: T('그룹 관계 지도'), consult: T('추가 고민 상담'), brainx: T('두뇌 퍼즐 해설'), moneyx: T('재테크 DNA 심층 리포트'), aix: T('AI 활용력 심층 리포트'), genx: '세대 감각 심층 리포트', templex: '나의 절 여행 지도', level: T('두뇌 챌린지 단계 열기'), welcome: T('베타 참여 선물'), shopvisit: '칼렛스토어 둘러보기', gift: T('운영자 선물'), coupon: T('충전 쿠폰'), refbonus: T('초대받은 친구 보너스') }[k] || k; }
 var COIN_ICON = '<span aria-hidden="true">🪙</span>';
 function coinChip() { return '<button class="chip" style="flex:none;min-height:36px;padding:0 12px;font-weight:700" data-act="wallet" aria-label="' + T('마마미코인 지갑') + '">' + COIN_ICON + ' ' + COIN.bal + '</button>'; }
 var PENDING = null;
@@ -10421,6 +10421,7 @@ function buy(item, key, then) {
     openModal('<div class="row between"><h2>' + T('코인이 부족해요') + '</h2><button class="btn btn-ghost" data-act="closeModal">' + T('닫기') + '</button></div>' +
       '<div class="card col" style="gap:8px;align-items:center;text-align:center"><span style="font-size:34px">🪙</span><b>' + esc(itemName(item)) + ' · ' + price + T('코인') + '</b><span class="small muted">' + T('지금 가진 코인') + ' ' + COIN.bal + '</span></div>' +
       ((COIN.coupons || 0) > 0 ? '<button class="btn btn-pri" data-act="couponUse">🎟️ ' + T('충전 쿠폰 쓰고 20코인 채우기') + ' (' + COIN.coupons + T('장') + ')</button>' : '') +
+      (homeNew() ? earnCard() : '') +
       '<div class="card col" style="gap:6px;border:1.5px solid var(--acc);background:#F6F5FE"><b class="small">🎟️ ' + T('친구 초대하고 충전 쿠폰 받기') + '</b><span class="xs" style="color:#33364F">' + T('내 초대 링크로 들어온 친구가 테스트를 하나 끝내면 쿠폰 1장! 쿠폰을 쓰면 코인이 20개로 다시 채워져요.') + '</span><button class="btn ' + ((COIN.coupons || 0) > 0 ? 'btn-sec' : 'btn-pri') + '" data-act="invite">' + T('친구 초대하기') + '</button></div>' +
       '<button class="btn btn-ghost" data-act="closeModal">' + T('닫기') + '</button>');
     return;
@@ -10462,14 +10463,60 @@ function walletRows(row) {
   if (tpOn()) out += svc('templex', tpDone(), 'templeResult', 'templeIntro', '절', 4, '계절별 4곳·전국 10곳·7일 루틴');
   return out;
 }
+/* ---------- 코인 채우기: 칼렛스토어 둘러보기(+10, 하루 1번) · 쿠팡 파트너스 추천템(보상 없음) ----------
+ * 상품 목록은 관리자가 서버(/api/shop)에 넣는다. 둘러보기는 새 창으로 열고, 10초 넘게 보고 돌아오면 코인을 준다.
+ * 쿠팡 파트너스는 클릭에 보상을 주면 정책 위반(부정 클릭 유도)이라 보상 없이 고지 문구와 함께 보여 준다 */
+var SHOP_COIN = 10, SHOP_SEC = 10, SHOP = { visit: [], cp: [], loaded: false }, SHOPV = null;
+function shopLoad() {
+  if (SHOP.loaded || SHOP.loading || !PUBLIC || DEMO) return; SHOP.loading = true;
+  fetch('/api/shop').then(function (r) { return r.json(); }).then(function (j) { SHOP.loading = false; SHOP.loaded = true; if (j && j.ok) { SHOP.visit = j.visit || []; SHOP.cp = j.cp || []; } if (document.querySelector('[data-shopslot]')) shopRefresh(); }, function () { SHOP.loading = false; SHOP.loaded = true; });
+}
+function shopToday() { var v = SHOP.visit; if (!v.length) return null; var d = new Date(), n = d.getFullYear() * 400 + d.getMonth() * 31 + d.getDate(); return v[n % v.length]; }
+function shopDone() { return COIN.shopDay === TODAY; }
+function earnCard() {
+  shopLoad();
+  var it = shopToday(), out = '<div class="card col" style="gap:0;padding:6px 16px" data-shopslot="earn"><b class="small" style="padding:8px 0">' + T('코인 채우는 방법') + '</b>';
+  if (homeNew() && it) out += '<div class="row between" style="gap:10px;padding:10px 0;border-top:1px solid var(--line)"><span class="col" style="flex:1;gap:2px;min-width:0"><b class="small">🌿 칼렛스토어 둘러보기 <span style="color:var(--ok)">+' + SHOP_COIN + '</span></b><span class="xs muted">오늘의 상품 · ' + esc(it.name) + (it.desc ? ' — ' + esc(it.desc) : '') + '</span><span class="xs muted">' + (shopDone() ? '오늘은 받았어요 · 내일 또 받을 수 있어요' : SHOP_SEC + '초 넘게 둘러보고 돌아오면 받아요 · 하루 1번') + '</span></span>' +
+    (shopDone() ? '<span class="xs" style="color:var(--ok);font-weight:700;flex:none">받음 ✓</span>' : '<button class="btn btn-pri" style="min-height:36px;padding:0 12px;font-size:13px;width:auto;flex:none" data-act="shopVisit">' + T('둘러보기') + '</button>') + '</div>';
+  if (homeNew() && S.result) out += '<div class="row between" style="gap:10px;padding:10px 0;border-top:1px solid var(--line)"><span class="col" style="flex:1;gap:2px"><b class="small">🃏 오늘의 카드 열기 <span style="color:var(--ok)">+' + DAYCARD_COIN + '</span></b><span class="xs muted">' + (COIN.dayCard === TODAY ? '오늘은 받았어요' : '홈 화면의 오늘의 카드 · 하루 1번') + '</span></span>' + (COIN.dayCard === TODAY ? '<span class="xs" style="color:var(--ok);font-weight:700;flex:none">받음 ✓</span>' : '<button class="btn btn-sec" style="min-height:36px;padding:0 12px;font-size:13px;width:auto;flex:none" data-act="earnDay">' + T('열기') + '</button>') + '</div>';
+  out += '<div class="row between" style="gap:10px;padding:10px 0;border-top:1px solid var(--line)"><span class="col" style="flex:1;gap:2px"><b class="small">🎟️ ' + T('친구 초대') + ' <span style="color:var(--ok)">' + T('쿠폰 = ') + COUPON_FILL + T('코인') + '</span></b><span class="xs muted">' + T('친구가 첫 테스트를 마치면 충전 쿠폰이 와요') + '</span></span><button class="btn btn-sec" style="min-height:36px;padding:0 12px;font-size:13px;width:auto;flex:none" data-act="invite">' + T('초대') + '</button></div>';
+  return out + (homeNew() && it ? '<p class="xs muted" style="padding:6px 0 8px">칼렛스토어는 MyMyMe를 운영하는 ㈜칼렛바이오의 친환경 포장 쇼핑몰이에요. 구매하지 않아도 코인을 받아요.</p>' : '') + '</div>';
+}
+function cpCard() {
+  if (!homeNew() || !SHOP.cp.length) return '';
+  return '<div class="card col" style="gap:0;padding:6px 16px" data-shopslot="cp"><b class="small" style="padding:8px 0">MyMyMe가 고른 추천템</b>' + SHOP.cp.map(function (x) {
+    return '<a class="row between" style="gap:10px;padding:10px 0;border-top:1px solid var(--line);text-decoration:none;color:inherit" href="' + esc(x.url) + '" target="_blank" rel="noopener sponsored" data-cp="' + esc(x.id) + '"><span class="col" style="flex:1;gap:2px;min-width:0"><b class="small">' + esc(x.name) + '</b>' + (x.desc ? '<span class="xs muted">' + esc(x.desc) + '</span>' : '') + '</span><span class="xs" style="color:var(--acc-d);font-weight:700;flex:none">보기 ↗</span></a>'; }).join('') +
+    '<p class="xs muted" style="padding:6px 0 8px">이 영역은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p></div>';
+}
+function shopRefresh() {
+  var a = document.querySelector('[data-shopslot="earn"]'); if (a) a.outerHTML = earnCard();
+  var b = document.querySelector('[data-shopslot="cp"]'), c = cpCard(); if (b) b.outerHTML = c || ''; else if (c) { var e = document.querySelector('[data-shopslot="cpwrap"]'); if (e) e.innerHTML = c; }
+}
+function shopVisit() {
+  var it = shopToday(); if (!it || shopDone()) return;
+  var u = it.url + (it.url.indexOf('?') >= 0 ? '&' : '?') + 'utm_source=mymyme&utm_medium=coin&utm_campaign=visit';
+  SHOPV = { t: Date.now(), id: it.id }; track('shop_click', { mode: it.id });
+  window.open(u, '_blank', 'noopener');
+}
+function shopBack() {
+  if (!SHOPV || document.visibilityState === 'hidden') return;
+  var sec = (Date.now() - SHOPV.t) / 1000, id = SHOPV.id; SHOPV = null;
+  if (shopDone()) return;
+  if (sec < SHOP_SEC) { toast(SHOP_SEC + '초 넘게 둘러보고 오면 코인을 받아요'); return; }
+  COIN.shopDay = TODAY; COIN.bal += SHOP_COIN; coinLog('grant', SHOP_COIN, 'shopvisit'); track('coin', { op: 'grant', item: 'shopvisit', amt: SHOP_COIN, bal: COIN.bal, via: id });
+  toast('칼렛스토어 둘러보기 완료! +' + SHOP_COIN + '코인'); if (document.body.classList.contains('mopen')) shopRefresh(); render();
+}
+document.addEventListener('visibilitychange', shopBack); window.addEventListener('focus', function () { setTimeout(shopBack, 50); });
+document.addEventListener('click', function (ev) { var a = ev.target.closest && ev.target.closest('a[data-cp]'); if (a) track('cp_click', { mode: a.dataset.cp }); }, true);
 function walletModal() {
   var row = function (k, desc, act) { return '<div class="row between" style="gap:10px;padding:10px 0;border-top:1px solid var(--line)"><span class="col" style="flex:1;gap:2px"><b class="small">' + esc(itemName(k)) + '</b><span class="xs muted">' + desc + '</span></span>' + (act ? act : '') + '<b class="small" style="flex:none">' + COIN_ICON + ' ' + PRICE[k] + '</b></div>'; };
   openModal('<div class="row between"><h2>' + T('마마미코인') + '</h2><button class="btn btn-ghost" data-act="closeModal">' + T('닫기') + '</button></div>' +
     '<div class="hero" style="align-items:center;text-align:center;gap:4px"><span class="small" style="color:#C9C7E8">' + T('내 코인') + '</span><span class="serif" style="font-size:46px;font-weight:700;line-height:1.1">' + COIN_ICON + ' ' + COIN.bal + '</span></div>' +
-    inviteCard() +
+    inviteCard() + earnCard() +
     '<div class="card col" style="gap:0;padding:6px 16px"><b class="small" style="padding:8px 0">' + T('코인으로 열 수 있는 것') + '</b>' +
     (homeNew() ? walletRows(row) : walletLegacy(row)) +
     row('consult', homeNew() ? '<span class="xs" style="font-weight:700;color:var(--acc-d)">자동 차감</span> · 고민 상담은 3회까지 무료, 4회차부터 보낼 때 3코인이 빠져요 (버튼 없이 상담 화면에서 사용)' : T('무료 3회 이후 1회당'), '') + '</div>' +
+    '<div data-shopslot="cpwrap">' + cpCard() + '</div>' +
     (COIN.log.length ? '<div class="card col" style="gap:0;padding:6px 16px"><b class="small" style="padding:8px 0">' + T('사용 내역') + '</b>' + COIN.log.slice(0, 12).map(function (l) {
       var plus = l.op === 'grant' || l.op === 'refund' || l.op === 'gift' || l.op === 'coupon' || l.op === 'refbonus', d = new Date(l.t);
       return '<div class="row between small" style="padding:8px 0;border-top:1px solid var(--line)"><span>' + esc(itemName(l.item)) + (l.op === 'refund' ? T(' (돌려받음)') : '') + ' <span class="xs muted">' + (d.getMonth() + 1) + '/' + d.getDate() + '</span></span><b style="color:' + (plus ? 'var(--ok)' : 'var(--coral-d)') + '">' + (plus ? '+' : '−') + l.amt + '</b></div>';
@@ -11618,6 +11665,8 @@ document.addEventListener('click', function (ev) {
       toast('🎟️ ' + T('쿠폰을 써서 코인을 20개로 채웠어요')); closeModal(); render();
       if (PENDING && PENDING.item && COIN.bal >= PRICE[PENDING.item]) { var pd = PENDING; buy(pd.item, pd.key, pd.then); }
       break;
+    case 'shopVisit': shopVisit(); break;
+    case 'earnDay': closeModal(); go('home'); setTimeout(function () { var e = document.querySelector('[data-act="dayCard"]'); if (e) e.scrollIntoView({ block: 'center' }); }, 120); break;
     case 'pwaInstall':
       track('pwa_click', { ios: pwaIOS() ? 1 : 0 });
       if (PWA.prompt) { var pp = PWA.prompt; PWA.prompt = null; pp.prompt(); (pp.userChoice || Promise.resolve({})).then(function (c) { track('pwa_choice', { outcome: c && c.outcome || '' }); render(); }); }
