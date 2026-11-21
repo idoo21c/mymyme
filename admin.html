@@ -94,7 +94,7 @@ function load() {
   fetch(ENDPOINT + '?action=stats&key=' + encodeURIComponent(KEY)).then(function (r) { return r.json(); }).then(function (j) {
     if (!j.ok) { try { sessionStorage.removeItem('mm_admin'); } catch (e) {} login(j.reason === 'auth' ? '비밀번호가 맞지 않거나, 스크립트의 ADMIN_KEY가 아직 기본값이에요.' : '데이터를 불러오지 못했어요.'); return; }
     DATA = j;
-    return fetch(ENDPOINT + '?action=consults&key=' + encodeURIComponent(KEY)).then(function (r) { return r.json(); }).then(function (c) { CONS = (c && c.items) || []; render(); });
+    return fetch(ENDPOINT + '?action=consults&key=' + encodeURIComponent(KEY)).then(function (r) { return r.json(); }).then(function (c) { CONS = (c && c.items) || []; render(); sinceShow(false); });
   }).catch(function () { login('서버에 연결하지 못했어요. 웹 앱 URL과 배포 설정(액세스: 모든 사용자)을 확인해 주세요.'); });
 }
 function kpi(l, v, s, pred) { var pr = pred || (typeof kpiPred === 'function' && aud() ? kpiPred(l) : null), id = pr ? dr(String(l).replace(/<[^>]+>/g, ''), pr) : null;
@@ -103,7 +103,7 @@ function dist(title, obj, map, top, field) {
   var arr = Object.keys(obj).map(function (k) { return [k, obj[k]]; }).sort(function (a, b) { return b[1] - a[1]; }).slice(0, top || 12);
   var max = arr.length ? arr[0][1] : 1, sum = arr.reduce(function (a, b) { return a + b[1]; }, 0);
   return '<div class="card dist"><h2>' + title + '</h2>' + (arr.length ? arr.map(function (x) {
-    return '<div class="row"><span class="k" title="' + esc(x[0]) + '">' + esc(map ? (map[x[0]] || x[0]) + (map[x[0]] ? ' ' + x[0] : '') : x[0]) + '</span><div class="bar"><div style="width:' + (x[1] / max * 100) + '%"></div></div><span class="n">' + (field ? dn(x[1], title + ' · ' + x[0], function (p) { return p.r && p.r[field] === x[0]; }) : x[1]) + '</span><span class="small muted" style="width:40px">' + pct(x[1], sum) + '</span></div>';
+    return '<div class="row"><span class="k" title="' + esc(x[0]) + '">' + esc(map ? (map[x[0]] || x[0]) + (map[x[0]] ? ' ' + x[0] : '') : x[0]) + (field === 'st' ? ' <a href="admin-study#stem-' + encodeURIComponent(x[0]) + '" target="_blank" rel="noopener" title="이 일간 공부하기" style="text-decoration:none">📖</a>' : '') + '</span><div class="bar"><div style="width:' + (x[1] / max * 100) + '%"></div></div><span class="n">' + (field ? dn(x[1], title.replace(/<a[\s\S]*<\/a>/, '').trim() + ' · ' + x[0], function (p) { return p.r && p.r[field] === x[0]; }) : x[1]) + '</span><span class="small muted" style="width:40px">' + pct(x[1], sum) + '</span></div>';
   }).join('') : '<p class="small muted">아직 데이터가 없어요</p>') + '</div>';
 }
 var WHO = { user: '상담자', ai: 'AI 답변', admin: '운영자(나)' };
@@ -290,7 +290,7 @@ function brainTab() {
   return '<div class="kpis">' + kpi('퍼즐 시작', b.started, '') + kpi('퍼즐 완료', b.n, '완료율 ' + (b.started ? Math.round(b.n / b.started * 100) + '%' : '–')) + kpi('평균 점수', b.avg + ' / 20', '') + kpi('풀이 시간 중앙값', b.medSec ? Math.floor(b.medSec / 60) + '분 ' + (b.medSec % 60) + '초' : '–', '') + '</div>' +
     challengeHtml() + hist + dom + types + items + '<p class="small muted">한 사람이 여러 번 풀면 마지막 결과만 셌어요. "상위 몇 %"는 참여자가 충분히 쌓인 뒤 이용자 화면에 보여줄 예정이에요.</p>';
 }
-var ITEMN = { shopvisit: '오늘의 추천템 둘러보기',  ny2027: '2027 신년운세', group: '그룹 관계 지도', consult: '추가 고민 상담', brainx: '두뇌 퍼즐 해설', level: '두뇌 챌린지 단계 열기', moneyx: '재테크 DNA 심층 리포트', aix: 'AI 활용력 심층 리포트', genx: '세대 감각 심층 리포트' };
+var ITEMN = { shopvisit: '오늘의 추천템 둘러보기', streak7: '7일 연속 방문 도장',  ny2027: '2027 신년운세', group: '그룹 관계 지도', consult: '추가 고민 상담', brainx: '두뇌 퍼즐 해설', level: '두뇌 챌린지 단계 열기', moneyx: '재테크 DNA 심층 리포트', aix: 'AI 활용력 심층 리포트', genx: '세대 감각 심층 리포트' };
 function giftTo(sids, amt, memo) {
   sids = (sids || []).filter(Boolean); if (!sids.length) { alert('받을 사람의 익명번호를 넣어 주세요.'); return; }
   if (!amt) { var a = prompt(sids.length + '명에게 줄 마마미코인 개수 (1~1000)', '10'); if (a === null) return; amt = +a; }
@@ -607,7 +607,7 @@ function overviewTab() {
     }).join('') + '</div>';
 }
 function resultsTab() {
-  return '<div class="grid2">' + dist('인기 유형 이름 TOP 12', DATA.dist.name) + dist('4글자 성격 코드', DATA.dist.code, null, 16, 'sj') + dist('일간 분포', DATA.dist.dayStem, STEM_READ, 0, 'st') +
+  return '<div class="grid2">' + dist('인기 유형 이름 TOP 12', DATA.dist.name) + dist('4글자 성격 코드', DATA.dist.code, null, 16, 'sj') + dist('일간 분포 <a href="admin-study#stems" target="_blank" rel="noopener" style="font-size:13px;font-weight:500">📖 일간 공부하기</a>', DATA.dist.dayStem, STEM_READ, 0, 'st') +
     dist('혈액형', DATA.dist.blood, { '': '미선택' }) + dist('성별', DATA.dist.gender, GENDER) + '</div>';
 }
 function forestTab() {
@@ -789,7 +789,7 @@ function previewTab() {
  * DATA.audience = 익명번호마다 { s, f(첫 활동 ms), l(마지막), n(활동일 수), dd(첫날 기준 활동한 날 번호), src, camp, e{이벤트:횟수}, r{서비스 결과}, cs(쓴 코인), cg(받은 코인), sh(코인 부족) }
  * 이름·연락처는 없다. 새 이벤트도 e에 자동으로 잡혀서 '전체 이벤트' 표와 퍼널 빌더에 바로 나온다 */
 var DR = [], DRV = null, AN = { steps: ['visit', 'start', 'finish', 'share'], range: 0 };
-var EVNAME = { visit: '방문', start: '사주 시작', likert_done: '성향 60문항 완료', scenario_done: '상황 12문항 완료', finish: '사주 결과 확인', report: '심층 리포트 열람', share: '결과 공유', mycode: '궁합 코드 복사', compat: '궁합 보기',
+var EVNAME = { today1: '오늘의 한 장 저장·공유', taste_sample: '맛보기 예시 결과 보기', taste_friend: '맛보기 친구 케미',  visit: '방문', start: '사주 시작', likert_done: '성향 60문항 완료', scenario_done: '상황 12문항 완료', finish: '사주 결과 확인', report: '심층 리포트 열람', share: '결과 공유', mycode: '궁합 코드 복사', compat: '궁합 보기',
   consult: '고민 상담', secret_post: '대나무숲 글', secret_release: '대나무숲 날려 보냄', invite_open: '궁합 초대 열기', taste: '30초 맛보기', result_update: '결과 갱신', resume: '이어서 하기',
   brain_start: '두뇌 퍼즐 시작', brain_finish: '두뇌 퍼즐 완료', challenge_start: '두뇌 챌린지 도전', challenge_finish: '두뇌 챌린지 완료', money_start: '재테크 DNA 시작', money_finish: '재테크 DNA 완료',
   aiq_start: 'AI 활용력 시작', aiq_finish: 'AI 활용력 완료', gen_start: '세대 감각 시작', gen_finish: '세대 감각 완료', temple_start: '절 테스트 시작', temple_finish: '절 테스트 완료', temple_pick: '절 추천 확인', temple_suggest: '절 추천 보냄',
@@ -831,7 +831,7 @@ function personHtml(p) {
     '<div class="dgrid" style="margin-top:10px"><div class="dk"><span>첫 활동</span><b>' + dt(p.f) + '</b><em>' + ago(p.f) + '</em></div><div class="dk"><span>마지막 활동</span><b>' + dt(p.l) + '</b><em>' + ago(p.l) + '</em></div>' +
     '<div class="dk"><span>활동한 날</span><b>' + p.n + '일</b><em>' + esc(days) + '</em></div><div class="dk"><span>첫 유입</span><b>' + esc(srcName(p.src || 'unknown')) + '</b><em>' + esc(p.camp || '') + '</em></div>' +
     '<div class="dk"><span>코인</span><b>받음 ' + p.cg + ' · 씀 ' + p.cs + '</b><em>' + (p.sh ? '부족 ' + p.sh + '회' : '') + '</em></div><div class="dk"><span>알림</span><b>' + (r.push ? '켬' : '꺼짐') + '</b></div></div>' +
-    (res.length ? '<p class="small" style="margin:12px 0 4px"><b>결과</b> · ' + res.map(esc).join(' · ') + '</p>' : '') +
+    (res.length ? '<p class="small" style="margin:12px 0 4px"><b>결과</b> · ' + res.map(esc).join(' · ') + ((r.st || r.ts) ? ' <a href="admin-study#stem-' + encodeURIComponent(r.st || r.ts) + '" target="_blank" rel="noopener">📖 이 일간 공부하기</a>' : '') + '</p>' : '') +
     '<table class="tbl" style="margin-top:8px"><thead><tr><th>활동</th><th>횟수</th></tr></thead><tbody>' + ev.map(function (k) { return '<tr><td>' + esc(evName(k)) + ' <span class="xs muted">' + esc(k) + '</span></td><td>' + p.e[k] + '</td></tr>'; }).join('') + '</tbody></table>' +
     '<div class="row" style="gap:8px;margin-top:10px"><button class="sec" data-dgift1="' + esc(p.s) + '">이 사람에게 코인 선물</button></div>';
 }
@@ -985,6 +985,55 @@ var KPI_DRILL = {
 };
 function kpiPred(l) { var k = String(l).replace(/<[^>]+>/g, ''); return KPI_DRILL[TAB + '|' + k] || KPI_DRILL['*|' + k] || null; }
 
+/* ---------- 지난번 확인 이후: 마지막으로 '확인'을 누른 시점과 지금의 누적값 차이 (이 브라우저에만 저장) ---------- */
+var SEEN_KEY = 'mm_adm_seen';
+function snapNow() {
+  var t = DATA.totals || {}, ev = {}, A = aud() || [];
+  Object.keys(DATA.events || {}).forEach(function (k) { ev[k] = (DATA.events[k] || {}).n || 0; });
+  return { t: Date.now(), tot: { visit: t.visit || 0, start: t.start || 0, likert_done: t.likert_done || 0, finish: t.finish || 0, report: t.report || 0, share: t.share || 0, mycode: t.mycode || 0, compat: t.compat || 0, secret: t.secretTotal || 0 },
+    cons: DATA.consults ? DATA.consults.total || 0 : 0, ev: ev, ppl: A.length };
+}
+function sinceShow(force) {
+  if (!DATA) return; var prev = null, cur = snapNow();
+  try { prev = JSON.parse(localStorage.getItem(SEEN_KEY) || 'null'); } catch (e) {}
+  if (!prev) { try { localStorage.setItem(SEEN_KEY, JSON.stringify(cur)); } catch (e) {} if (force) alertBox('<h2>지난번 이후</h2><p class="small">지금 시점을 처음으로 기록했어요. 다음에 들어오면 그사이 바뀐 숫자를 보여 드려요.</p>'); return; }
+  var dT = function (k) { return (cur.tot[k] || 0) - (prev.tot[k] || 0); };
+  var anyChange = Object.keys(cur.tot).some(function (k) { return dT(k) !== 0; }) || cur.cons !== prev.cons;
+  if (!force && (!anyChange || cur.t - prev.t < 10 * 60000)) return;
+  var A = aud() || [], fresh = A.filter(function (p) { return p.f > prev.t; }), back = A.filter(function (p) { return p.f <= prev.t && p.l > prev.t; });
+  var srcs = {}; fresh.forEach(function (p) { var k = p.src || 'unknown'; srcs[k] = (srcs[k] || 0) + 1; });
+  var srcTop = Object.keys(srcs).sort(function (a, b) { return srcs[b] - srcs[a]; }).slice(0, 4).map(function (k) { return esc(srcName(k)) + ' ' + srcs[k]; }).join(' · ');
+  var evD = Object.keys(cur.ev).map(function (k) { return [k, cur.ev[k] - ((prev.ev || {})[k] || 0)]; }).filter(function (x) { return x[1] > 0; }).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 8);
+  var rate = function (a, b) { return b > 0 ? Math.round(a / b * 100) + '%' : '데이터 없음'; };
+  var hrs = (cur.t - prev.t) / 36e5, ago = hrs < 1 ? Math.round(hrs * 60) + '분' : hrs < 48 ? Math.round(hrs) + '시간' : Math.round(hrs / 24) + '일';
+  var box = function (l, v, sub) { return '<div class="card kpi"><div class="l">' + l + '</div><div class="v">' + v + '</div>' + (sub ? '<div class="s">' + sub + '</div>' : '') + '</div>'; };
+  var plus = function (n) { return (n > 0 ? '+' : '') + n; };
+  var html = '<div class="row between" style="flex-wrap:wrap;gap:8px"><h2 style="margin:0">지난번 확인 이후 · ' + ago + ' 동안</h2><span class="small muted">' + new Date(prev.t).toLocaleString('ko-KR') + ' → 지금</span></div>' +
+    (anyChange || fresh.length ? '' : '<p class="small muted">그사이 새로 들어온 활동이 없어요.</p>') +
+    '<div class="kpis" style="margin-top:12px">' + box('방문', plus(dT('visit')), '누적 ' + cur.tot.visit) + box('참여 시작', plus(dT('start')), '이 기간 참여율 ' + rate(dT('start'), dT('visit'))) +
+    box('결과 확인', plus(dT('finish')), '이 기간 완주율 ' + rate(dT('finish'), dT('start'))) + box('결과 공유', plus(dT('share')), '이 기간 공유율 ' + rate(dT('share'), dT('finish'))) +
+    box('심층 리포트', plus(dT('report')), '') + box('궁합', plus(dT('compat')), '코드 복사 ' + plus(dT('mycode'))) + box('새 상담', plus(cur.cons - prev.cons), '') + box('대나무숲 글', plus(dT('secret')), '') + '</div>' +
+    (DATA.audience ? '<div class="card"><h2>사람</h2><p class="small">처음 온 사람 <b>' + fresh.length + '명</b>' + (srcTop ? ' · 유입 ' + srcTop : '') + '<br>다시 온 사람 <b>' + back.length + '명</b></p>' +
+      '<div class="row" style="gap:8px;flex-wrap:wrap">' + (fresh.length ? '<button class="sec" data-since="fresh">처음 온 사람 보기</button>' : '') + (back.length ? '<button class="sec" data-since="back">다시 온 사람 보기</button>' : '') + '</div></div>'
+      : '<p class="small muted">Code.gs를 최신으로 배포하면 처음 온 사람·다시 온 사람도 보여요.</p>') +
+    (evD.length ? '<div class="card"><h2>많이 늘어난 활동</h2><table class="tbl"><tbody>' + evD.map(function (x) { return '<tr><td>' + esc(evName(x[0])) + ' <span class="xs muted">' + esc(x[0]) + '</span></td><td style="text-align:right"><b>+' + x[1] + '</b></td></tr>'; }).join('') + '</tbody></table></div>' : '') +
+    '<p class="xs muted">누적 집계끼리의 차이라 \'이 기간 비율\'은 같은 사람이 아닐 수 있어요(예: 어제 시작해 오늘 끝낸 사람). 확인을 누르면 지금 시점이 다음 비교 기준이 돼요.</p>' +
+    '<div class="row" style="gap:8px;justify-content:flex-end"><button class="sec" data-since="later">나중에 다시 보기</button><button data-since="ok">확인 · 지금으로 기준 바꾸기</button></div>';
+  SINCE = { cur: cur, prev: prev };
+  alertBox(html);
+}
+var SINCE = null;
+function alertBox(inner) {
+  var el = document.getElementById('since'); if (!el) { el = document.createElement('div'); el.id = 'since'; document.body.appendChild(el); }
+  el.innerHTML = inner ? '<div class="dbg" data-since="later" style="position:fixed;inset:0;background:rgba(30,33,64,.4);z-index:60"></div><div role="dialog" aria-modal="true" aria-label="지난번 확인 이후" style="position:fixed;left:50%;top:6vh;transform:translateX(-50%);width:min(760px,94vw);max-height:88vh;overflow:auto;background:var(--bg);border-radius:18px;padding:20px;z-index:61;box-shadow:0 20px 50px rgba(0,0,0,.25)">' + inner + (inner.indexOf('data-since="ok"') < 0 ? '<div class="row" style="justify-content:flex-end"><button data-since="later">닫기</button></div>' : '') + '</div>' : '';
+}
+document.addEventListener('click', function (ev) {
+  var b = ev.target.closest('[data-since]'); if (!b) return; var k = b.dataset.since;
+  if (k === 'ok' && SINCE) { try { localStorage.setItem(SEEN_KEY, JSON.stringify(SINCE.cur)); } catch (e) {} alertBox(''); return; }
+  if (k === 'later') { alertBox(''); return; }
+  if ((k === 'fresh' || k === 'back') && SINCE) { var t0 = SINCE.prev.t; alertBox(''); DRV = { title: k === 'fresh' ? '지난번 이후 처음 온 사람' : '지난번 이후 다시 온 사람', pred: k === 'fresh' ? function (p) { return p.f > t0; } : function (p) { return p.f <= t0 && p.l > t0; }, q: '', sort: 'l', who: null }; drawRender(); return; }
+  if (k === 'open') sinceShow(true);
+});
 var SERVICES = [
   { id: 'saju', name: '사주×성향', tab: sajuTab },
   { id: 'compat', name: '궁합·리포트 코드', tab: compatTab },
@@ -1005,7 +1054,7 @@ function render() {
   var tabBtn = function (t) { return '<button role="tab" aria-selected="' + (TAB === t[0]) + '" class="tabb' + (TAB === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>'; };
   var svcHit = SERVICES.filter(function (x) { return x.id === TAB; })[0];
   var body = svcHit ? svcHit.tab() : TAB === 'analysis' ? analysisTab() : TAB === 'preview' ? previewTab() : TAB === 'trends' ? trendsTab() : TAB === 'ai' ? aiTab() : TAB === 'coin' ? coinTab() : TAB === 'push' ? pushTab() : TAB === 'match' ? matchTab() : TAB === 'traffic' ? trafficTab() : TAB === 'people' ? peopleTab() : TAB === 'results' ? resultsTab() : TAB === 'forest' ? forestTab() : overviewTab();
-  app.innerHTML = '<div class="row between" style="flex-wrap:wrap"><h1>MyMyMe 관리자</h1><div class="row"><span class="small muted">갱신 ' + new Date(DATA.updated).toLocaleString('ko-KR') + '</span><button class="sec" id="re">새로고침</button><button class="sec" id="out">로그아웃</button></div></div>' +
+  app.innerHTML = '<div class="row between" style="flex-wrap:wrap"><h1>MyMyMe 관리자</h1><div class="row"><span class="small muted">갱신 ' + new Date(DATA.updated).toLocaleString('ko-KR') + '</span><button class="sec" data-since="open">지난번 이후</button><a class="sec" href="admin-study" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center;padding:0 12px;border:1px solid var(--line,#DDD);border-radius:10px;font-size:14px;color:inherit">📖 사주 공부 노트</a><button class="sec" id="re">새로고침</button><button class="sec" id="out">로그아웃</button></div></div>' +
     '<nav class="tabs" role="tablist"><span class="small muted" style="align-self:center;margin-right:4px">공통</span>' + common.map(tabBtn).join('') + '</nav>' +
     '<nav class="tabs" role="tablist" style="margin-top:-6px"><span class="small muted" style="align-self:center;margin-right:4px">서비스</span>' + svc.map(tabBtn).join('') + '</nav>' +
     body + '<p class="small muted">원본 데이터는 구글 시트 "MyMyMe 운영 데이터"에서 볼 수 있어요. 이름·생년월일시는 "사주 통계 연구"에 동의한 참여자만 기록돼요. 연락처는 수집하지 않아요.</p>';
