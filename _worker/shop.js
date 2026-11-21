@@ -8,7 +8,7 @@ function list(arr, okUrl) {
   return (Array.isArray(arr) ? arr : []).slice(0, 12).map((x, i) => ({ id: clean(x.id, 20) || 'i' + i, name: clean(x.name, 40), desc: clean(x.desc, 80), url: clean(x.url, 500) }))
     .filter((x) => x.name && okUrl(x.url));
 }
-const okStore = (u) => /^https:\/\/([a-z0-9-]+\.)*caretstore\.co\.kr(\/[^\s]*)?$/i.test(u) || /^https:\/\/(smartstore\.naver\.com|brand\.naver\.com)\/[^\s]+$/i.test(u);
+const okStore = (u) => /^https:\/\/[a-z0-9.-]+\.[a-z]{2,}(\/[^\s]*)?$/i.test(u);   // 관리자만 넣는 칸이라 https 주소면 허용
 const okCp = (u) => /^https:\/\/(link\.coupang\.com|coupa\.ng)\/[^\s]+$/i.test(u);
 export async function shopApi(req, env, path, isAdmin) {
   if (path === '/api/shop' && req.method === 'GET') {

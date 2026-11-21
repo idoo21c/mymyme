@@ -9036,7 +9036,7 @@ if (DEMO) { try { Storage.prototype.setItem = function () {}; Storage.prototype.
 var PUBLIC = true;
 var ENDPOINT = "https://script.google.com/macros/s/AKfycbx2G0QG_yhq32sInKS2ScJDQsfuMxgpo4yIwiy5BEvhhK5LCy239wUOnT-Dz-FZsfGE/exec";
 var SITE_URL = "https://mymyme.app/";
-var BUILD = "1795223761";
+var BUILD = "1795224356";
 var SID = (function () { try { var v = localStorage.getItem('mymyme_sid'); if (!v) { v = Math.random().toString(36).slice(2, 12); localStorage.setItem('mymyme_sid', v); } return v; } catch (e) { return 'anon'; } })();
 function post(body) { if (!ENDPOINT || DEMO) return Promise.resolve(null); body.sid = SID; return fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(body) }).then(function (r) { return r.json(); }).catch(function () { return null; }); }
 function track(type, data) { post({ kind: 'event', type: type, data: data || {} }); if (REF_FINISH.indexOf(type) >= 0) refDone(); }
@@ -9369,7 +9369,7 @@ V.taste = function () {
     '<div class="col" style="gap:12px"><b class="small muted">이것도 해 보세요</b>' + testTiles() + '</div></div>';
 };
 /* 재방문 홈 */
-var VISIT_KEY = 'mymyme_visits', DAYCARD_COIN = 1, MAP_COIN = 10;
+var VISIT_KEY = 'mymyme_visits', DAYCARD_COIN = 5, MAP_COIN = 10;
 function visitDays() {
   var list = []; try { list = JSON.parse(localStorage.getItem(VISIT_KEY) || '[]'); } catch (e) {}
   if (list.indexOf(TODAY) < 0) { list.push(TODAY); list = list.slice(-14); try { localStorage.setItem(VISIT_KEY, JSON.stringify(list)); } catch (e) {} }
