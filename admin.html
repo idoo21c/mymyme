@@ -707,9 +707,9 @@ function templeTab() {
   var st = TADM.st, meta = st && st.meta;
   var imp = '<div class="card col" style="gap:8px"><h2>전통사찰 공식 목록 (행정안전부)</h2>' +
     (!st ? '<p class="small">상태를 확인하지 못했어요' + (TADM.err === 'auth' ? ' (관리자 확인 실패)' : '') + '.</p>' :
-      !st.key ? '<p class="small">아직 인증키가 서버에 없어요. Cloudflare → Workers & Pages → mymyme → 설정 → 변수 및 비밀(Variables and Secrets)에서 <b>비밀(Secret)</b> 이름 <code>TEMPLE_KEY</code>로 공공데이터포털 일반 인증키를 넣어 주세요. 키는 이 화면에도 앱에도 보이지 않아요.</p>' :
+      !st.key ? '<p class="small">서버가 인증키를 아직 못 읽고 있어요. Cloudflare → Workers & Pages → mymyme → Settings 맨 위 <b>Runtime variables and secrets</b> → Add variable에서 Type <b>Secret</b>, 이름 <code>TEMPLE_KEY</code>로 넣고 Deploy 해 주세요. 아래쪽 Builds 안의 Variables and secrets는 빌드 때만 쓰여서 앱이 읽지 못해요. 키는 이 화면에도 앱에도 보이지 않아요.</p>' :
       '<p class="small">인증키 연결됨 · ' + (meta ? '마지막 가져오기 ' + new Date(meta.at).toLocaleString('ko-KR') + ' · 받은 ' + meta.raw + '건 중 운영 중 ' + meta.n + '곳 (좌표 ' + meta.geo + '곳, 시·군·구 ' + meta.sgg + '곳)' : '아직 가져온 적이 없어요') + '</p>') +
-    (st && st.key ? '<button id="tpImport"' + (TADM.importing ? ' disabled' : '') + '>' + (TADM.importing ? '가져오는 중… (1분쯤)' : '공식 목록 가져오기 / 새로 고침') + '</button>' : '') +
+    '<div class="row" style="gap:8px;flex-wrap:wrap"><button id="tpImport"' + (TADM.importing ? ' disabled' : '') + '>' + (TADM.importing ? '가져오는 중… (1분쯤)' : '공식 목록 가져오기 / 새로 고침') + '</button><button class="sec" id="tpStatus">상태 다시 확인</button></div>' +
     (TADM.msg ? '<p class="small" style="color:#8A3520">' + esc(TADM.msg) + '</p>' : '') +
     (meta && meta.keys && meta.keys.length ? '<details><summary class="small muted">받은 항목 이름 보기</summary><p class="xs muted">' + esc(meta.keys.join(', ')) + '</p></details>' : '') + '</div>';
   var items = (TADM.items || []).filter(function (r) { return TADM.filter === 'all' || r.st === TADM.filter; });
@@ -799,7 +799,8 @@ document.addEventListener('click', function (e) {
   else if (b.id === 'csv') downloadCsv();
   else if (b.id === 'pushTest') pushSend(true);
   else if (b.id === 'madmReload') { MADM.d = null; render(); }
-  else if (b.id === 'tpImport') { TADM.importing = true; TADM.msg = ''; render(); wpost('/api/temple/admin', { op: 'import' }).then(function (j) { TADM.importing = false; TADM.msg = j && j.ok ? '가져왔어요: 운영 중 ' + j.n + '곳' : '가져오지 못했어요 (' + (j && j.reason) + (j && j.detail ? ' · ' + j.detail : '') + ')'; TADM.items = null; render(); }, function () { TADM.importing = false; TADM.msg = '가져오지 못했어요 (네트워크)'; render(); }); }
+  else if (b.id === 'tpStatus') { TADM.items = null; TADM.msg = ''; render(); }
+  else if (b.id === 'tpImport') { TADM.importing = true; TADM.msg = ''; render(); wpost('/api/temple/admin', { op: 'import' }).then(function (j) { TADM.importing = false; TADM.msg = j && j.ok ? '가져왔어요: 운영 중 ' + j.n + '곳' : j && j.reason === 'no-key' ? '서버에 인증키가 없어요. 위 안내대로 Runtime 칸에 TEMPLE_KEY를 넣어 주세요' : '가져오지 못했어요 (' + (j && j.reason) + (j && j.detail ? ' · ' + j.detail : '') + ')'; TADM.items = null; render(); }, function () { TADM.importing = false; TADM.msg = '가져오지 못했어요 (네트워크)'; render(); }); }
   else if (b.dataset.tpf) { TADM.filter = b.dataset.tpf; render(); }
   else if (b.dataset.tps) { var tps = b.dataset.tps; if (tps === 'del' && !confirm('이 추천을 삭제할까요? 되돌릴 수 없어요.')) return; b.disabled = true; wpost('/api/temple/admin', tps === 'del' ? { op: 'del', id: b.dataset.id } : { op: 'set', id: b.dataset.id, st: tps }).then(function () { TADM.items = null; render(); }); }
   else if (b.dataset.madm) { var op = b.dataset.madm; if (op === 'delete' && !confirm('이 소개를 삭제할까요? 되돌릴 수 없어요.')) return; b.disabled = true; wpost('/api/match/admin', { op: op, pid: b.dataset.pid }).then(function () { MADM.d = null; render(); }); }
