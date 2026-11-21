@@ -606,9 +606,35 @@ function overviewTab() {
       return '<div class="row small" style="margin-bottom:9px"><span style="width:130px">' + f[0] + '</span><div class="bar"><div style="width:' + (t.visit ? f[1] / Math.max(t.visit, 1) * 100 : 0) + '%;background:var(--coral)"></div></div><b style="width:44px;text-align:right">' + dn(f[1], f[0], has(f[2])) + '</b><span class="muted" style="width:40px">' + pct(f[1], t.visit) + '</span></div>';
     }).join('') + '</div>';
 }
+/* 오행·십성 분포: 사람마다 마지막 결과 1개 기준 집계값(Code.gs sajuAgg) */
+var EL_KO = { wood: '목', fire: '화', earth: '토', metal: '금', water: '수' }, EL_ORDER = ['wood', 'fire', 'earth', 'metal', 'water'];
+var TG_KO = ['비견', '겁재', '식신', '상관', '편재', '정재', '편관', '정관', '편인', '정인'];
+function sajuAggCard() {
+  var g = DATA.sajuAgg;
+  if (!g) return '<div class="card"><h2>오행 · 십성 분포</h2><p class="small muted">Code.gs를 최신으로 배포하면 오행 개수·많음/부족, 십성 분포, 일간 × 성향 교차가 보여요.</p></div>';
+  var N = g.people || 0, P = function (a) { return N ? Math.round(a / N * 100) + '%' : '데이터 없음'; };
+  var small = N < 30 ? '<p class="small" style="color:#8A3520">아직 ' + N + '명이라 경향을 말하기엔 적어요. 30명 이상부터 참고하세요.</p>' : '';
+  var bar = function (v, max, col) { return '<div class="bar" style="flex:1"><div style="width:' + (max ? v / max * 100 : 0) + '%;background:' + (col || 'var(--coral)') + '"></div></div>'; };
+  var avgMax = Math.max.apply(null, g.elSum.map(function (x) { return x; }).concat([1]));
+  var el = '<table class="tbl"><thead><tr><th>오행</th><th>평균 개수</th><th style="width:30%"></th><th>많음(3개+)</th><th>없음(0개)</th><th>사주 최다</th><th>체감 최다</th></tr></thead><tbody>' + EL_ORDER.map(function (k, i) {
+    return '<tr><td><b>' + EL_KO[k] + '</b> <a href="admin-study#el-' + k + '" target="_blank" rel="noopener" style="text-decoration:none">📖</a></td><td>' + (N ? (g.elSum[i] / N).toFixed(1) : '–') + '</td><td>' + bar(g.elSum[i], avgMax, 'var(--acc,#4B3FC7)') + '</td><td>' + (g.excess[k] || 0) + '명 · ' + P(g.excess[k] || 0) + '</td><td>' + (g.lack[k] || 0) + '명 · ' + P(g.lack[k] || 0) + '</td><td>' + (g.sajuTop[k] || 0) + '명</td><td>' + (g.feltTop[k] || 0) + '명</td></tr>';
+  }).join('') + '</tbody></table><p class="xs muted">평균 개수는 여덟 글자(시간 모르면 여섯 글자) 중 그 오행 글자 수의 평균이에요. \'사주 최다\'는 원국에서 가장 많은 오행, \'체감 최다\'는 체감 10문항에서 가장 높게 나온 오행이 그것인 사람 수예요(동점이면 앞 순서).</p>';
+  var tgMax = Math.max.apply(null, g.tgHave.concat([1]));
+  var tg = '<table class="tbl"><thead><tr><th>십성</th><th>1개 이상 가진 사람</th><th style="width:30%"></th><th>총 등장</th><th>월지 십성</th></tr></thead><tbody>' + TG_KO.map(function (n, i) {
+    return '<tr><td><b>' + n + '</b></td><td>' + g.tgHave[i] + '명 · ' + P(g.tgHave[i]) + '</td><td>' + bar(g.tgHave[i], tgMax) + '</td><td>' + g.tg[i] + '회</td><td>' + g.monthTg[i] + '명</td></tr>';
+  }).join('') + '</tbody></table><p class="xs muted">일간을 뺀 천간과 지지 본기 기준이에요. \'월지 십성\'은 태어난 달 지지의 십성으로, 사주에서 가장 힘이 센 자리예요. <a href="admin-study#tengods" target="_blank" rel="noopener">📖 십성 공부하기</a></p>';
+  var stems = Object.keys(g.stemAxis).sort(function (a, b) { return g.stemAxis[b].n - g.stemAxis[a].n; });
+  var cross = stems.length ? '<table class="tbl"><thead><tr><th>일간</th><th>인원</th><th>E(외향)</th><th>N(직관)</th><th>F(감정)</th><th>P(즉흥)</th></tr></thead><tbody>' + stems.map(function (k) {
+    var a = g.stemAxis[k], q = function (x) { return a.n ? Math.round(x / a.n * 100) + '%' : '–'; };
+    return '<tr' + (a.n < 10 ? ' style="color:#8A8D9E"' : '') + '><td><b>' + esc(STEM_READ[k] || k) + '</b> ' + k + ' <a href="admin-study#stem-' + encodeURIComponent(k) + '" target="_blank" rel="noopener" style="text-decoration:none">📖</a></td><td>' + a.n + '명' + (a.n < 10 ? ' (적음)' : '') + '</td><td>' + q(a.E) + '</td><td>' + q(a.N) + '</td><td>' + q(a.F) + '</td><td>' + q(a.P) + '</td></tr>';
+  }).join('') + '</tbody></table><p class="xs muted">10명 미만인 일간은 회색으로 표시했어요. 비율 차이를 해석하기 어려운 수준이에요.</p>' : '<p class="small muted">데이터 없음</p>';
+  return '<div class="card"><h2>오행 · 십성 분포 <span class="small muted" style="font-weight:400">결과를 본 ' + N + '명 · 시간 입력 ' + P(g.hourKnown) + '</span></h2>' + small +
+    '<h3 style="font-size:15px;margin:14px 0 6px">오행</h3><div style="overflow-x:auto">' + el + '</div><h3 style="font-size:15px;margin:18px 0 6px">십성</h3><div style="overflow-x:auto">' + tg + '</div>' +
+    '<h3 style="font-size:15px;margin:18px 0 6px">일간 × 성향 축</h3><div style="overflow-x:auto">' + cross + '</div></div>';
+}
 function resultsTab() {
   return '<div class="grid2">' + dist('인기 유형 이름 TOP 12', DATA.dist.name) + dist('4글자 성격 코드', DATA.dist.code, null, 16, 'sj') + dist('일간 분포 <a href="admin-study#stems" target="_blank" rel="noopener" style="font-size:13px;font-weight:500">📖 일간 공부하기</a>', DATA.dist.dayStem, STEM_READ, 0, 'st') +
-    dist('혈액형', DATA.dist.blood, { '': '미선택' }) + dist('성별', DATA.dist.gender, GENDER) + '</div>';
+    dist('혈액형', DATA.dist.blood, { '': '미선택' }) + dist('성별', DATA.dist.gender, GENDER) + '</div>' + sajuAggCard();
 }
 function forestTab() {
   var secrets = DATA.secrets.filter(function (s) { return FILTER === 'all' || (FILTER === 'hidden' ? s.hidden : !s.hidden); });
