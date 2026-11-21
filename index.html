@@ -9051,7 +9051,7 @@ if (DEMO) { try { Storage.prototype.setItem = function () {}; Storage.prototype.
 var PUBLIC = true;
 var ENDPOINT = "https://script.google.com/macros/s/AKfycbx2G0QG_yhq32sInKS2ScJDQsfuMxgpo4yIwiy5BEvhhK5LCy239wUOnT-Dz-FZsfGE/exec";
 var SITE_URL = "https://mymyme.app/";
-var BUILD = "1795232394";
+var BUILD = "1795232883";
 var SID = (function () { try { var v = localStorage.getItem('mymyme_sid'); if (!v) { v = Math.random().toString(36).slice(2, 12); localStorage.setItem('mymyme_sid', v); } return v; } catch (e) { return 'anon'; } })();
 function post(body) { if (!ENDPOINT || DEMO) return Promise.resolve(null); body.sid = SID; return fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(body) }).then(function (r) { return r.json(); }).catch(function () { return null; }); }
 function track(type, data) { post({ kind: 'event', type: type, data: data || {} }); if (REF_FINISH.indexOf(type) >= 0) refDone(); }
@@ -9260,6 +9260,8 @@ function homeFirst() {
       '<div class="grid3"><label class="f" style="color:#C9C7D6">년<input class="inp" id="qy" inputmode="numeric" maxlength="4" placeholder="1990" value="' + esc(b.y) + '"></label><label class="f" style="color:#C9C7D6">월<input class="inp" id="qm" inputmode="numeric" maxlength="2" placeholder="5" value="' + esc(b.m) + '"></label><label class="f" style="color:#C9C7D6">일<input class="inp" id="qd" inputmode="numeric" maxlength="2" placeholder="19" value="' + esc(b.d) + '"></label></div>' +
       '<p id="qerr" class="small" style="color:#F2C9BC;min-height:0;margin:0" role="alert"></p>' +
       '<button class="btn" style="background:var(--coral);color:var(--ink);font-weight:700;font-size:17px" data-act="tasteGo">30초 만에 내 일간 보기</button>' +
+      '<div class="row" style="gap:6px;flex-wrap:wrap;justify-content:center">' + ['회원가입 없음', '이름·연락처 안 받아요'].map(function (x) { return '<span class="xs" style="color:#E4E2EE;background:rgba(247,245,240,.1);border-radius:10px;padding:4px 9px">✓ ' + x + '</span>'; }).join('') + '</div>' +
+      '<button data-act="tasteSample" style="background:none;border:1px solid rgba(247,245,240,.35);color:var(--bg);border-radius:12px;min-height:44px;font-size:14px;cursor:pointer">넣기 전에 예시 결과 먼저 보기</button>' +
       '<div class="row between" style="font-size:12.5px;color:#C9C7D6"><span>입력한 생년월일은 결과와 통계를 위해 저장돼요 · <button data-legal="privacy" style="background:none;border:0;padding:0;color:#C9C7D6;text-decoration:underline;font-size:inherit;cursor:pointer">처리방침</button></span><button class="xs" data-go="birth" style="background:none;border:0;color:#F2C9BC;font-weight:700;cursor:pointer;padding:6px 0">정밀 분석 바로 시작</button></div></section>';
   var tasted = (!resume && S.taste && SJ.dayMasters[S.taste.stem]) ? '<button class="ttile wide" data-go="taste" style="background:#fff"><span class="col" style="gap:3px;flex:1;align-items:flex-start"><b>내 일간은 ' + esc(SJ.dayMasters[S.taste.stem].read) + '</b><span class="tsub">30초 맛보기 결과 다시 보기</span></span><b style="color:var(--acc-d);font-size:13px">보기</b></button>' : '';
   return topBanner() + '<div class="screen">' + homeHead() + inviteBanner() + inAppNote(true) + tasted + hero +
@@ -9366,22 +9368,49 @@ function pushUnsubscribe() {
   track('push_off'); toast('알림을 껐어요'); render();
 }
 function b64uBytes(s) { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; var b = atob(s), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
-/* 30초 맛보기 결과 */
+/* 30초 맛보기 결과. 예시 모드(TASTE_SAMPLE)는 생일 없이 병화 일간 예시를 보여 주고 아무것도 기록하지 않는다 */
+var TASTE_SAMPLE = false, FRIEND = null;  /* FRIEND: 친구 생일로 본 일간. 기기 안에서만 계산하고 저장·전송하지 않는다 */
+var EL_GEN = { wood: 'fire', fire: 'earth', earth: 'metal', metal: 'water', water: 'wood' }, EL_CTL = { wood: 'earth', earth: 'water', water: 'fire', fire: 'metal', metal: 'wood' };
+var EL_SHORT = { wood: '나무', fire: '불', earth: '흙', metal: '쇠', water: '물' };
+function chemLine(me, fr) {
+  if (me === fr) return ['같은 ' + EL_SHORT[me] + ' 기운끼리', '말 안 해도 통하는 사이예요. 대신 막히는 지점도 같아서, 둘이 고민할 땐 다른 기운의 친구를 한 명 끼우면 딱이에요.'];
+  if (EL_GEN[me] === fr) return ['내가 친구를 키워 주는 사이', '나는 응원단장, 친구는 쑥쑥 크는 쪽이에요. 가끔은 나도 받고 싶다고 말해 주기!'];
+  if (EL_GEN[fr] === me) return ['친구가 나를 채워 주는 사이', '힘 빠질 때 먼저 생각나는 사람이에요. 고맙다는 말을 한 번 더 해 보세요.'];
+  if (EL_CTL[me] === fr) return ['내가 친구를 다듬어 주는 사이', '잔소리처럼 들려도 결국 도움이 되는 조합이에요. 말투만 부드럽게 하면 최고의 코치.'];
+  return ['친구가 나를 잡아 주는 사이', '가끔 따끔하지만, 내가 흔들릴 때 중심을 잡아 주는 사람이에요.'];
+}
 V.taste = function () {
-  if (!S.taste || !SJ.dayMasters[S.taste.stem]) { S.view = 'home'; return V.home(); }
-  var st = S.taste.stem, dm = SJ.dayMasters[st], el = SJ.elements[dm.element];
+  var sample = TASTE_SAMPLE || !S.taste || !SJ.dayMasters[S.taste.stem];
+  if (sample && !TASTE_SAMPLE) { S.view = 'home'; return V.home(); }
+  var st = sample ? '丙' : S.taste.stem, dm = SJ.dayMasters[st], el = SJ.elements[dm.element];
   var kw = (dm.strengths || []).slice(0, 3).map(function (k) { return '<span class="pill" style="background:rgba(247,245,240,.12);color:var(--bg)">' + esc(k) + '</span>'; }).join('');
   var lock = function (a, b2) { return '<div class="col" style="gap:4px;border-radius:14px;background:var(--acc-ll);padding:12px"><span class="xs" style="color:var(--acc-d)">' + a + '</span><b class="small" style="color:var(--acc-d);letter-spacing:1px">' + b2 + '</b></div>'; };
-  return '<div class="screen"><div class="row" style="gap:6px"><button class="iconbtn" data-go="home" aria-label="처음으로">' + ICON.back + '</button><span class="small muted">30초 맛보기 결과</span></div>' +
-    '<section class="hero" style="gap:12px"><span class="xs" style="color:#C9C7D6">내 사주의 중심, 일간</span><div class="row" style="gap:14px"><div class="serif" style="width:72px;height:72px;border-radius:20px;background:rgba(139,131,240,.22);display:flex;align-items:center;justify-content:center;font-size:40px">' + st + '</div>' +
+  var hero = (sample ? '<div class="card row" style="gap:10px;align-items:center;background:var(--coral-l);border:0"><span class="small" style="flex:1;color:#6A2A18;line-height:1.5"><b>예시 결과예요.</b> 생일을 넣으면 이런 화면이 내 것으로 나와요.</span><button class="btn" style="min-height:40px;padding:0 14px;font-size:13px;background:var(--coral-d);color:#fff;width:auto" data-act="tasteMine">내 생일로 보기</button></div>' : '') +
+    '<section class="hero" style="gap:12px"><span class="xs" style="color:#C9C7D6">' + (sample ? '예시 · ' : '') + '내 사주의 중심, 일간</span><div class="row" style="gap:14px"><div class="serif" style="width:72px;height:72px;border-radius:20px;background:rgba(139,131,240,.22);display:flex;align-items:center;justify-content:center;font-size:40px">' + st + '</div>' +
     '<div class="col" style="gap:2px"><b class="serif" style="font-size:28px">' + esc(dm.read) + '</b><span class="small" style="color:#C9C7D6">' + esc(dm.image) + (el ? ' · ' + esc(el.name) + '의 기운' : '') + '</span></div></div>' +
     '<div class="row" style="gap:6px;flex-wrap:wrap">' + kw + '</div><p style="margin:0;font-size:14px;line-height:1.7;color:#E4E2EE">' + esc(dm.essence) + '</p>' +
-    '<p class="small" style="margin:0;color:#F2C9BC">' + esc(dm.advice) + '</p></section>' +
-    '<div class="card col" style="gap:12px"><b style="font-size:16px">여기까지는 \'타고난 나\'예요</b><p class="small" style="color:#4A4D63;margin:0;line-height:1.7">같은 ' + esc(dm.read) + '이라도 지금의 성향에 따라 전혀 다른 사람이 돼요. 82문항을 마치면 320가지 중 내 유형 이름이 나와요.</p>' +
-    '<div class="grid2" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">' + lock('내 유형 이름', esc(dm.prefix) + ' □□□') + lock('4글자 성격 코드', '????') + lock('타고난 나 vs 지금의 나', '잠김') + lock('친구와 궁합 코드', '잠김') + '</div>' +
-    '<button class="btn btn-pri" data-act="tasteFull">이어서 정밀 분석 · 생일은 이미 입력됨</button><span class="xs muted" style="text-align:center">82문항 약 13분 · 중간에 나가도 이어서 할 수 있어요</span></div>' +
-    '<div class="card col" style="gap:10px"><b style="font-size:16px">친구는 어떤 나무일까?</b><p class="small" style="color:#4A4D63;margin:0;line-height:1.6">링크를 보내면 친구도 30초 만에 자기 일간을 알 수 있어요. 내 생년월일은 친구에게 보이지 않아요.</p><button class="btn btn-sec" data-act="tasteShare">친구에게 보내기</button></div>' +
-    '<div class="col" style="gap:12px"><b class="small muted">이것도 해 보세요</b>' + testTiles() + '</div></div>';
+    '<p class="small" style="margin:0;color:#F2C9BC">' + esc(dm.advice) + '</p></section>';
+  if (sample) return '<div class="screen"><div class="row" style="gap:6px"><button class="iconbtn" data-act="tasteMine" aria-label="처음으로">' + ICON.back + '</button><span class="small muted">30초 맛보기 · 예시</span></div>' + hero +
+    '<div class="card col" style="gap:10px"><b style="font-size:16px">내 결과에는 이것도 열려요</b><div class="grid2" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">' + lock('친구와 우리 둘 케미', '친구 생일만') + lock('내 유형 이름', '320가지 중') + '</div>' +
+    '<button class="btn btn-pri" data-act="tasteMine">내 생일로 30초 만에 보기</button><span class="xs muted" style="text-align:center">회원가입 없음 · 이름·연락처 안 받아요</span></div></div>';
+  /* 다음 한 걸음 ①: 친구 생일로 우리 둘 케미 */
+  var me = dm.element, fz = FRIEND && SJ.dayMasters[FRIEND.stem];
+  var friendBox = fz
+    ? (function () { var c = chemLine(me, fz.element); return '<div class="col" style="gap:8px;border-radius:14px;background:var(--acc-ll);padding:14px"><span class="xs" style="color:var(--acc-d)">친구 일간 · ' + esc(fz.read) + ' (' + esc(fz.image) + ')</span><b style="font-size:17px;color:var(--acc-d)">' + esc(c[0]) + '</b><p class="small" style="margin:0;line-height:1.7;color:#2E2A6B">' + esc(c[1]) + '</p></div>' +
+        '<span class="xs muted" style="line-height:1.6">일간 하나만 본 가벼운 케미예요. 둘 다 정밀 분석을 마치면 진짜 궁합이 열려요.</span>' +
+        '<div class="row" style="gap:8px"><button class="btn btn-sec" data-act="tasteShare" style="flex:1">친구에게 보내기</button><button class="btn btn-ghost" data-act="friendAgain" style="flex:1">다른 친구</button></div>'; })()
+    : '<div class="grid3"><label class="f">년<input class="inp" id="fy" inputmode="numeric" maxlength="4" placeholder="1992"></label><label class="f">월<input class="inp" id="fm" inputmode="numeric" maxlength="2" placeholder="3"></label><label class="f">일<input class="inp" id="fd" inputmode="numeric" maxlength="2" placeholder="8"></label></div>' +
+      '<p id="ferr" class="small" style="color:var(--coral-d);margin:0" role="alert"></p>' +
+      '<button class="btn btn-pri" data-act="friendGo">우리 둘 케미 보기</button><span class="xs muted" style="line-height:1.6">친구 생일은 이 화면에서만 계산하고 저장하거나 보내지 않아요 · 양력 기준</span>';
+  var quick = testTiles().match(/<button class="ttile" data-go="(\w+)">(?:<span class="tbadge">[^<]*<\/span>)?<b>([^<]*)<\/b><span class="tsub">([^<]*)<\/span><span class="tmeta"[^>]*>([^<]*)<\/span>/);
+  var step2 = quick ? '<button class="ttile wide" data-go="' + quick[1] + '" style="background:#fff"><span class="col" style="gap:3px;flex:1;align-items:flex-start"><b>' + quick[2] + '</b><span class="tsub">' + quick[3] + ' · ' + quick[4] + '</span></span><b style="color:var(--acc-d);font-size:13px">하기</b></button>' : '';
+  return '<div class="screen"><div class="row" style="gap:6px"><button class="iconbtn" data-go="home" aria-label="처음으로">' + ICON.back + '</button><span class="small muted">30초 맛보기 결과</span></div>' + hero +
+    '<h2 style="font-size:18px;margin-top:4px">다음 한 걸음</h2>' +
+    '<div class="card col" style="gap:10px;border:1.5px solid var(--acc)"><span class="pill pill-acc" style="align-self:flex-start">① 가장 가벼워요</span><b style="font-size:16px">친구 생일 넣고 우리 둘 케미 보기</b>' + friendBox + '</div>' +
+    (step2 ? '<div class="col" style="gap:8px"><span class="pill pill-acc" style="align-self:flex-start">② 짧은 테스트 하나</span>' + step2 + '</div>' : '') +
+    '<div class="card col" style="gap:12px"><span class="pill pill-acc" style="align-self:flex-start">③ 제대로 알아보기</span><b style="font-size:16px">여기까지는 \'타고난 나\'예요</b><p class="small" style="color:#4A4D63;margin:0;line-height:1.7">같은 ' + esc(dm.read) + '이라도 지금의 성향에 따라 전혀 다른 사람이 돼요. 82문항을 마치면 320가지 중 내 유형 이름이 나와요.</p>' +
+    '<div class="grid2" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">' + lock('내 유형 이름', esc(dm.prefix) + ' □□□') + lock('4글자 성격 코드', '????') + lock('타고난 나 vs 지금의 나', '잠김') + lock('친구와 진짜 궁합', '잠김') + '</div>' +
+    '<button class="btn btn-pri" data-act="tasteFull">이어서 정밀 분석 · 생일은 이미 입력됨</button><span class="xs muted" style="text-align:center">82문항 약 13분 · 중간 결과를 조금씩 보여 드려요 · 나가도 이어서 할 수 있어요</span></div></div>';
 };
 /* 재방문 홈 */
 var VISIT_KEY = 'mymyme_visits', DAYCARD_COIN = 5, MAP_COIN = 10;
@@ -9557,10 +9586,18 @@ V.likert = function () {
   var id = LIK_ORDER[S.li], it = STAGE.likert.items[id], blk = LIK_BLOCK_OF[id];
   return '<div class="screen"><div class="col" style="gap:10px">' +
     T('<div class="row between"><button class="iconbtn" data-act="likPrev" aria-label="이전 문항">') + ICON.back + T('</button><span class="small muted" style="font-weight:500">2 / 4 단계 · ') + (S.li + 1) + ' / 60</span>' + editBirthBtn() + '</div>' + progress(overall()) + '<span class="xs muted" style="text-align:right">' + leftLine() + '</span>' + '</div>' + cheer('likert', S.li) +
-    '<div class="col" style="gap:14px;margin-top:12px;min-height:150px"><span class="pill pill-coral">' + esc(blk.title) + '</span><h1 style="font-size:23px;line-height:1.5">' + esc(it.text) + '</h1></div>' +
+    likPeek() + '<div class="col" style="gap:14px;margin-top:12px;min-height:150px"><span class="pill pill-coral">' + esc(blk.title) + '</span><h1 style="font-size:23px;line-height:1.5">' + esc(it.text) + '</h1></div>' +
     T('<div class="col" style="gap:10px" role="radiogroup" aria-label="응답">') + scaleOpts(S.answers.likert[id], 'lik') + '</div>' +
     T('<p class="xs muted" style="text-align:center;margin-top:auto">답을 고르면 다음 문항으로 넘어가요</p></div>');
 };
+/* 중간 결과 한 조각: 20번째·48번째 문항을 지나면 3문항 동안 축 하나의 기울기를 미리 보여 준다 */
+function likPeek() {
+  if (LANG !== 'ko') return '';
+  var ax = S.li >= 20 && S.li < 23 ? 'SN' : S.li >= 48 && S.li < 51 ? 'TF' : ''; if (!ax) return '';
+  var p; try { p = E.scorePersonality(Q, S.answers); } catch (e) { return ''; }
+  var a = Q.axes[ax], pos = p.pct[ax] >= 50, lab = (pos ? a.posLabel : a.negLabel).replace(' · ', '(') + ')';
+  return '<div class="card row" style="gap:10px;align-items:center;background:var(--acc-ll);border:0;margin-top:8px"><span style="font-size:20px" aria-hidden="true">🔓</span><span class="small" style="line-height:1.55;color:#2E2A6B"><b>중간 결과 한 조각</b> · ' + esc(a.title) + '은 지금까지 <b>' + esc(lab) + '</b> 쪽이에요</span></div>';
+}
 V.interlude1 = function () {
   var il = STAGE.likert.interlude, p = E.scorePersonality(Q, S.answers), a = p.pct.EI >= 50 ? T('밖으로 향하는(외향)') : T('안으로 향하는(내향)');
   return '<div class="screen"><div class="col" style="gap:10px">' + topbar(null, T('2 / 4 단계')) + progress(overall()) + '</div>' +
@@ -11626,6 +11663,14 @@ document.addEventListener('click', function (ev) {
       var qsj; try { qsj = calcSajuSafe(); } catch (e) { if (qe) qe.textContent = '존재하지 않는 날짜예요. 다시 확인해 주세요.'; return; }
       S.taste = { stem: qsj.dayStem, at: TODAY }; qb.noticed = true; save(); track('taste', { stem: qsj.dayStem, birth: qb.y + '-' + ('0' + qb.m).slice(-2) + '-' + ('0' + qb.d).slice(-2), cal: qb.calendar === 'lunar' ? (qb.leap ? 'lunar_leap' : 'lunar') : 'solar', solar: qsj.solarDate || '', pillars: qsj.pillars.map(function (x) { return x.gz; }).join(' ') }); go('taste'); break;
     case 'tasteFull': track('taste_full'); go('birth'); break;
+    case 'tasteSample': TASTE_SAMPLE = true; track('taste_sample'); go('taste'); break;
+    case 'tasteMine': TASTE_SAMPLE = false; S.view = 'home'; render(); setTimeout(function () { var qy = document.getElementById('qy'); if (qy) { qy.scrollIntoView({ block: 'center', behavior: 'smooth' }); qy.focus(); } }, 50); break;
+    case 'friendAgain': FRIEND = null; render(); break;
+    case 'friendGo':
+      var fe = document.getElementById('ferr'), fv = ['fy', 'fm', 'fd'].map(function (k) { var x = document.getElementById(k); return x ? +x.value.replace(/[^0-9]/g, '') : 0; });
+      if (!validDate(fv[0], fv[1], fv[2])) { if (fe) fe.textContent = '친구 생년월일을 정확히 입력해 주세요. (1900~2099년)'; break; }
+      var fsj; try { fsj = E.calcSaju({ y: fv[0], m: fv[1], d: fv[2], hour: null, minute: 0, calendar: 'solar', leap: false }); } catch (e) { if (fe) fe.textContent = '존재하지 않는 날짜예요. 다시 확인해 주세요.'; break; }
+      FRIEND = { stem: fsj.dayStem }; track('taste_friend'); render(); break;
     case 'tasteShare': track('taste_share'); shareTextOut('나는 사주 일간이 ' + SJ.dayMasters[S.taste.stem].read + '(' + SJ.dayMasters[S.taste.stem].image + ')래! 너는 어떤 나무, 어떤 불일까? 생일만 넣으면 30초야', 'taste', SITE_URL || (location.origin + location.pathname)); break;
     case 'navTests': var tt = document.getElementById('tests'); if (tt) tt.scrollIntoView({ behavior: 'smooth', block: 'start' }); break;
     case 'navCompat': if (S.result) compatModal(); else { toast('궁합은 사주×성향 정밀 분석을 마치면 열려요'); window.scrollTo({ top: 0, behavior: 'smooth' }); } break;
