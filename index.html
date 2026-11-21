@@ -9045,7 +9045,7 @@ if (DEMO) { try { Storage.prototype.setItem = function () {}; Storage.prototype.
 var PUBLIC = true;
 var ENDPOINT = "https://script.google.com/macros/s/AKfycbx2G0QG_yhq32sInKS2ScJDQsfuMxgpo4yIwiy5BEvhhK5LCy239wUOnT-Dz-FZsfGE/exec";
 var SITE_URL = "https://mymyme.app/";
-var BUILD = "1795226824";
+var BUILD = "1795230979";
 var SID = (function () { try { var v = localStorage.getItem('mymyme_sid'); if (!v) { v = Math.random().toString(36).slice(2, 12); localStorage.setItem('mymyme_sid', v); } return v; } catch (e) { return 'anon'; } })();
 function post(body) { if (!ENDPOINT || DEMO) return Promise.resolve(null); body.sid = SID; return fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(body) }).then(function (r) { return r.json(); }).catch(function () { return null; }); }
 function track(type, data) { post({ kind: 'event', type: type, data: data || {} }); if (REF_FINISH.indexOf(type) >= 0) refDone(); }
