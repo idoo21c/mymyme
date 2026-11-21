@@ -57,6 +57,13 @@ ol li{margin-bottom:6px;line-height:1.6}
 .danger{color:#B3261E!important;border-color:#F0C9C2!important}
 .mini{height:30px!important;min-height:30px!important;padding:0 10px!important;font-size:12.5px!important}
 .calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.calw{text-align:center;font-size:12px;color:#5A5D72;padding:2px 0}.calday{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:52px;border:1px solid #E4E2EE;border-radius:8px;cursor:pointer;font:inherit;padding:2px}.calday b{font-size:14px}.calday span{font-size:10.5px;opacity:.85}.calday:disabled{cursor:default}
+.kclick{cursor:pointer;transition:box-shadow .15s,border-color .15s}.kclick:hover{border-color:var(--acc);box-shadow:0 2px 10px rgba(75,63,199,.12)}.kgo{font-size:11.5px;color:var(--acc);font-weight:700;margin-top:6px;opacity:.75}.kclick:hover .kgo{opacity:1}
+button.drill{background:none;border:0;padding:0;font:inherit;color:var(--acc);font-weight:700;cursor:pointer;text-decoration:underline;text-decoration-color:rgba(75,63,199,.35);text-underline-offset:3px;min-height:0;height:auto}button.drill:hover{text-decoration-color:var(--acc)}
+body.dopen{overflow:hidden}#drawer .dbg{position:fixed;inset:0;background:rgba(30,33,64,.35);z-index:50}#drawer .dpanel{position:fixed;top:0;right:0;bottom:0;width:min(920px,100%);background:var(--bg);z-index:51;overflow:auto;padding:22px 22px 40px;box-shadow:-8px 0 30px rgba(0,0,0,.15)}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}.dk{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}.dk span{font-size:12px;color:var(--muted)}.dk b{font-size:17px}.dk em{font-style:normal;font-size:11.5px;color:var(--muted)}
+.dtbl tbody tr{cursor:pointer}.dtbl tbody tr:hover{background:var(--acc-l)}
+.seg{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}.segc{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;background:#fff}.segc span{font-size:12.5px;font-weight:700}.segc b{font-size:22px}.segc em{font-style:normal;font-size:11.5px;color:var(--muted)}
+table.heat{border-collapse:separate;border-spacing:2px;font-size:10.5px}table.heat td{width:18px;height:18px;border-radius:3px;background:#F0EEF7}table.heat th{font-weight:500;color:var(--muted);padding:0 3px}
 </style>
 </head>
 <body>
@@ -90,12 +97,13 @@ function load() {
     return fetch(ENDPOINT + '?action=consults&key=' + encodeURIComponent(KEY)).then(function (r) { return r.json(); }).then(function (c) { CONS = (c && c.items) || []; render(); });
   }).catch(function () { login('서버에 연결하지 못했어요. 웹 앱 URL과 배포 설정(액세스: 모든 사용자)을 확인해 주세요.'); });
 }
-function kpi(l, v, s) { return '<div class="card kpi"><div class="l">' + l + '</div><div class="v">' + v + '</div>' + (s ? '<div class="s">' + s + '</div>' : '') + '</div>'; }
-function dist(title, obj, map, top) {
+function kpi(l, v, s, pred) { var pr = pred || (typeof kpiPred === 'function' && aud() ? kpiPred(l) : null), id = pr ? dr(String(l).replace(/<[^>]+>/g, ''), pr) : null;
+  return '<div class="card kpi' + (id != null ? ' kclick" data-drill="' + id + '" title="누르면 누가인지 보여요' : '') + '"><div class="l">' + l + '</div><div class="v">' + v + '</div>' + (s ? '<div class="s">' + s + '</div>' : '') + (id != null ? '<div class="kgo">대상자 보기 →</div>' : '') + '</div>'; }
+function dist(title, obj, map, top, field) {
   var arr = Object.keys(obj).map(function (k) { return [k, obj[k]]; }).sort(function (a, b) { return b[1] - a[1]; }).slice(0, top || 12);
   var max = arr.length ? arr[0][1] : 1, sum = arr.reduce(function (a, b) { return a + b[1]; }, 0);
   return '<div class="card dist"><h2>' + title + '</h2>' + (arr.length ? arr.map(function (x) {
-    return '<div class="row"><span class="k" title="' + esc(x[0]) + '">' + esc(map ? (map[x[0]] || x[0]) + (map[x[0]] ? ' ' + x[0] : '') : x[0]) + '</span><div class="bar"><div style="width:' + (x[1] / max * 100) + '%"></div></div><span class="n">' + x[1] + '</span><span class="small muted" style="width:40px">' + pct(x[1], sum) + '</span></div>';
+    return '<div class="row"><span class="k" title="' + esc(x[0]) + '">' + esc(map ? (map[x[0]] || x[0]) + (map[x[0]] ? ' ' + x[0] : '') : x[0]) + '</span><div class="bar"><div style="width:' + (x[1] / max * 100) + '%"></div></div><span class="n">' + (field ? dn(x[1], title + ' · ' + x[0], function (p) { return p.r && p.r[field] === x[0]; }) : x[1]) + '</span><span class="small muted" style="width:40px">' + pct(x[1], sum) + '</span></div>';
   }).join('') : '<p class="small muted">아직 데이터가 없어요</p>') + '</div>';
 }
 var WHO = { user: '상담자', ai: 'AI 답변', admin: '운영자(나)' };
@@ -256,7 +264,7 @@ function aiTab() {
 }
 var BDOM = { P: ['패턴', 5], N: ['수리', 6], S: ['공간', 4], L: ['논리', 5] }, BTYPE = { P: '패턴 탐정', N: '숫자 설계자', S: '공간 건축가', L: '논리 전략가' };
 var BITEM_DOM = 'NPLSNPLSNPLSNPLSNPLN';
-function hbar(label, v, max, right) { return '<div class="row" style="gap:10px;margin:5px 0"><span class="small" style="width:96px;flex:none">' + label + '</span><div style="flex:1;background:#EEEDF5;border-radius:4px;height:14px"><div style="width:' + (max ? Math.round(v / max * 100) : 0) + '%;background:#4B3FC7;height:14px;border-radius:4px"></div></div><b class="small" style="width:56px;text-align:right">' + right + '</b></div>'; }
+function hbar(label, v, max, right) { return '<div class="row" style="gap:10px;margin:5px 0"><span class="small" style="width:96px;flex:none">' + label + '</span><div style="flex:1;background:#EEEDF5;border-radius:4px;height:14px"><div style="width:' + (max ? Math.round(v / max * 100) : 0) + '%;background:#4B3FC7;height:14px;border-radius:4px"></div></div><b class="small" style="min-width:56px;text-align:right;white-space:nowrap">' + right + '</b></div>'; }
 function challengeHtml() {
   var ch = DATA.challenge, lvBuy = coinItem('level');
   if (!ch) return '<div class="card"><h2>두뇌 챌린지 1~10단계</h2><p class="small muted">Code.gs를 최신 버전으로 배포하면 단계별 기록이 보여요.</p></div>';
@@ -393,7 +401,7 @@ function trafficTab() {
     kpi('오늘 결과 확인', t.todayFinish, '분모: 오늘 방문자 ' + t.today + '명 · ' + pct(t.todayFinish, t.today)) + kpi('경로 기록된 사람', t.tracked, '집계 ' + esc(t.at) + ' · 새로고침으로 갱신') + '</div>' +
     '<div class="card"><h2>유입 경로별 전환</h2><p class="small muted">사람마다 <b>처음 들어온 경로</b> 기준이에요. 비율의 분모는 그 경로로 들어온 방문자 수예요. "이전 기록"은 이 기능을 배포하기 전에 들어온 사람이에요.</p>' +
     '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>경로</th><th>방문자</th><th>참여 시작</th><th>결과 확인</th><th>심층 리포트</th><th>공유</th><th>상담</th></tr></thead><tbody>' +
-    (srcs.length ? srcs.map(function (x) { return '<tr><td><b>' + esc(srcName(x.src)) + '</b></td><td>' + x.visitors + '</td><td>' + x.start + ' <span class="xs muted">' + pct(x.start, x.visitors) + '</span></td><td>' + x.finish + ' <span class="xs muted">' + pct(x.finish, x.visitors) + '</span></td><td>' + x.report + ' <span class="xs muted">' + pct(x.report, x.visitors) + '</span></td><td>' + x.share + ' <span class="xs muted">' + pct(x.share, x.visitors) + '</span></td><td>' + x.consult + '</td></tr>'; }).join('') : '<tr><td colspan="7" class="muted">데이터 없음</td></tr>') +
+    (srcs.length ? srcs.map(function (x) { return '<tr><td><b>' + esc(srcName(x.src)) + '</b></td><td>' + dn(x.visitors, srcName(x.src) + ' 유입', function (p) { return (p.src || 'unknown') === x.src; }) + '</td><td>' + dn(x.start, srcName(x.src) + ' · 참여 시작', function (p) { return (p.src || 'unknown') === x.src && p.e.start; }) + ' <span class="xs muted">' + pct(x.start, x.visitors) + '</span></td><td>' + dn(x.finish, srcName(x.src) + ' · 결과 확인', function (p) { return (p.src || 'unknown') === x.src && p.e.finish; }) + ' <span class="xs muted">' + pct(x.finish, x.visitors) + '</span></td><td>' + x.report + ' <span class="xs muted">' + pct(x.report, x.visitors) + '</span></td><td>' + x.share + ' <span class="xs muted">' + pct(x.share, x.visitors) + '</span></td><td>' + x.consult + '</td></tr>'; }).join('') : '<tr><td colspan="7" class="muted">데이터 없음</td></tr>') +
     '</tbody></table></div></div>' +
     (series.length && labels.length ? lineChart('c_src', '경로별 일일 방문자 (사람/일, 상위 5개 경로)', '명', labels, series) : '<div class="card"><p class="small muted">경로별 일일 추이는 데이터가 쌓이면 보여요.</p></div>') +
     '<div class="card"><h2>캠페인 (utm_campaign)</h2>' + ((t.campaigns || []).length ? '<table class="tbl"><thead><tr><th>캠페인</th><th>경로</th><th>방문자</th><th>결과 확인</th></tr></thead><tbody>' + t.campaigns.map(function (c) { return '<tr><td><b>' + esc(c.camp) + '</b></td><td>' + esc(srcName(c.src)) + '</td><td>' + c.visitors + '</td><td>' + c.finish + ' <span class="xs muted">' + pct(c.finish, c.visitors) + '</span></td></tr>'; }).join('') + '</tbody></table>' : '<p class="small muted">아직 캠페인 링크로 들어온 사람이 없어요. 아래에서 캠페인 링크를 만들어 홍보 글에 쓰세요.</p>') + '</div>' +
@@ -589,17 +597,17 @@ function matchTab() {
 }
 function overviewTab() {
   var t = DATA.totals;
-  var funnel = [['방문', t.visit], ['참여 시작', t.start], ['성향 60문항 완료', t.likert_done], ['상황 12문항 완료', t.scenario_done], ['결과 확인', t.finish], ['심층 리포트 열람', t.report]];
-  return '<div class="kpis">' + kpi('방문자', t.visit, '고유 방문 기준') + kpi('참여 시작', t.start, '방문 대비 ' + pct(t.start, t.visit)) + kpi('결과 확인', t.finish, '완주율 ' + pct(t.finish, t.start)) +
+  var funnel = [['방문', t.visit, 'visit'], ['참여 시작', t.start, 'start'], ['성향 60문항 완료', t.likert_done, 'likert_done'], ['상황 12문항 완료', t.scenario_done, 'scenario_done'], ['결과 확인', t.finish, 'finish'], ['심층 리포트 열람', t.report, 'report']];
+  return needAud() + '<div class="kpis">' + kpi('방문자', t.visit, '고유 방문 기준') + kpi('참여 시작', t.start, '방문 대비 ' + pct(t.start, t.visit)) + kpi('결과 확인', t.finish, '완주율 ' + pct(t.finish, t.start)) +
     kpi('심층 리포트 열람', t.report, '결과 대비 ' + pct(t.report, t.finish)) + kpi('결과 공유', t.share, '결과 대비 ' + pct(t.share, t.finish)) + kpi('궁합 코드 복사', t.mycode, '궁합 이용 ' + t.compat + '명 · 심층 ' + t.deepCompat + '회') +
     kpi('평균 참여 시간', DATA.avgMinutes != null ? DATA.avgMinutes + '분' : '–', '목표 11~15분') + kpi('대나무숲', t.secretTotal + '개', '날려 보냄 ' + t.secretReleased + '회') +
     kpi('고민 상담', (DATA.consults ? DATA.consults.total : 0) + '건', '답변 필요 ' + CONS.filter(function (c) { return c.status !== '답변 완료'; }).length + '건 · 위기 ' + (DATA.consults ? DATA.consults.crisis : 0)) + '</div>' + homeCard() +
     '<div class="card"><h2>참여 단계별 이탈 (누적)</h2>' + funnel.map(function (f) {
-      return '<div class="row small" style="margin-bottom:9px"><span style="width:130px">' + f[0] + '</span><div class="bar"><div style="width:' + (t.visit ? f[1] / Math.max(t.visit, 1) * 100 : 0) + '%;background:var(--coral)"></div></div><b style="width:44px;text-align:right">' + f[1] + '</b><span class="muted" style="width:40px">' + pct(f[1], t.visit) + '</span></div>';
+      return '<div class="row small" style="margin-bottom:9px"><span style="width:130px">' + f[0] + '</span><div class="bar"><div style="width:' + (t.visit ? f[1] / Math.max(t.visit, 1) * 100 : 0) + '%;background:var(--coral)"></div></div><b style="width:44px;text-align:right">' + dn(f[1], f[0], has(f[2])) + '</b><span class="muted" style="width:40px">' + pct(f[1], t.visit) + '</span></div>';
     }).join('') + '</div>';
 }
 function resultsTab() {
-  return '<div class="grid2">' + dist('인기 유형 이름 TOP 12', DATA.dist.name) + dist('4글자 성격 코드', DATA.dist.code, null, 16) + dist('일간 분포', DATA.dist.dayStem, STEM_READ) +
+  return '<div class="grid2">' + dist('인기 유형 이름 TOP 12', DATA.dist.name) + dist('4글자 성격 코드', DATA.dist.code, null, 16, 'sj') + dist('일간 분포', DATA.dist.dayStem, STEM_READ, 0, 'st') +
     dist('혈액형', DATA.dist.blood, { '': '미선택' }) + dist('성별', DATA.dist.gender, GENDER) + '</div>';
 }
 function forestTab() {
@@ -662,7 +670,7 @@ function genTab() {
   var cross = keys.filter(function (k) { return m.cross[k]; }).map(function (k) { var c = m.cross[k]; return '<tr><td>' + GNAME[k] + '</td><td>' + keys.filter(function (g) { return c[g]; }).map(function (g) { return GNAME[g] + ' ' + c[g]; }).join(' · ') + '</td></tr>'; }).join('');
   return '<div class="kpis">' + kpi('테스트 시작', m.started, '') + kpi('완료', m.n, '완료율 ' + (m.started ? Math.round(m.n / m.started * 100) + '%' : '–')) + kpi('요즘 말 평균', m.avgRight != null ? m.avgRight + ' / 8' : '–', '언어 점수 평균 ' + (m.avgLang != null ? m.avgLang : '–')) +
     kpi('심층 리포트', x.spend, x.users + '명 · 코인 부족 ' + x.short + '회') + kpi('공유', EVN('share').sub.gen || 0, '') + '</div>' +
-    '<div class="card"><h2>감각 세대 분포</h2>' + keys.map(function (k) { var v = m.gen[k] || 0; return hbar(GNAME[k], v, gmax, v + '명 · ' + Math.round(v / m.n * 100) + '%'); }).join('') + '</div>' +
+    '<div class="card"><h2>감각 세대 분포</h2>' + keys.map(function (k) { var v = m.gen[k] || 0; return hbar(GNAME[k], v, gmax, dn(v + '명', '세대 감각 ' + GNAME[k], function (p) { return p.r && p.r.gn === k; }) + ' · ' + Math.round(v / m.n * 100) + '%'); }).join('') + '</div>' +
     (cross ? '<div class="card"><h2>실제 세대 → 감각 세대</h2><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>실제 세대(출생연도 입력자)</th><th>감각 세대</th></tr></thead><tbody>' + cross + '</tbody></table></div></div>' : '') +
     '<div class="card"><h2>요즘 말 단어별 정답률</h2><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>단어</th><th>정답률</th><th>출제</th></tr></thead><tbody>' + ws.map(function (w) { return '<tr><td>' + esc(w[0]) + '</td><td>' + w[3] + '%</td><td>' + w[2] + '회</td></tr>'; }).join('') + '</tbody></table></div><p class="small muted">정답률이 아주 낮거나 높은 단어는 매주 단어 점검 때 교체 후보로 봐요.</p></div>' +
     evDaily('일자별', [['gen_start', '시작'], ['gen_finish', '완료']]) + '<p class="small muted">한 사람이 여러 번 하면 마지막 결과만 셌어요.</p>';
@@ -678,7 +686,7 @@ function aiqTab() {
   return '<div class="kpis">' + kpi('테스트 시작', m.started, '') + kpi('완료', m.n, '완료율 ' + (m.started ? Math.round(m.n / m.started * 100) + '%' : '–')) + kpi('평균 AI 활용 지수', m.avgIdx != null ? m.avgIdx : '–', '정답형 평균 ' + (m.avgOk != null ? m.avgOk : '–') + ' / 15') +
     kpi('심층 리포트', x.spend, x.users + '명 · 코인 부족 ' + x.short + '회') + kpi('공유', EVN('share').sub.aiq || 0, '') + kpi('걸린 시간(중앙값)', m.medSec != null ? Math.round(m.medSec / 60 * 10) / 10 + '분' : '–', '') + '</div>' +
     '<div class="card"><h2>지수 분포</h2>' + m.hist.map(function (v, i) { return hbar((i * 10) + '~' + (i === 9 ? 100 : i * 10 + 9), v, hmax, v + '명'); }).join('') + '</div>' +
-    '<div class="card"><h2>활용 스타일 분포</h2>' + Object.keys(ASTYLE).map(function (k) { var v = m.style[k] || 0; return hbar(ASTYLE[k], v, smax, v + '명 · ' + Math.round(v / m.n * 100) + '%'); }).join('') + '</div>' +
+    '<div class="card"><h2>활용 스타일 분포</h2>' + Object.keys(ASTYLE).map(function (k) { var v = m.style[k] || 0; return hbar(ASTYLE[k], v, smax, dn(v + '명', 'AI 활용력 ' + ASTYLE[k], function (p) { return p.r && p.r.aq === k; }) + ' · ' + Math.round(v / m.n * 100) + '%'); }).join('') + '</div>' +
     '<div class="card"><h2>영역 평균 (0~100)</h2>' + Object.keys(ATRAIT).map(function (k) { var v = m.traits[k]; return hbar(ATRAIT[k], v || 0, 100, v == null ? '–' : String(v)); }).join('') + '</div>' +
     '<div class="card"><h2>문항별 응답 분포</h2><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>#</th><th>문항</th><th>보기별 응답 수</th></tr></thead><tbody>' + m.items.map(function (it, i) { return '<tr><td>' + (i + 1) + '</td><td>' + esc(AITEM[it.id] || it.id) + '</td><td>' + it.c.join(' · ') + '</td></tr>'; }).join('') + '</tbody></table></div><p class="small muted">정답형 문항에서 거의 모두 정답을 고르면 너무 쉬운 문항이에요. 바꿀 후보로 보세요.</p></div>' +
     evDaily('일자별', [['aiq_start', '시작'], ['aiq_finish', '완료']]) + '<p class="small muted">한 사람이 여러 번 하면 마지막 결과만 셌어요.</p>';
@@ -696,7 +704,7 @@ function moneyTab() {
   if (!m) return '<div class="card"><p class="small muted">Code.gs를 최신 버전으로 배포하면 이 날부터 재테크 DNA 기록이 쌓여요.</p></div>';
   if (!m.n) return '<div class="kpis">' + kpi('테스트 시작', m.started, '') + kpi('완료', 0, '') + '</div><div class="card"><p class="small muted">재테크 DNA를 완료한 사람이 아직 없어요 (데이터 없음).</p></div>';
   var tmax = Math.max.apply(null, Object.keys(MSTYLE).map(function (k) { return m.top[k] || 0; }).concat([1]));
-  var top = '<div class="card"><h2>1위 스타일 분포</h2>' + Object.keys(MSTYLE).map(function (k) { var v = m.top[k] || 0; return hbar(MSTYLE[k], v, tmax, v + '명 · ' + Math.round(v / m.n * 100) + '%'); }).join('') +
+  var top = '<div class="card"><h2>1위 스타일 분포</h2>' + Object.keys(MSTYLE).map(function (k) { var v = m.top[k] || 0; return hbar(MSTYLE[k], v, tmax, dn(v + '명', '재테크 ' + MSTYLE[k], function (p) { return p.r && p.r.mn === k; }) + ' · ' + Math.round(v / m.n * 100) + '%'); }).join('') +
     '<p class="small muted">한 스타일이 40% 넘게 몰리면 기질 프로필 수치를 다시 조정할 때예요.</p></div>';
   var tr = '<div class="card"><h2>기질 평균 (0~100)</h2>' + Object.keys(MTRAIT).map(function (k) { var v = m.traits[k]; return hbar(MTRAIT[k], v == null ? 0 : v, 100, v == null ? '–' : String(v)); }).join('') + '</div>';
   var items = '<div class="card"><h2>문항별 응답 분포</h2><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>#</th><th>문항</th><th>기질</th><th>보기별 응답 수</th></tr></thead><tbody>' + (m.items || []).map(function (it, i) {
@@ -730,10 +738,10 @@ function templeCover() {
 function templeTab() {
   if (TADM.items === null && !TADM.busy) templeAdminLoad();
   var s0 = EVN('temple_start'), s1 = EVN('temple_finish'), s2 = EVN('temple_pick'), sg = EVN('temple_suggest'), x = (DATA.coin && DATA.coin.items && DATA.coin.items.templex) || null;
-  var top = Object.keys(TP_TYPE).map(function (k) { return [TP_TYPE[k], s1.sub[k] || 0]; }), mx = Math.max.apply(null, top.map(function (t) { return t[1]; }).concat([1]));
+  var top = Object.keys(TP_TYPE).map(function (k) { return [TP_TYPE[k], s1.sub[k] || 0, k]; }), mx = Math.max.apply(null, top.map(function (t) { return t[1]; }).concat([1]));
   var sds = Object.keys(s2.sub).sort(function (a, b) { return s2.sub[b] - s2.sub[a]; }), mx2 = Math.max.apply(null, sds.map(function (k) { return s2.sub[k]; }).concat([1]));
   var head = '<div class="kpis">' + kpi('테스트 시작', s0.n, s0.users + '명') + kpi('완료', s1.n, '완료율 ' + pct(s1.n, s0.n)) + kpi('절 추천 확인', s2.n, '지역 고르고 결과 본 횟수') + kpi('참여자 절 추천', sg.n, '접수 기준') + '</div>' +
-    '<div class="grid2"><div class="card"><h2>1위 쉼터 유형</h2>' + (s1.n ? top.map(function (t) { return hbar(t[0], t[1], mx, t[1] + '명'); }).join('') : '<p class="small muted">데이터 없음</p>') + '</div>' +
+    '<div class="grid2"><div class="card"><h2>1위 쉼터 유형</h2>' + (s1.n ? top.map(function (t) { return hbar(t[0], t[1], mx, dn(t[1] + '명', '쉼터 1위 ' + t[0], function (p) { return p.r && p.r.tp === t[2]; })); }).join('') : '<p class="small muted">데이터 없음</p>') + '</div>' +
     '<div class="card"><h2>사는 시·도</h2>' + (sds.length ? sds.map(function (k) { return hbar(esc(k), s2.sub[k], mx2, s2.sub[k] + '회'); }).join('') : '<p class="small muted">데이터 없음</p>') + '<p class="xs muted">시·군·구는 서버에 남기지 않아요.</p></div></div>' +
     evDaily('일자별', [['temple_start', '시작'], ['temple_finish', '완료'], ['temple_suggest', '절 추천']]);
   if (TADM.busy && TADM.items === null) return head + '<p class="small muted">불러오는 중…</p>';
@@ -777,6 +785,206 @@ function previewTab() {
       return '<a class="sec" style="display:inline-flex;align-items:center;height:40px;padding:0 14px;border:1px solid #D9D6E6;border-radius:10px;text-decoration:none;color:inherit;font-size:14px" target="_blank" rel="noopener" href="' + base + '?demo=' + x[0] + '&lang=' + PV_LANG + '">' + x[1] + ' ↗</a>'; }).join('') + '</div></div>'; }).join('') +
     '<p class="small muted">새 서비스를 붙이면 PREVIEWS에 한 줄을 더하고, 앱의 demoStart()에 그 화면을 여는 방법을 추가해요.</p>';
 }
+/* ---------- 분석: 숫자를 누르면 대상자(익명번호) 목록 · 개인 상세 · 집단 요약 ----------
+ * DATA.audience = 익명번호마다 { s, f(첫 활동 ms), l(마지막), n(활동일 수), dd(첫날 기준 활동한 날 번호), src, camp, e{이벤트:횟수}, r{서비스 결과}, cs(쓴 코인), cg(받은 코인), sh(코인 부족) }
+ * 이름·연락처는 없다. 새 이벤트도 e에 자동으로 잡혀서 '전체 이벤트' 표와 퍼널 빌더에 바로 나온다 */
+var DR = [], DRV = null, AN = { steps: ['visit', 'start', 'finish', 'share'], range: 0 };
+var EVNAME = { visit: '방문', start: '사주 시작', likert_done: '성향 60문항 완료', scenario_done: '상황 12문항 완료', finish: '사주 결과 확인', report: '심층 리포트 열람', share: '결과 공유', mycode: '궁합 코드 복사', compat: '궁합 보기',
+  consult: '고민 상담', secret_post: '대나무숲 글', secret_release: '대나무숲 날려 보냄', invite_open: '궁합 초대 열기', taste: '30초 맛보기', result_update: '결과 갱신', resume: '이어서 하기',
+  brain_start: '두뇌 퍼즐 시작', brain_finish: '두뇌 퍼즐 완료', challenge_start: '두뇌 챌린지 도전', challenge_finish: '두뇌 챌린지 완료', money_start: '재테크 DNA 시작', money_finish: '재테크 DNA 완료',
+  aiq_start: 'AI 활용력 시작', aiq_finish: 'AI 활용력 완료', gen_start: '세대 감각 시작', gen_finish: '세대 감각 완료', temple_start: '절 테스트 시작', temple_finish: '절 테스트 완료', temple_pick: '절 추천 확인', temple_suggest: '절 추천 보냄',
+  coin: '코인 기록', push_on: '알림 켬', push_off: '알림 끔', push_err: '알림 오류', pwa_click: '앱 설치 버튼', pwa_installed: '앱 설치 완료', pwa_hide: '설치 안내 닫음', pwa_choice: '설치 창 응답',
+  shop_click: '추천템 둘러보기', cp_click: '쿠팡 추천템 클릭', ref_open: '초대 링크로 방문', ref_share: '초대 링크 공유', match_on: '귀인 찾기 등록', match_like: '귀인 좋아요', ny_open: '신년운세', lang: '언어 변경' };
+function evName(k) { return EVNAME[k] || k; }
+var SVC = [['finish', '사주×성향'], ['brain_finish', '두뇌 퍼즐'], ['money_finish', '재테크 DNA'], ['aiq_finish', 'AI 활용력'], ['gen_finish', '세대 감각'], ['temple_finish', '나에게 맞는 절'], ['taste', '30초 맛보기']];
+function aud() { return (DATA && DATA.audience) || null; }
+function has(t) { return function (p) { return (p.e[t] || 0) > 0; }; }
+function svcN(p) { return SVC.slice(0, 6).filter(function (x) { return p.e[x[0]]; }).length; }
+function dr(title, pred) { DR.push({ title: title, pred: pred }); return DR.length - 1; }
+/* 숫자 v를 누르면 pred에 맞는 사람 목록이 열린다 */
+function dn(v, title, pred) { return aud() && pred ? '<button class="drill" data-drill="' + dr(title, pred) + '" title="누가인지 보기">' + v + '</button>' : v; }
+var DAYMS = 864e5;
+function ago(ms) { var d = Math.floor((Date.now() - ms) / DAYMS); return d <= 0 ? '오늘' : d + '일 전'; }
+function dt(ms) { var d = new Date(ms + 9 * 3600e3); return d.toISOString().slice(5, 16).replace('T', ' ').replace('-', '/'); }
+function needAud() { return aud() ? '' : '<div class="card" style="border:1.5px solid var(--coral)"><p class="small"><b>대상자 보기·분석을 켜려면 Code.gs를 새 버전으로 배포해 주세요.</b> 지금은 합계만 보여요. 배포하면 모든 숫자를 눌러 누가인지 볼 수 있어요.</p></div>'; }
+/* ---------- 대상자 창 ---------- */
+function openDrill(i) { var d = DR[+i]; if (!d) return; DRV = { title: d.title, pred: d.pred, q: '', sort: 'l', who: null }; drawRender(); }
+function drillList() { var L = aud() || []; return L.filter(DRV.pred); }
+function groupSummary(L) {
+  var n = L.length, base = DRV.pred, bt = DRV.title; if (!n) return '';
+  var src = {}; L.forEach(function (p) { var k = p.src || 'unknown'; src[k] = (src[k] || 0) + 1; });
+  var srcTop = Object.keys(src).sort(function (a, b) { return src[b] - src[a]; }).slice(0, 5);
+  var avgDays = Math.round(L.reduce(function (a, p) { return a + p.n; }, 0) / n * 10) / 10, ret = L.filter(function (p) { return p.n >= 2; }).length;
+  var new7 = L.filter(function (p) { return Date.now() - p.f < 7 * DAYMS; }).length, act7 = L.filter(function (p) { return Date.now() - p.l < 7 * DAYMS; }).length;
+  var coinU = L.filter(function (p) { return p.cs > 0; }).length, push = L.filter(function (p) { return p.r && p.r.push; }).length;
+  var mini = function (l, v, sub, pred) { return '<div class="dk"><span>' + l + '</span><b>' + (pred ? '<button class="drill" data-sub="' + dr(bt + ' · ' + l, function (p) { return base(p) && pred(p); }) + '">' + v + '</button>' : v) + '</b><em>' + (sub || '') + '</em></div>'; };
+  return '<div class="dgrid">' + mini('재방문(2일+ 활동)', ret, pct(ret, n), function (p) { return p.n >= 2; }) + mini('평균 활동일', avgDays + '일') + mini('최근 7일 신규', new7, pct(new7, n), function (p) { return Date.now() - p.f < 7 * DAYMS; }) +
+    mini('최근 7일 활동', act7, pct(act7, n), function (p) { return Date.now() - p.l < 7 * DAYMS; }) + mini('코인 사용', coinU, pct(coinU, n), function (p) { return p.cs > 0; }) + mini('알림 켬', push, pct(push, n), function (p) { return p.r && p.r.push; }) + '</div>' +
+    '<div class="grid2" style="margin-top:10px"><div><b class="small">유입 경로</b>' + srcTop.map(function (k) { return hbar(esc(srcName(k)), src[k], n, src[k] + '명 · ' + pct(src[k], n)); }).join('') + '</div>' +
+    '<div><b class="small">서비스 이용 (완료 기준)</b>' + SVC.map(function (x) { var c = L.filter(has(x[0])).length; return hbar(x[1], c, n, c + '명 · ' + pct(c, n)); }).join('') + '</div></div>';
+}
+function personHtml(p) {
+  var ev = Object.keys(p.e).sort(function (a, b) { return p.e[b] - p.e[a]; }), r = p.r || {};
+  var res = [r.sj && '성격 코드 ' + r.sj, r.st && '일간 ' + (STEM_READ[r.st] || r.st), r.ts && !r.sj && '맛보기 일간 ' + (STEM_READ[r.ts] || r.ts), r.br != null && '두뇌 퍼즐 ' + r.br + '점', r.mn && '재테크 ' + (MSTYLE[r.mn] || r.mn), r.aq && 'AI ' + (ASTYLE[r.aq] || r.aq), r.gn && '세대 ' + (GNAME[r.gn] || r.gn), r.tp && '쉼터 ' + (TP_TYPE[r.tp] || r.tp)].filter(Boolean);
+  var days = (p.dd || []).map(function (x) { return x === 0 ? '첫날' : '+' + x + '일'; }).join(' · ');
+  return '<div class="row between"><button class="sec" data-dback="1">← 목록으로</button><span class="small muted">익명번호 <b>' + esc(p.s) + '</b>' + (p.rc ? ' · 리포트 코드 ' + esc(p.rc) : '') + '</span></div>' +
+    '<div class="dgrid" style="margin-top:10px"><div class="dk"><span>첫 활동</span><b>' + dt(p.f) + '</b><em>' + ago(p.f) + '</em></div><div class="dk"><span>마지막 활동</span><b>' + dt(p.l) + '</b><em>' + ago(p.l) + '</em></div>' +
+    '<div class="dk"><span>활동한 날</span><b>' + p.n + '일</b><em>' + esc(days) + '</em></div><div class="dk"><span>첫 유입</span><b>' + esc(srcName(p.src || 'unknown')) + '</b><em>' + esc(p.camp || '') + '</em></div>' +
+    '<div class="dk"><span>코인</span><b>받음 ' + p.cg + ' · 씀 ' + p.cs + '</b><em>' + (p.sh ? '부족 ' + p.sh + '회' : '') + '</em></div><div class="dk"><span>알림</span><b>' + (r.push ? '켬' : '꺼짐') + '</b></div></div>' +
+    (res.length ? '<p class="small" style="margin:12px 0 4px"><b>결과</b> · ' + res.map(esc).join(' · ') + '</p>' : '') +
+    '<table class="tbl" style="margin-top:8px"><thead><tr><th>활동</th><th>횟수</th></tr></thead><tbody>' + ev.map(function (k) { return '<tr><td>' + esc(evName(k)) + ' <span class="xs muted">' + esc(k) + '</span></td><td>' + p.e[k] + '</td></tr>'; }).join('') + '</tbody></table>' +
+    '<div class="row" style="gap:8px;margin-top:10px"><button class="sec" data-dgift1="' + esc(p.s) + '">이 사람에게 코인 선물</button></div>';
+}
+function drawRender() {
+  var el = document.getElementById('drawer'); if (!el) { el = document.createElement('div'); el.id = 'drawer'; document.body.appendChild(el); }
+  if (!DRV) { el.innerHTML = ''; document.body.classList.remove('dopen'); return; }
+  document.body.classList.add('dopen');
+  var all = drillList();
+  var q = DRV.q.toLowerCase(), L = all.filter(function (p) { return !q || p.s.toLowerCase().indexOf(q) >= 0 || (p.rc || '').toLowerCase().indexOf(q) >= 0 || (p.src || '').indexOf(q) >= 0; });
+  var S = { l: function (a, b) { return b.l - a.l; }, f: function (a, b) { return b.f - a.f; }, n: function (a, b) { return b.n - a.n || b.l - a.l; }, ev: function (a, b) { return evSum(b) - evSum(a); }, cs: function (a, b) { return b.cs - a.cs; }, svc: function (a, b) { return svcN(b) - svcN(a) || b.l - a.l; } };
+  L.sort(S[DRV.sort] || S.l);
+  var body;
+  if (DRV.who) { var who = (aud() || []).filter(function (p) { return p.s === DRV.who; })[0]; body = who ? personHtml(who) : '<p>없음</p>'; }
+  else body = groupSummary(all) +
+    '<div class="row" style="gap:8px;flex-wrap:wrap;margin:14px 0 8px"><input id="dq" placeholder="익명번호·리포트 코드·유입 검색" value="' + esc(DRV.q) + '" style="height:36px;flex:1;min-width:180px;padding:0 10px">' +
+    '<select id="dsort" style="height:36px">' + [['l', '최근 활동 순'], ['f', '최근 첫 방문 순'], ['n', '활동일 많은 순'], ['svc', '이용 서비스 많은 순'], ['ev', '활동 많은 순'], ['cs', '코인 많이 쓴 순']].map(function (o) { return '<option value="' + o[0] + '"' + (DRV.sort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>' +
+    '<button class="sec" data-dcsv="1">CSV</button><button class="sec" data-dcopy="1">익명번호 복사</button><button class="sec" data-dgift="1">이 대상에 코인 선물</button></div>' +
+    '<div style="overflow-x:auto"><table class="tbl dtbl"><thead><tr><th>익명번호</th><th>첫 활동</th><th>마지막</th><th>활동일</th><th>유입</th><th>이용 서비스</th><th>코인 씀</th></tr></thead><tbody>' +
+    (L.length ? L.slice(0, 300).map(function (p) {
+      return '<tr data-who="' + esc(p.s) + '"><td><b>' + esc(p.s) + '</b>' + (p.rc ? '<div class="xs muted">' + esc(p.rc) + '</div>' : '') + '</td><td>' + ago(p.f) + '</td><td>' + ago(p.l) + '</td><td>' + p.n + '</td><td>' + esc(srcName(p.src || 'unknown')) + '</td><td>' +
+        SVC.filter(function (x) { return p.e[x[0]]; }).map(function (x) { return '<span class="tag">' + x[1] + '</span>'; }).join(' ') + '</td><td>' + (p.cs || '') + '</td></tr>'; }).join('') : '<tr><td colspan="7" class="muted">해당하는 사람이 없어요</td></tr>') + '</tbody></table></div>' +
+    (L.length > 300 ? '<p class="xs muted">앞의 300명만 보여요. 전체는 CSV로 받아 주세요.</p>' : '');
+  el.innerHTML = '<div class="dbg" data-dclose="1"></div><aside class="dpanel" role="dialog" aria-modal="true" aria-label="대상자 보기"><div class="row between" style="gap:10px"><div><span class="small muted">대상자 보기</span><h2 style="margin:2px 0">' + esc(DRV.title) + ' · ' + all.length.toLocaleString('ko-KR') + '명</h2></div><button class="sec" data-dclose="1">닫기</button></div>' +
+    '<p class="xs muted" style="margin:0 0 10px">익명번호 기준이라 이름·연락처는 없어요. 최근 활동한 5,000명까지 분석해요.</p>' + body + '</aside>';
+  var dq = document.getElementById('dq'); if (dq) { dq.addEventListener('input', function () { DRV.q = dq.value; var pos = dq.selectionStart; drawRender(); var n = document.getElementById('dq'); n.focus(); n.setSelectionRange(pos, pos); }); }
+  var ds = document.getElementById('dsort'); if (ds) ds.addEventListener('change', function () { DRV.sort = ds.value; drawRender(); });
+}
+function evSum(p) { var s = 0; for (var k in p.e) s += p.e[k]; return s; }
+function drillCsv() {
+  var L = drillList(), head = ['익명번호', '리포트코드', '첫활동', '마지막활동', '활동일', '유입', '캠페인', '이용서비스', '받은코인', '쓴코인', '코인부족', '알림'].concat(SVC.map(function (x) { return x[1]; }));
+  var rows = L.map(function (p) { return [p.s, p.rc, dt(p.f), dt(p.l), p.n, srcName(p.src || 'unknown'), p.camp, svcN(p), p.cg, p.cs, p.sh, p.r && p.r.push ? 'Y' : ''].concat(SVC.map(function (x) { return p.e[x[0]] ? 'Y' : ''; })); });
+  var csv = '﻿' + [head].concat(rows).map(function (r) { return r.map(function (v) { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(','); }).join('\n');
+  var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = 'mymyme_' + DRV.title.replace(/[^\w가-힣]+/g, '_') + '.csv'; a.click();
+}
+document.addEventListener('click', function (e) {
+  var t = e.target.closest('[data-drill],[data-sub],[data-dclose],[data-dback],[data-who],[data-dcsv],[data-dcopy],[data-dgift],[data-dgift1],[data-ansteps],[data-anrm],[data-anrange]'); if (!t) return;
+  var d = t.dataset;
+  if (d.drill != null) { e.preventDefault(); e.stopPropagation(); openDrill(d.drill); }
+  else if (d.sub != null) { var x = DR[+d.sub]; if (x) { DRV.title = x.title; DRV.pred = x.pred; DRV.q = ''; drawRender(); } }
+  else if (d.dclose) { DRV = null; drawRender(); }
+  else if (d.dback) { DRV.who = null; drawRender(); }
+  else if (d.who) { DRV.who = d.who; drawRender(); var pn = document.querySelector('.dpanel'); if (pn) pn.scrollTop = 0; }
+  else if (d.dcsv) drillCsv();
+  else if (d.dcopy) { var ids = drillList().map(function (p) { return p.s; }).join('\n'); try { navigator.clipboard.writeText(ids); alert(drillList().length + '명의 익명번호를 복사했어요.'); } catch (er) { prompt('복사해 주세요', ids); } }
+  else if (d.dgift) { var L = drillList(); if (L.length > 300 && !confirm(L.length + '명이에요. 모두에게 보낼까요?')) return; giftTo(L.map(function (p) { return p.s; })); }
+  else if (d.dgift1) giftTo([d.dgift1]);
+}, true);
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && DRV) { DRV = null; drawRender(); } });
+/* ---------- 분석 탭 ---------- */
+function segs() {
+  var now = Date.now(), D = DAYMS;
+  return [
+    ['전체 방문자', '익명번호가 한 번이라도 기록된 사람', function () { return true; }],
+    ['오늘 활동', '오늘 무엇이든 한 사람', function (p) { return now - p.l < D && new Date(p.l + 9 * 3600e3).toISOString().slice(0, 10) === kstToday(); }],
+    ['최근 7일 신규', '처음 온 지 7일 이내', function (p) { return now - p.f < 7 * D; }],
+    ['재방문자', '2일 이상 활동', function (p) { return p.n >= 2; }],
+    ['단골', '5일 이상 활동', function (p) { return p.n >= 5; }],
+    ['이탈 위험', '2일 이상 왔지만 14일째 안 옴', function (p) { return p.n >= 2 && now - p.l > 14 * D; }],
+    ['방문만 하고 떠남', '방문 외 활동 없음', function (p) { return Object.keys(p.e).every(function (k) { return k === 'visit' || k === 'lang'; }); }],
+    ['맛보기만', '30초 맛보기 후 정밀 분석 안 함', function (p) { return p.e.taste && !p.e.start; }],
+    ['사주 중도 이탈', '시작했지만 결과를 못 봄', function (p) { return p.e.start && !p.e.finish; }],
+    ['결과 보고 공유 안 함', '바이럴 후보', function (p) { return p.e.finish && !p.e.share; }],
+    ['공유한 사람', '결과 공유 1회 이상', has('share')],
+    ['서비스 2개 이상', '교차 이용', function (p) { return svcN(p) >= 2; }],
+    ['서비스 3개 이상', '고관여', function (p) { return svcN(p) >= 3; }],
+    ['코인 써 본 사람', '유료 리포트 수요', function (p) { return p.cs > 0; }],
+    ['코인 부족 겪음', '충전 안내 대상', function (p) { return p.sh > 0; }],
+    ['코인 받기만 함', '받았지만 안 씀', function (p) { return p.cg > 0 && !p.cs; }],
+    ['알림 켬', '푸시 대상', function (p) { return p.r && p.r.push; }],
+    ['앱 설치', '설치 완료 기록', has('pwa_installed')],
+    ['추천템 클릭', '칼렛스토어 둘러보기', has('shop_click')],
+    ['쿠팡 클릭', '쿠팡 추천템', has('cp_click')],
+    ['초대로 온 사람', '친구 초대 링크', has('ref_open')],
+    ['귀인 찾기 등록', '', has('match_on')]
+  ];
+}
+function anRangeOk(p) { return !AN.range || Date.now() - p.f < AN.range * DAYMS; }
+function analysisTab() {
+  if (!aud()) return needAud();
+  var A = aud().filter(anRangeOk), N = A.length;
+  var rangeBar = '<div class="row" style="gap:6px;flex-wrap:wrap"><span class="small muted" style="align-self:center">첫 방문 기준</span>' + [[0, '전체'], [7, '최근 7일'], [30, '최근 30일'], [90, '최근 90일']].map(function (r) { return '<button class="sec" data-anrange="' + r[0] + '" style="' + (AN.range === r[0] ? 'border-color:var(--ink);font-weight:700' : '') + '">' + r[1] + '</button>'; }).join('') + '<span class="small muted" style="align-self:center">· 숫자를 누르면 누가인지 보여요</span></div>';
+  var RG = function (f) { return function (p) { return anRangeOk(p) && f(p); }; };
+  /* 1) 세그먼트 */
+  var segHtml = '<div class="card"><h2>세그먼트</h2><div class="seg">' + segs().map(function (s) { var c = A.filter(s[2]).length;
+    return '<div class="segc"><span>' + s[0] + '</span><b>' + dn(c.toLocaleString('ko-KR'), s[0], RG(s[2])) + '</b><em>' + pct(c, N) + (s[1] ? ' · ' + s[1] : '') + '</em></div>'; }).join('') + '</div></div>';
+  /* 2) 퍼널 빌더 */
+  var evs = {}; A.forEach(function (p) { for (var k in p.e) evs[k] = (evs[k] || 0) + 1; });
+  var evKeys = Object.keys(evs).sort(function (a, b) { return evs[b] - evs[a]; });
+  var steps = AN.steps.filter(function (k) { return k; }), prevSet = A, fRows = steps.map(function (k, i) {
+    var nowSet = prevSet.filter(has(k)), drop = prevSet.length - nowSet.length, sl = steps.slice(0, i + 1), pv = steps.slice(0, i);
+    var row = '<tr><td><select data-ansteps="' + i + '">' + evKeys.map(function (x) { return '<option value="' + x + '"' + (x === k ? ' selected' : '') + '>' + esc(evName(x)) + '</option>'; }).join('') + '</select></td><td><b>' + dn(nowSet.length, sl.map(evName).join(' → '), RG(function (p) { return sl.every(function (s) { return p.e[s]; }); })) + '</b></td>' +
+      '<td>' + (i ? pct(nowSet.length, prevSet.length) : '–') + '</td><td>' + pct(nowSet.length, A.length) + '</td><td>' + (i ? dn(drop, evName(pv[pv.length - 1]) + ' 후 ' + evName(k) + ' 안 함', RG(function (p) { return pv.every(function (s) { return p.e[s]; }) && !p.e[k]; })) : '–') + '</td><td>' + (steps.length > 2 ? '<button class="sec mini" data-anrm="' + i + '">빼기</button>' : '') + '</td></tr>';
+    prevSet = nowSet; return row; }).join('');
+  var funHtml = '<div class="card"><h2>퍼널 빌더</h2><p class="small muted">단계를 골라 어디서 빠지는지 봐요. 앞 단계를 모두 한 사람 중 이번 단계까지 한 사람을 세요(순서는 보지 않아요).</p><table class="tbl"><thead><tr><th>단계</th><th>사람</th><th>전 단계 대비</th><th>전체 대비</th><th>여기서 빠짐</th><th></th></tr></thead><tbody>' + fRows + '</tbody></table>' +
+    (steps.length < 7 ? '<button class="sec" data-ansteps="add" style="margin-top:8px">단계 추가</button>' : '') + '</div>';
+  /* 3) 재방문 코호트 (첫 방문 주차별) */
+  var wk = function (ms) { var d = Math.floor((ms + 9 * 3600e3) / DAYMS); return d - ((d + 3) % 7); };   // 월요일 시작 주
+  var cohorts = {}; aud().forEach(function (p) { var w = wk(p.f); (cohorts[w] = cohorts[w] || []).push(p); });
+  var wks = Object.keys(cohorts).map(Number).sort(function (a, b) { return b - a; }).slice(0, 8), today = Math.floor((Date.now() + 9 * 3600e3) / DAYMS);
+  var cohHtml = '<div class="card"><h2>재방문 코호트</h2><p class="small muted">첫 방문한 주별로, N주 뒤에 다시 활동한 사람 비율이에요. 아직 오지 않은 주는 비워 둬요.</p><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>첫 방문 주</th><th>사람</th>' + [1, 2, 3, 4, 6, 8].map(function (w) { return '<th>' + w + '주 뒤</th>'; }).join('') + '</tr></thead><tbody>' +
+    wks.map(function (w) { var L = cohorts[w], lab = new Date(w * DAYMS).toISOString().slice(5, 10).replace('-', '/') + ' 주';
+      return '<tr><td>' + lab + '</td><td>' + dn(L.length, lab + ' 첫 방문', function (p) { return wk(p.f) === w; }) + '</td>' + [1, 2, 3, 4, 6, 8].map(function (k) {
+        if (w + k * 7 > today) return '<td class="muted">–</td>';
+        var f = function (p) { var f0 = Math.floor((p.f + 9 * 3600e3) / DAYMS); return (p.dd || []).some(function (x) { var dd = x + f0 - w; return dd >= k * 7 && dd < k * 7 + 7; }); };
+        var c = L.filter(f).length, v = L.length ? Math.round(c / L.length * 100) : 0;
+        return '<td style="background:rgba(75,63,199,' + (v / 100 * 0.6 + 0.04) + ');color:' + (v > 50 ? '#fff' : 'inherit') + '">' + dn(v + '%', lab + ' 첫 방문 · ' + k + '주 뒤 재방문', function (p) { return wk(p.f) === w && f(p); }) + ' <span class="xs">(' + c + ')</span></td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div></div>';
+  /* 4) 서비스 교차 이용 */
+  var S6 = SVC.slice(0, 7);
+  var crossHtml = '<div class="card"><h2>서비스 교차 이용</h2><p class="small muted">행 서비스를 한 사람 중 열 서비스도 한 사람이에요. 다음에 어떤 서비스를 권할지 정할 때 봐요.</p><div style="overflow-x:auto"><table class="tbl"><thead><tr><th></th><th>사람</th>' + S6.map(function (x) { return '<th>' + x[1] + '</th>'; }).join('') + '</tr></thead><tbody>' +
+    S6.map(function (a) { var L = A.filter(has(a[0])); return '<tr><td><b>' + a[1] + '</b></td><td>' + dn(L.length, a[1], RG(has(a[0]))) + '</td>' + S6.map(function (b) {
+      if (a === b) return '<td class="muted">–</td>'; var c = L.filter(has(b[0])).length, v = L.length ? Math.round(c / L.length * 100) : 0;
+      return '<td style="background:rgba(211,90,46,' + (v / 100 * 0.55 + 0.03) + ')">' + dn(v + '%', a[1] + ' + ' + b[1], RG(function (p) { return p.e[a[0]] && p.e[b[0]]; })) + ' <span class="xs">(' + c + ')</span></td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div></div>';
+  /* 5) 유입 경로 품질 */
+  var src = {}; A.forEach(function (p) { var k = p.src || 'unknown'; (src[k] = src[k] || []).push(p); });
+  var srcHtml = '<div class="card"><h2>유입 경로별 품질</h2><p class="small muted">어디서 온 사람이 오래 남고 많이 쓰는지 비교해요. 광고·게시 채널 우선순위를 정할 때 봐요.</p><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>경로</th><th>사람</th><th>무엇이든 참여</th><th>사주 완료</th><th>공유</th><th>재방문</th><th>평균 활동일</th><th>평균 서비스 수</th><th>코인 사용</th></tr></thead><tbody>' +
+    Object.keys(src).sort(function (a, b) { return src[b].length - src[a].length; }).map(function (k) { var L = src[k], n = L.length, nm = srcName(k), F = function (f) { return function (p) { return (p.src || 'unknown') === k && anRangeOk(p) && f(p); }; };
+      var eng = function (p) { return Object.keys(p.e).some(function (x) { return x !== 'visit' && x !== 'lang'; }); };
+      var c = function (f, lab) { var m = L.filter(f).length; return dn(m, nm + ' · ' + lab, F(f)) + ' <span class="xs muted">' + pct(m, n) + '</span>'; };
+      return '<tr><td><b>' + esc(nm) + '</b></td><td>' + dn(n, nm + ' 유입', F(function () { return true; })) + '</td><td>' + c(eng, '무엇이든 참여') + '</td><td>' + c(has('finish'), '사주 완료') + '</td><td>' + c(has('share'), '공유') + '</td><td>' + c(function (p) { return p.n >= 2; }, '재방문') + '</td><td>' +
+        (Math.round(L.reduce(function (a, p) { return a + p.n; }, 0) / n * 10) / 10) + '</td><td>' + (Math.round(L.reduce(function (a, p) { return a + svcN(p); }, 0) / n * 10) / 10) + '</td><td>' + c(function (p) { return p.cs > 0; }, '코인 사용') + '</td></tr>'; }).join('') + '</tbody></table></div></div>';
+  /* 6) 시간대 히트맵 */
+  var H = DATA.heat, heatHtml = '';
+  if (H) { var mx = Math.max.apply(null, H.map(function (r) { return Math.max.apply(null, r); }).concat([1])), WD = ['일', '월', '화', '수', '목', '금', '토'];
+    var best = []; H.forEach(function (r, w) { r.forEach(function (v, h) { best.push([v, w, h]); }); }); best.sort(function (a, b) { return b[0] - a[0]; });
+    heatHtml = '<div class="card"><h2>방문 시간대 (요일 × 시간, 한국 시간)</h2><p class="small muted">게시물 올릴 시간과 알림 보낼 시간을 정할 때 봐요. 가장 많은 시간: ' + best.slice(0, 3).filter(function (b) { return b[0]; }).map(function (b) { return WD[b[1]] + ' ' + b[2] + '시(' + b[0] + ')'; }).join(', ') + '</p>' +
+      '<div style="overflow-x:auto"><table class="heat"><thead><tr><th></th>' + H[0].map(function (_, h) { return '<th>' + h + '</th>'; }).join('') + '</tr></thead><tbody>' + H.map(function (r, w) { return '<tr><th>' + WD[w] + '</th>' + r.map(function (v) { return '<td title="' + v + '회" style="background:rgba(75,63,199,' + (v ? v / mx * 0.9 + 0.08 : 0) + ')"></td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div></div>'; }
+  /* 7) 전체 이벤트 */
+  var evHtml = '<div class="card"><h2>전체 활동 목록</h2><p class="small muted">앱이 기록하는 모든 활동이에요. 새 기능을 붙이면 여기에 자동으로 나와요.</p><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>활동</th><th>한 사람</th><th>비율</th><th>총 횟수</th><th>1인당</th></tr></thead><tbody>' +
+    evKeys.map(function (k) { var tot = A.reduce(function (a, p) { return a + (p.e[k] || 0); }, 0);
+      return '<tr><td>' + esc(evName(k)) + ' <span class="xs muted">' + esc(k) + '</span></td><td>' + dn(evs[k], evName(k), RG(has(k))) + '</td><td>' + pct(evs[k], N) + '</td><td>' + tot.toLocaleString('ko-KR') + '</td><td>' + (Math.round(tot / evs[k] * 10) / 10) + '</td></tr>'; }).join('') + '</tbody></table></div></div>';
+  return rangeBar + segHtml + funHtml + '<div class="grid2">' + cohHtml + heatHtml + '</div>' + crossHtml + srcHtml + evHtml;
+}
+document.addEventListener('change', function (e) { var t = e.target; if (t.dataset && t.dataset.ansteps != null && t.dataset.ansteps !== 'add') { AN.steps[+t.dataset.ansteps] = t.value; render(); } });
+document.addEventListener('click', function (e) { var t = e.target.closest('[data-ansteps="add"],[data-anrm],[data-anrange]'); if (!t) return; var d = t.dataset;
+  if (d.ansteps === 'add') { AN.steps.push('report'); render(); } else if (d.anrm != null) { AN.steps.splice(+d.anrm, 1); render(); } else if (d.anrange != null) { AN.range = +d.anrange; render(); } });
+
+/* kpi 숫자 → 대상자: '탭|라벨' 또는 '*|라벨'로 찾는다 */
+function both(a, b) { return function (p) { return p.e[a] && p.e[b]; }; }
+var KPI_DRILL = {
+  '*|방문자': has('visit'), '*|기간 방문자': has('visit'), '*|참여 시작': has('start'), '*|결과 확인': has('finish'), '*|심층 리포트 열람': has('report'), '*|심층 리포트': has('report'), '*|결과 공유': has('share'),
+  '*|궁합 코드 복사': has('mycode'), '*|30초 맛보기': has('taste'), '*|→ 정밀 분석 시작': both('taste', 'start'), '*|→ 결과 확인': both('taste', 'finish'),
+  '*|푸시 구독': function (p) { return p.r && p.r.push; }, '*|알림 켠 사람': function (p) { return p.r && p.r.push; },
+  '*|오늘 방문자': function (p) { return new Date(p.l + 9 * 3600e3).toISOString().slice(0, 10) === kstToday(); }, '*|지금 접속 중': function (p) { return Date.now() - p.l < 10 * 60000; },
+  '*|오늘 결과 확인': function (p) { return p.e.finish && new Date(p.l + 9 * 3600e3).toISOString().slice(0, 10) === kstToday(); },
+  '*|고민 상담': has('consult'), '*|대나무숲': has('secret_post'), '*|초대 링크로 방문': has('ref_open'), '*|궁합 본 횟수': has('compat'), '*|코드 복사·보내기': has('mycode'),
+  '*|칼렛스토어 둘러보기 클릭': has('shop_click'), '*|쿠팡 추천템 클릭': has('cp_click'), '*|지급한 코인': function (p) { return p.cg > 0; }, '*|사용한 코인': function (p) { return p.cs > 0; },
+  'brain|퍼즐 시작': has('brain_start'), 'brain|퍼즐 완료': has('brain_finish'), 'brain|도전한 사람(1단계)': has('challenge_start'),
+  'gen|테스트 시작': has('gen_start'), 'gen|완료': has('gen_finish'), 'aiq|테스트 시작': has('aiq_start'), 'aiq|완료': has('aiq_finish'),
+  'money|테스트 시작': has('money_start'), 'money|완료': has('money_finish'),
+  'temple|테스트 시작': has('temple_start'), 'temple|완료': has('temple_finish'), 'temple|절 추천 확인': has('temple_pick'), 'temple|참여자 절 추천': has('temple_suggest')
+};
+function kpiPred(l) { var k = String(l).replace(/<[^>]+>/g, ''); return KPI_DRILL[TAB + '|' + k] || KPI_DRILL['*|' + k] || null; }
+
 var SERVICES = [
   { id: 'saju', name: '사주×성향', tab: sajuTab },
   { id: 'compat', name: '궁합·리포트 코드', tab: compatTab },
@@ -789,14 +997,14 @@ var SERVICES = [
   { id: 'forest', name: '대나무숲·상담', tab: function () { return forestTab(); } }
 ];
 function render() {
-  CHARTS = {};
+  CHARTS = {}; DR = [];
   var waiting = CONS.filter(function (c) { return c.status !== '답변 완료'; }).length;
   if (TAB === 'results' || TAB === 'funnel') { SAJU_SUB = TAB; TAB = 'saju'; }
-  var common = [['overview', '개요'], ['trends', '일자별 보기'], ['traffic', '유입 경로'], ['people', '참여자'], ['coin', '마마미코인'], ['push', '알림 보내기'], ['match', '귀인 찾기'], ['ai', 'AI 사용량'], ['preview', '미리보기']];
+  var common = [['overview', '개요'], ['analysis', '분석'], ['trends', '일자별 보기'], ['traffic', '유입 경로'], ['people', '참여자'], ['coin', '마마미코인'], ['push', '알림 보내기'], ['match', '귀인 찾기'], ['ai', 'AI 사용량'], ['preview', '미리보기']];
   var svc = SERVICES.map(function (x) { return [x.id, x.name + (x.id === 'forest' && waiting ? ' (' + waiting + ')' : '')]; });
   var tabBtn = function (t) { return '<button role="tab" aria-selected="' + (TAB === t[0]) + '" class="tabb' + (TAB === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>'; };
   var svcHit = SERVICES.filter(function (x) { return x.id === TAB; })[0];
-  var body = svcHit ? svcHit.tab() : TAB === 'preview' ? previewTab() : TAB === 'trends' ? trendsTab() : TAB === 'ai' ? aiTab() : TAB === 'coin' ? coinTab() : TAB === 'push' ? pushTab() : TAB === 'match' ? matchTab() : TAB === 'traffic' ? trafficTab() : TAB === 'people' ? peopleTab() : TAB === 'results' ? resultsTab() : TAB === 'forest' ? forestTab() : overviewTab();
+  var body = svcHit ? svcHit.tab() : TAB === 'analysis' ? analysisTab() : TAB === 'preview' ? previewTab() : TAB === 'trends' ? trendsTab() : TAB === 'ai' ? aiTab() : TAB === 'coin' ? coinTab() : TAB === 'push' ? pushTab() : TAB === 'match' ? matchTab() : TAB === 'traffic' ? trafficTab() : TAB === 'people' ? peopleTab() : TAB === 'results' ? resultsTab() : TAB === 'forest' ? forestTab() : overviewTab();
   app.innerHTML = '<div class="row between" style="flex-wrap:wrap"><h1>MyMyMe 관리자</h1><div class="row"><span class="small muted">갱신 ' + new Date(DATA.updated).toLocaleString('ko-KR') + '</span><button class="sec" id="re">새로고침</button><button class="sec" id="out">로그아웃</button></div></div>' +
     '<nav class="tabs" role="tablist"><span class="small muted" style="align-self:center;margin-right:4px">공통</span>' + common.map(tabBtn).join('') + '</nav>' +
     '<nav class="tabs" role="tablist" style="margin-top:-6px"><span class="small muted" style="align-self:center;margin-right:4px">서비스</span>' + svc.map(tabBtn).join('') + '</nav>' +
