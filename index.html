@@ -9036,7 +9036,7 @@ if (DEMO) { try { Storage.prototype.setItem = function () {}; Storage.prototype.
 var PUBLIC = true;
 var ENDPOINT = "https://script.google.com/macros/s/AKfycbx2G0QG_yhq32sInKS2ScJDQsfuMxgpo4yIwiy5BEvhhK5LCy239wUOnT-Dz-FZsfGE/exec";
 var SITE_URL = "https://mymyme.app/";
-var BUILD = "1795225046";
+var BUILD = "1795225381";
 var SID = (function () { try { var v = localStorage.getItem('mymyme_sid'); if (!v) { v = Math.random().toString(36).slice(2, 12); localStorage.setItem('mymyme_sid', v); } return v; } catch (e) { return 'anon'; } })();
 function post(body) { if (!ENDPOINT || DEMO) return Promise.resolve(null); body.sid = SID; return fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(body) }).then(function (r) { return r.json(); }).catch(function () { return null; }); }
 function track(type, data) { post({ kind: 'event', type: type, data: data || {} }); if (REF_FINISH.indexOf(type) >= 0) refDone(); }
@@ -10480,8 +10480,10 @@ function earnCard() {
   if (homeNew() && picks.length) out += '<div class="col" style="gap:2px;padding:10px 0 4px;border-top:1px solid var(--line)"><div class="row between"><b class="small">🌿 오늘의 추천템 둘러보기 <span style="color:var(--ok)">+' + SHOP_COIN + '</span></b>' + (shopDone() ? '<span class="xs" style="color:var(--ok);font-weight:700">받음 ✓</span>' : '') + '</div><span class="xs muted">' + (shopDone() ? '오늘은 받았어요 · 내일 또 받을 수 있어요' : '아래 상품 중 하나를 ' + SHOP_SEC + '초 넘게 둘러보고 돌아오면 받아요 · 하루 1번') + '</span></div>' +
     picks.map(function (x) { return '<div class="row between" style="gap:10px;padding:7px 0 7px 10px"><span class="col" style="flex:1;gap:1px;min-width:0"><span class="small" style="font-weight:600">' + esc(x.name) + '</span>' + (x.desc ? '<span class="xs muted">' + esc(x.desc) + '</span>' : '') + '</span><button class="btn ' + (shopDone() ? 'btn-sec' : 'btn-pri') + '" style="min-height:34px;padding:0 12px;font-size:13px;width:auto;flex:none" data-act="shopVisit" data-id="' + esc(x.id) + '">' + T('보기') + '</button></div>'; }).join('');
   if (homeNew() && S.result) out += '<div class="row between" style="gap:10px;padding:10px 0;border-top:1px solid var(--line)"><span class="col" style="flex:1;gap:2px"><b class="small">🃏 오늘의 카드 열기 <span style="color:var(--ok)">+' + DAYCARD_COIN + '</span></b><span class="xs muted">' + (COIN.dayCard === TODAY ? '오늘은 받았어요' : '홈 화면의 오늘의 카드 · 하루 1번') + '</span></span>' + (COIN.dayCard === TODAY ? '<span class="xs" style="color:var(--ok);font-weight:700;flex:none">받음 ✓</span>' : '<button class="btn btn-sec" style="min-height:36px;padding:0 12px;font-size:13px;width:auto;flex:none" data-act="earnDay">' + T('열기') + '</button>') + '</div>';
+  if (homeNew() && SHOP.cp.length) out += '<div class="col" style="gap:2px;padding:10px 0 4px;border-top:1px solid var(--line)"><b class="small">🛍️ 함께 보면 좋은 추천템</b><span class="xs muted">쿠팡 파트너스 활동으로 수수료를 받는 링크예요</span></div>' +
+    SHOP.cp.slice(0, SHOP_SHOW).map(function (x) { return '<a class="row between" style="gap:10px;padding:7px 0 7px 10px;text-decoration:none;color:inherit" href="' + esc(x.url) + '" target="_blank" rel="noopener sponsored" data-cp="' + esc(x.id) + '"><span class="col" style="flex:1;gap:1px;min-width:0"><span class="small" style="font-weight:600">' + esc(x.name) + '</span>' + (x.desc ? '<span class="xs muted">' + esc(x.desc) + '</span>' : '') + '</span><span class="btn btn-sec" style="min-height:34px;padding:0 12px;font-size:13px;width:auto;flex:none;display:inline-flex;align-items:center">' + T('보기') + '</span></a>'; }).join('');
   out += '<div class="row between" style="gap:10px;padding:10px 0;border-top:1px solid var(--line)"><span class="col" style="flex:1;gap:2px"><b class="small">🎟️ ' + T('친구 초대') + ' <span style="color:var(--ok)">' + T('쿠폰 = ') + COUPON_FILL + T('코인') + '</span></b><span class="xs muted">' + T('친구가 첫 테스트를 마치면 충전 쿠폰이 와요') + '</span></span><button class="btn btn-sec" style="min-height:36px;padding:0 12px;font-size:13px;width:auto;flex:none" data-act="invite">' + T('초대') + '</button></div>';
-  return out + (homeNew() && picks.length ? '<p class="xs muted" style="padding:6px 0 8px">추천템은 MyMyMe를 운영하는 ㈜칼렛바이오의 쇼핑몰 칼렛스토어 상품이에요. 구매하지 않아도 코인을 받아요.</p>' : '') + '</div>';
+  return out + (homeNew() && (picks.length || SHOP.cp.length) ? '<p class="xs muted" style="padding:6px 0 8px">MyMyMe와 어울리는 상품을 추천합니다. 구매하지 않아도 코인을 받아요.</p>' : '') + '</div>';
 }
 function cpCard() {
   if (!homeNew() || !SHOP.cp.length) return '';
@@ -10517,7 +10519,6 @@ function walletModal() {
     '<div class="card col" style="gap:0;padding:6px 16px"><b class="small" style="padding:8px 0">' + T('코인으로 열 수 있는 것') + '</b>' +
     (homeNew() ? walletRows(row) : walletLegacy(row)) +
     row('consult', homeNew() ? '<span class="xs" style="font-weight:700;color:var(--acc-d)">자동 차감</span> · 고민 상담은 3회까지 무료, 4회차부터 보낼 때 3코인이 빠져요 (버튼 없이 상담 화면에서 사용)' : T('무료 3회 이후 1회당'), '') + '</div>' +
-    '<div data-shopslot="cpwrap">' + cpCard() + '</div>' +
     (COIN.log.length ? '<div class="card col" style="gap:0;padding:6px 16px"><b class="small" style="padding:8px 0">' + T('사용 내역') + '</b>' + COIN.log.slice(0, 12).map(function (l) {
       var plus = l.op === 'grant' || l.op === 'refund' || l.op === 'gift' || l.op === 'coupon' || l.op === 'refbonus', d = new Date(l.t);
       return '<div class="row between small" style="padding:8px 0;border-top:1px solid var(--line)"><span>' + esc(itemName(l.item)) + (l.op === 'refund' ? T(' (돌려받음)') : '') + ' <span class="xs muted">' + (d.getMonth() + 1) + '/' + d.getDate() + '</span></span><b style="color:' + (plus ? 'var(--ok)' : 'var(--coral-d)') + '">' + (plus ? '+' : '−') + l.amt + '</b></div>';
