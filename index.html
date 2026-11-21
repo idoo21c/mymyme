@@ -9036,7 +9036,7 @@ if (DEMO) { try { Storage.prototype.setItem = function () {}; Storage.prototype.
 var PUBLIC = true;
 var ENDPOINT = "https://script.google.com/macros/s/AKfycbx2G0QG_yhq32sInKS2ScJDQsfuMxgpo4yIwiy5BEvhhK5LCy239wUOnT-Dz-FZsfGE/exec";
 var SITE_URL = "https://mymyme.app/";
-var BUILD = "1795224898";
+var BUILD = "1795225046";
 var SID = (function () { try { var v = localStorage.getItem('mymyme_sid'); if (!v) { v = Math.random().toString(36).slice(2, 12); localStorage.setItem('mymyme_sid', v); } return v; } catch (e) { return 'anon'; } })();
 function post(body) { if (!ENDPOINT || DEMO) return Promise.resolve(null); body.sid = SID; return fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(body) }).then(function (r) { return r.json(); }).catch(function () { return null; }); }
 function track(type, data) { post({ kind: 'event', type: type, data: data || {} }); if (REF_FINISH.indexOf(type) >= 0) refDone(); }
@@ -10468,8 +10468,8 @@ function walletRows(row) {
  * 쿠팡 파트너스는 클릭에 보상을 주면 정책 위반(부정 클릭 유도)이라 보상 없이 고지 문구와 함께 보여 준다 */
 var SHOP_COIN = 10, SHOP_SEC = 10, SHOP = { visit: [], cp: [], loaded: false }, SHOPV = null;
 function shopLoad() {
-  if (SHOP.loaded || SHOP.loading || !PUBLIC || DEMO) return; SHOP.loading = true;
-  fetch('/api/shop').then(function (r) { return r.json(); }).then(function (j) { SHOP.loading = false; SHOP.loaded = true; if (j && j.ok) { SHOP.visit = j.visit || []; SHOP.cp = j.cp || []; } if (document.querySelector('[data-shopslot]')) shopRefresh(); }, function () { SHOP.loading = false; SHOP.loaded = true; });
+  if (SHOP.loading || !PUBLIC || DEMO || (SHOP.loaded && Date.now() - SHOP.at < 60000)) return; SHOP.loading = true; SHOP.at = Date.now();
+  fetch('/api/shop', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) { SHOP.loading = false; SHOP.loaded = true; if (j && j.ok) { SHOP.visit = j.visit || []; SHOP.cp = j.cp || []; } if (document.querySelector('[data-shopslot]')) shopRefresh(); }, function () { SHOP.loading = false; SHOP.loaded = true; });
 }
 var SHOP_SHOW = 5;
 function shopPicks() { var v = SHOP.visit; if (!v.length) return []; var d = new Date(), n = d.getFullYear() * 400 + d.getMonth() * 31 + d.getDate(), out = []; for (var i = 0; i < Math.min(SHOP_SHOW, v.length); i++) out.push(v[(n + i) % v.length]); return out; }

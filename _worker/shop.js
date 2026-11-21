@@ -14,7 +14,7 @@ export async function shopApi(req, env, path, isAdmin) {
   if (path === '/api/shop' && req.method === 'GET') {
     const v = await env.PUSH.get('shop:cfg');
     const c = v ? JSON.parse(v) : { visit: [], cp: [] };
-    return J({ ok: true, visit: c.visit || [], cp: c.cp || [] }, 200, 'public, max-age=300');
+    return J({ ok: true, visit: c.visit || [], cp: c.cp || [] }, 200, 'public, max-age=60');
   }
   if (path === '/api/shop/admin' && req.method === 'POST') {
     let b; try { b = await req.json(); } catch (e) { return J({ ok: false, reason: 'bad' }, 400); }
