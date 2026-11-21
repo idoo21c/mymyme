@@ -1,6 +1,85 @@
+User-agent: Googlebot
+Allow: /
+Disallow: /admin.html
+Disallow: /admin
+Disallow: /api/
+
+User-agent: Yeti
+Allow: /
+Disallow: /admin.html
+Disallow: /admin
+Disallow: /api/
+
+User-agent: Bingbot
+Allow: /
+Disallow: /admin.html
+Disallow: /admin
+Disallow: /api/
+
+User-agent: Daum
+Allow: /
+Disallow: /admin.html
+Disallow: /admin
+Disallow: /api/
+
+User-agent: GPTBot
+Allow: /
+Disallow: /admin.html
+Disallow: /admin
+Disallow: /api/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /admin.html
+Disallow: /admin
+Disallow: /api/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /admin.html
+Disallow: /admin
+Disallow: /api/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /admin.html
+Disallow: /admin
+Disallow: /api/
+
+User-agent: Claude-SearchBot
+Allow: /
+Disallow: /admin.html
+Disallow: /admin
+Disallow: /api/
+
+User-agent: Claude-User
+Allow: /
+Disallow: /admin.html
+Disallow: /admin
+Disallow: /api/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /admin.html
+Disallow: /admin
+Disallow: /api/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /admin.html
+Disallow: /admin
+Disallow: /api/
+
+User-agent: Applebot
+Allow: /
+Disallow: /admin.html
+Disallow: /admin
+Disallow: /api/
+
 User-agent: *
 Allow: /
 Disallow: /admin.html
 Disallow: /admin
+Disallow: /api/
 
 Sitemap: https://mymyme.app/sitemap.xml
