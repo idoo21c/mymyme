@@ -9051,7 +9051,7 @@ if (DEMO) { try { Storage.prototype.setItem = function () {}; Storage.prototype.
 var PUBLIC = true;
 var ENDPOINT = "https://script.google.com/macros/s/AKfycbx2G0QG_yhq32sInKS2ScJDQsfuMxgpo4yIwiy5BEvhhK5LCy239wUOnT-Dz-FZsfGE/exec";
 var SITE_URL = "https://mymyme.app/";
-var BUILD = "1795232883";
+var BUILD = "1795233362";
 var SID = (function () { try { var v = localStorage.getItem('mymyme_sid'); if (!v) { v = Math.random().toString(36).slice(2, 12); localStorage.setItem('mymyme_sid', v); } return v; } catch (e) { return 'anon'; } })();
 function post(body) { if (!ENDPOINT || DEMO) return Promise.resolve(null); body.sid = SID; return fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(body) }).then(function (r) { return r.json(); }).catch(function () { return null; }); }
 function track(type, data) { post({ kind: 'event', type: type, data: data || {} }); if (REF_FINISH.indexOf(type) >= 0) refDone(); }
@@ -9265,7 +9265,7 @@ function homeFirst() {
       '<div class="row between" style="font-size:12.5px;color:#C9C7D6"><span>입력한 생년월일은 결과와 통계를 위해 저장돼요 · <button data-legal="privacy" style="background:none;border:0;padding:0;color:#C9C7D6;text-decoration:underline;font-size:inherit;cursor:pointer">처리방침</button></span><button class="xs" data-go="birth" style="background:none;border:0;color:#F2C9BC;font-weight:700;cursor:pointer;padding:6px 0">정밀 분석 바로 시작</button></div></section>';
   var tasted = (!resume && S.taste && SJ.dayMasters[S.taste.stem]) ? '<button class="ttile wide" data-go="taste" style="background:#fff"><span class="col" style="gap:3px;flex:1;align-items:flex-start"><b>내 일간은 ' + esc(SJ.dayMasters[S.taste.stem].read) + '</b><span class="tsub">30초 맛보기 결과 다시 보기</span></span><b style="color:var(--acc-d);font-size:13px">보기</b></button>' : '';
   return topBanner() + '<div class="screen">' + homeHead() + inviteBanner() + inAppNote(true) + tasted + hero +
-    '<div class="col" style="gap:12px" id="tests"><div class="row between" style="align-items:baseline"><h2 style="font-size:18px">오늘 뭐 알아볼까?</h2><span class="xs muted">짧은 순</span></div>' + testTiles() + tpCardHome() +
+    dayOneTile() + '<div class="col" style="gap:12px" id="tests"><div class="row between" style="align-items:baseline"><h2 style="font-size:18px">오늘 뭐 알아볼까?</h2><span class="xs muted">짧은 순</span></div>' + testTiles() + tpCardHome() +
     '<button class="ttile wide" data-go="birth"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><circle cx="16" cy="20" r="11" fill="none" stroke="#4B3FC7" stroke-width="2.4"/><circle cx="24" cy="20" r="11" fill="none" stroke="#E07A5F" stroke-width="2.4"/></svg><span class="col" style="gap:3px;flex:1;align-items:flex-start"><b>사주 × 성향 정밀 분석</b><span class="tsub" style="color:var(--acc-d)">320가지 유형 중 나 · 82문항 약 13분</span></span><b style="color:var(--acc-d);font-size:13px">시작</b></button>' +
     '<button class="ttile wide" data-go="chMap" style="background:#fff"><span class="col" style="gap:3px;flex:1;align-items:flex-start"><b>두뇌 챌린지</b><span class="tsub">1~10단계 · 10문제 중 7개를 맞히면 다음 단계</span></span><b style="color:var(--acc-d);font-size:13px">도전</b></button></div>' +
     homeFriends() + pushCard() + pwaCard() + bottomNav() + '</div>';
@@ -9412,6 +9412,92 @@ V.taste = function () {
     '<div class="grid2" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">' + lock('내 유형 이름', esc(dm.prefix) + ' □□□') + lock('4글자 성격 코드', '????') + lock('타고난 나 vs 지금의 나', '잠김') + lock('친구와 진짜 궁합', '잠김') + '</div>' +
     '<button class="btn btn-pri" data-act="tasteFull">이어서 정밀 분석 · 생일은 이미 입력됨</button><span class="xs muted" style="text-align:center">82문항 약 13분 · 중간 결과를 조금씩 보여 드려요 · 나가도 이어서 할 수 있어요</span></div></div>';
 };
+/* ---------- 오늘의 한 장: 매일 바뀌는 9:16 스토리 카드. 오늘의 일진(날짜의 천간)으로 고르며 생년월일을 쓰지 않는다 ---------- */
+var D1 = {
+  '甲': ['시작', ['미뤄 둔 일 하나, 첫 줄만 쓰기', '아침에 창문 열고 3분 스트레칭', '새로 가 보는 길로 퇴근하기']],
+  '乙': ['연결', ['오랜만인 친구에게 안부 한 줄', '화분이나 나무에 눈길 한 번', '고마운 사람에게 이모티콘 하나']],
+  '丙': ['드러내기', ['오늘 한 일 하나 자랑하기', '밝은색 옷이나 소품 하나 걸치기', '햇볕 아래 10분 걷기']],
+  '丁': ['집중', ['딱 25분, 알림 끄고 한 가지만', '좋아하는 노래 한 곡 끝까지 듣기', '자기 전 오늘 좋았던 것 하나 적기']],
+  '戊': ['정리', ['책상 위 한 칸만 비우기', '이번 주 할 일 3개만 고르기', '안 쓰는 앱 하나 지우기']],
+  '己': ['돌봄', ['따뜻한 밥 한 끼 천천히 먹기', '내 몸에 물 한 컵 더 주기', '고생한 나에게 작은 간식 하나']],
+  '庚': ['결단', ['고민만 하던 것 하나 정하기', '거절할 건 오늘 정중하게 거절', '버릴 물건 하나 골라 버리기']],
+  '辛': ['다듬기', ['보낸 메시지 맞춤법 한 번 더 보기', '신발이나 가방 한 번 닦기', '오늘 사진 중 한 장만 골라 남기기']],
+  '壬': ['흐름', ['계획 없이 20분 산책하기', '평소와 다른 카페·메뉴 고르기', '머릿속 생각 노트에 쏟아 내기']],
+  '癸': ['쉼', ['오늘은 30분 일찍 눕기', '물소리나 빗소리 틀어 두기', '할 일 목록에서 하나 지우고 쉬기']]
+};
+var EL_HEX = { wood: '#8BC34A', fire: '#F0643C', earth: '#F2C94C', metal: '#B39DDB', water: '#5BB8F0' };
+function dayOne(dateStr) {
+  var d = (dateStr || TODAY).split('-').map(Number), sj;
+  try { sj = E.calcSaju({ y: d[0], m: d[1], d: d[2], hour: null, minute: 0, calendar: 'solar', leap: false }); } catch (e) { return null; }
+  var st = sj.dayStem, info = D1[st]; if (!info) return null;
+  var doy = Math.floor((Date.UTC(d[0], d[1] - 1, d[2]) - Date.UTC(d[0], 0, 0)) / 864e5);
+  var dm = SJ.dayMasters[st];
+  return { stem: st, gz: sj.pillars[2].gz, el: dm.element, word: info[0], act: info[1][doy % 3], image: dm.image, date: d[1] + '월 ' + d[2] + '일' };
+}
+function dayOneTile() {
+  if (!homeNew()) return ''; var o = dayOne(); if (!o) return '';
+  return '<button class="ttile wide" data-go="today1" style="background:#FFF8E8;border:1.5px solid ' + EL_HEX[o.el] + '"><span aria-hidden="true" style="width:40px;height:56px;border-radius:8px;background:' + EL_HEX[o.el] + ';display:flex;align-items:center;justify-content:center;font-weight:700;color:#1E2140;flex:none">' + o.stem + '</span>' +
+    '<span class="col" style="gap:3px;flex:1;align-items:flex-start"><b>오늘의 한 장 · ' + esc(o.word) + '</b><span class="tsub">' + esc(o.act) + '</span></span><b style="color:var(--acc-d);font-size:13px">스토리용</b></button>';
+}
+V.today1 = function () {
+  var o = dayOne(); if (!o) { S.view = 'home'; return V.home(); }
+  var mine = S.result ? S.result.saju.dayStem : (S.taste && S.taste.stem), md = mine && SJ.dayMasters[mine], hint = '';
+  if (md) { var me = md.element, de = o.el, c = me === de ? '나와 같은 기운의 날 · 하던 대로 밀고 가기 좋아요' : EL_GEN[de] === me ? '오늘이 나를 채워 주는 날 · 부탁하고 도움받기 좋아요' : EL_GEN[me] === de ? '내가 오늘에 힘을 보태는 날 · 남을 챙기면 돌아와요' : EL_CTL[me] === de ? '내가 오늘을 다루는 날 · 미뤄 둔 결정하기 좋아요' : '오늘이 나를 다듬는 날 · 서두르지 말고 한 템포 쉬어 가요';
+    hint = '<div class="card col" style="gap:6px"><span class="xs muted">내 일간 ' + esc(md.read) + ' × 오늘 ' + esc(SJ.dayMasters[o.stem].read) + '의 날</span><b>' + esc(c) + '</b><span class="small muted" style="line-height:1.6">오늘 기운과 나의 관계예요. 가볍게 참고만 하세요.</span></div>'; }
+  return '<div class="screen"><div class="row" style="gap:6px"><button class="iconbtn" data-go="home" aria-label="처음으로">' + ICON.back + '</button><span class="small muted">오늘의 한 장</span></div>' +
+    '<canvas id="d1c" width="1080" height="1920" style="width:min(100%,320px);aspect-ratio:9/16;align-self:center;border-radius:18px;box-shadow:0 6px 24px rgba(30,33,64,.16)" role="img" aria-label="오늘의 한 장: ' + esc(o.word) + ', ' + esc(o.act) + '"></canvas>' +
+    '<div class="row" style="gap:8px"><button class="btn btn-pri" data-act="d1Share" style="flex:1">스토리에 올리기</button><button class="btn btn-sec" data-act="d1Save" style="flex:1">이미지 저장</button></div>' +
+    '<span class="xs muted" style="text-align:center">생년월일 없이 오늘 날짜로만 만든 카드예요 · 매일 자정에 바뀌어요</span>' + hint +
+    (md ? '' : '<button class="btn btn-ghost" data-act="tasteMine">내 일간이랑 오늘은 어떤 사이일까? · 30초</button>') + '</div>';
+};
+function d1Draw() {
+  var cv = document.getElementById('d1c'); if (!cv) return; var o = dayOne(); if (!o) return;
+  var g = cv.getContext('2d'), W = 1080, H = 1920, col = EL_HEX[o.el];
+  var draw = function () {
+    g.fillStyle = '#FBF6EA'; g.fillRect(0, 0, W, H);
+    g.fillStyle = col; g.globalAlpha = .9; g.beginPath(); g.arc(W - 120, 260, 300, 0, 7); g.fill(); g.beginPath(); g.arc(40, H - 80, 180, 0, 7); g.fill(); g.globalAlpha = 1;
+    g.fillStyle = '#1E2140'; g.textBaseline = 'alphabetic';
+    g.font = '700 44px "Noto Sans KR"'; g.fillText('오늘의 한 장', 96, 180);
+    g.font = '500 40px "Noto Sans KR"'; g.fillStyle = '#4A4D63'; g.fillText(o.date + ' · ' + o.gz + '일', 96, 246);
+    g.fillStyle = '#1E2140'; g.font = '700 120px "Noto Serif KR"'; g.fillText(o.stem, 96, 620);
+    g.font = '700 200px "Noto Sans KR"'; g.fillText(o.word, 96, 900);
+    g.font = '500 44px "Noto Sans KR"'; g.fillStyle = '#4A4D63'; g.fillText('오늘의 기운 · ' + o.image, 96, 990);
+    /* 행동 박스 */
+    g.fillStyle = '#fff'; var bx = 72, by = 1080, bw = W - 144, bh = 300; if (g.roundRect) { g.beginPath(); g.roundRect(bx, by, bw, bh, 40); g.fill(); } else g.fillRect(bx, by, bw, bh);
+    g.fillStyle = col; g.fillRect(bx, by + 40, 14, bh - 80);
+    g.fillStyle = '#4A4D63'; g.font = '500 40px "Noto Sans KR"'; g.fillText('오늘 해 볼 것 하나', 132, by + 100);
+    g.fillStyle = '#1E2140'; g.font = '700 58px "Noto Sans KR"';
+    var words = o.act.split(' '), line = '', y = by + 190;
+    words.forEach(function (w) { var t = line ? line + ' ' + w : w; if (g.measureText(t).width > bw - 120 && line) { g.fillText(line, 132, y); y += 76; line = w; } else line = t; }); g.fillText(line, 132, y);
+    g.fillStyle = '#1E2140'; g.font = '700 50px "Noto Sans KR"'; g.fillText('너는 오늘 어떤 날?', 96, 1600);
+    g.font = '500 40px "Noto Sans KR"'; g.fillStyle = '#4A4D63'; g.fillText('생일만 넣으면 30초 · 회원가입 없이', 96, 1664);
+    g.fillStyle = '#4B3FC7'; g.font = '700 48px "Noto Sans KR"'; g.fillText('mymyme.app', 96, 1800);
+  };
+  if (document.fonts && document.fonts.load) Promise.all(['700 200px "Noto Sans KR"', '500 40px "Noto Sans KR"', '700 120px "Noto Serif KR"'].map(function (f) { return document.fonts.load(f, '오늘甲'); })).then(draw, draw); else draw();
+}
+function d1Out(share) {
+  var cv = document.getElementById('d1c'); if (!cv) return; var o = dayOne();
+  track('today1', { mode: share ? 'share' : 'save' });
+  cv.toBlob(function (b) {
+    if (!b) return; var name = 'mymyme-' + TODAY + '.png';
+    var f = null; try { f = new File([b], name, { type: 'image/png' }); } catch (e) {}
+    if (share && f && navigator.canShare && navigator.canShare({ files: [f] })) { navigator.share({ files: [f], title: 'MyMyMe 오늘의 한 장', text: '오늘의 한 장 · ' + o.word + ' — 너는 오늘 어떤 날? mymyme.app' }).catch(function () {}); return; }
+    var a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    toast(share ? '이미지를 저장했어요. 인스타 스토리에서 불러와 올려 주세요' : '이미지를 저장했어요');
+  }, 'image/png');
+}
+/* 연속 방문 도장: 오늘까지 며칠 연속 왔는지. 7일째마다 보너스 */
+var STREAK_COIN = 10;
+function streakDays() {
+  var list = visitDays(), n = 0, t = new Date(TODAY + 'T00:00:00').getTime();
+  for (var i = 0; i < 14; i++) { var d = new Date(t - i * 864e5), k = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); if (list.indexOf(k) >= 0) n++; else break; }
+  return n;
+}
+function streakLine() {
+  var n = streakDays(), left = 7 - (n % 7 || 7), got = COIN.streak === TODAY;
+  var dots = ''; for (var i = 1; i <= 7; i++) dots += '<span aria-hidden="true" style="width:14px;height:14px;border-radius:7px;display:inline-block;background:' + (i <= ((n - 1) % 7) + 1 ? 'var(--coral)' : 'rgba(247,245,240,.18)') + '"></span>';
+  return '<div class="row between" style="gap:8px;align-items:center"><span class="xs" style="color:#E4E2EE">🔥 ' + n + '일 연속 · ' + (n % 7 === 0 ? (got ? '7일 도장 보너스 받음' : '오늘 카드 열면 +' + STREAK_COIN + ' 보너스') : left + '일 더 오면 +' + STREAK_COIN + '코인') + '</span><span class="row" style="gap:4px" role="img" aria-label="연속 방문 ' + n + '일">' + dots + '</span></div>';
+}
 /* 재방문 홈 */
 var VISIT_KEY = 'mymyme_visits', DAYCARD_COIN = 5, MAP_COIN = 10;
 function visitDays() {
@@ -9439,7 +9525,7 @@ function homeBack() {
   return topBanner() + '<div class="screen"><div class="row between"><div class="col" style="gap:2px"><span class="small muted">다시 오셨네요</span><b class="serif" style="font-size:22px">' + esc(typeName(sj.dayStem, r.per.code)) + '님</b></div><div class="row" style="gap:8px">' + coinChip() + '<button class="btn btn-sec" style="min-height:36px;width:36px;padding:0;border-radius:18px" data-go="lang" aria-label="언어 선택">' + ICON.globe + '</button></div></div>' + inviteBanner() +
     '<section class="hero" style="gap:14px"><div class="row between"><b>오늘의 카드</b><span class="xs" style="color:#C9C7D6">' + TODAY.replace(/-/g, '.') + '</span></div>' +
     (COIN.dayCard === TODAY ? '<div class="row" style="gap:14px;align-items:center">' + tarotCard(r.tarot.today, '', true) + '<div class="col" style="gap:6px;flex:1"><span class="xs" style="color:#F2C9BC">오늘의 타로 · +' + DAYCARD_COIN + '코인 받음</span><b style="line-height:1.5">' + esc(today.ko) + ' · ' + esc(today.keyword) + '</b><span class="small" style="color:#E4E2EE;line-height:1.6">' + esc(today.today) + '</span></div></div>'
-      : '<div class="row" style="gap:14px;align-items:center"><div aria-hidden="true" style="width:96px;height:150px;border-radius:12px;border:1.5px solid #E8876A;background:repeating-linear-gradient(45deg,rgba(232,135,106,.08) 0 8px,transparent 8px 16px);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="34" height="34" viewBox="0 0 34 34"><path d="M17 4l3.5 9 9.5.6-7.3 6 2.4 9.4L17 23.8 8.9 29l2.4-9.4-7.3-6 9.5-.6z" fill="none" stroke="#E8876A" stroke-width="1.6" stroke-linejoin="round"/></svg></div><div class="col" style="gap:8px;flex:1"><b style="line-height:1.5">오늘의 카드가 도착했어요</b><span class="small" style="color:#E4E2EE;line-height:1.6">하루 한 번 열면 마마미코인 ' + DAYCARD_COIN + '개를 드려요.</span><button class="btn" style="min-height:44px;background:var(--coral);color:var(--ink);font-weight:700" data-act="dayCard">카드 열고 +' + DAYCARD_COIN + '코인</button></div></div>') + weekStrip() + '</section>' +
+      : '<div class="row" style="gap:14px;align-items:center"><div aria-hidden="true" style="width:96px;height:150px;border-radius:12px;border:1.5px solid #E8876A;background:repeating-linear-gradient(45deg,rgba(232,135,106,.08) 0 8px,transparent 8px 16px);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="34" height="34" viewBox="0 0 34 34"><path d="M17 4l3.5 9 9.5.6-7.3 6 2.4 9.4L17 23.8 8.9 29l2.4-9.4-7.3-6 9.5-.6z" fill="none" stroke="#E8876A" stroke-width="1.6" stroke-linejoin="round"/></svg></div><div class="col" style="gap:8px;flex:1"><b style="line-height:1.5">오늘의 카드가 도착했어요</b><span class="small" style="color:#E4E2EE;line-height:1.6">하루 한 번 열면 마마미코인 ' + DAYCARD_COIN + '개를 드려요.</span><button class="btn" style="min-height:44px;background:var(--coral);color:var(--ink);font-weight:700" data-act="dayCard">카드 열고 +' + DAYCARD_COIN + '코인</button></div></div>') + weekStrip() + streakLine() + '</section>' + dayOneTile() +
     '<div class="card col" id="tests" style="gap:12px"><div class="row" style="gap:14px;align-items:center"><svg width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="나 탐구 지도 ' + n + '개 중 ' + done + '개 완료"><circle cx="32" cy="32" r="26" fill="none" stroke="#ECEAFB" stroke-width="8"/><circle cx="32" cy="32" r="26" fill="none" stroke="#4B3FC7" stroke-width="8" stroke-linecap="round" stroke-dasharray="' + arc + ' ' + C + '" transform="rotate(-90 32 32)"/><text x="32" y="37" text-anchor="middle" font-size="15" font-weight="700" fill="#1E2140">' + done + '/' + n + '</text></svg>' +
     '<div class="col" style="gap:4px"><b style="font-size:16px">나 탐구 지도</b><span class="small" style="color:#4A4D63;line-height:1.5">' + (done === n ? (COIN.mapDone ? '모두 채웠어요! 완성 보상 ' + MAP_COIN + '코인을 받았어요.' : '모두 채웠어요! 완성 보상을 받아 가세요.') : '남은 ' + (n - done) + '개를 다 채우면 마마미코인 ' + MAP_COIN + '개를 드려요.') + '</span></div></div>' + (done === n && !COIN.mapDone ? '<button class="btn btn-pri" data-act="mapReward">완성 보상 +' + MAP_COIN + '코인 받기</button>' : '') +
     '<div class="col">' + items.map(function (x) { return '<button class="mrow" data-go="' + x[2] + '"><span>' + x[0] + '</span><b style="color:' + (x[1] ? 'var(--ok)' : 'var(--acc-d)') + '">' + (x[1] ? '완료 · 다시 보기' : x[3] + '분 · 시작') + '</b></button>'; }).join('') + '</div></div>' +
@@ -10460,7 +10546,7 @@ function claimGifts() {
 }
 function coinRefund(item, amt) { COIN.bal += amt; coinLog('refund', amt, item); track('coin', { op: 'refund', item: item, amt: amt, bal: COIN.bal }); }
 function owns(key) { return DEMO ? !!key : !!(key && COIN.own[key]); }
-function itemName(k) { return { daycard: '오늘의 카드', mapdone: '나 탐구 지도 완성', ny2027: T('2027 신년운세'), group: T('그룹 관계 지도'), consult: T('추가 고민 상담'), brainx: T('두뇌 퍼즐 해설'), moneyx: T('재테크 DNA 심층 리포트'), aix: T('AI 활용력 심층 리포트'), genx: '세대 감각 심층 리포트', templex: '나의 절 여행 지도', level: T('두뇌 챌린지 단계 열기'), welcome: T('베타 참여 선물'), shopvisit: '오늘의 추천템 둘러보기', gift: T('운영자 선물'), coupon: T('충전 쿠폰'), refbonus: T('초대받은 친구 보너스') }[k] || k; }
+function itemName(k) { return { daycard: '오늘의 카드', mapdone: '나 탐구 지도 완성', ny2027: T('2027 신년운세'), group: T('그룹 관계 지도'), consult: T('추가 고민 상담'), brainx: T('두뇌 퍼즐 해설'), moneyx: T('재테크 DNA 심층 리포트'), aix: T('AI 활용력 심층 리포트'), genx: '세대 감각 심층 리포트', templex: '나의 절 여행 지도', level: T('두뇌 챌린지 단계 열기'), welcome: T('베타 참여 선물'), shopvisit: '오늘의 추천템 둘러보기', streak7: '7일 연속 방문 도장', gift: T('운영자 선물'), coupon: T('충전 쿠폰'), refbonus: T('초대받은 친구 보너스') }[k] || k; }
 var COIN_ICON = '<span aria-hidden="true">🪙</span>';
 function coinChip() { return '<button class="chip" style="flex:none;min-height:36px;padding:0 12px;font-weight:700" data-act="wallet" aria-label="' + T('마마미코인 지갑') + '">' + COIN_ICON + ' ' + COIN.bal + '</button>'; }
 var PENDING = null;
@@ -11460,6 +11546,7 @@ function render() {
   document.getElementById('foot').innerHTML = showFoot ? footer() : '';
   var seo = document.getElementById('seo'); if (seo) seo.style.display = S.view === 'home' ? '' : 'none';
   if (S.view === 'analyzing') runAnalyzing();
+  if (S.view === 'today1') d1Draw();
 }
 function runAnalyzing() {
   var steps = document.querySelectorAll('[data-step]'), i = 0;
@@ -11651,7 +11738,10 @@ document.addEventListener('click', function (ev) {
     case 'aqStart': aqNew(); track('aiq_start'); go('aiq'); break;
     case 'dayCard':
       if (!S.result || COIN.dayCard === TODAY) break;
-      COIN.dayCard = TODAY; COIN.bal += DAYCARD_COIN; coinLog('grant', DAYCARD_COIN, 'daycard'); track('coin', { op: 'grant', item: 'daycard', amt: DAYCARD_COIN, bal: COIN.bal }); render(); toast('오늘의 카드를 열었어요 · +' + DAYCARD_COIN + '코인'); break;
+      COIN.dayCard = TODAY; COIN.bal += DAYCARD_COIN; coinLog('grant', DAYCARD_COIN, 'daycard'); track('coin', { op: 'grant', item: 'daycard', amt: DAYCARD_COIN, bal: COIN.bal });
+      var sk = streakDays();
+      if (sk >= 7 && sk % 7 === 0 && COIN.streak !== TODAY) { COIN.streak = TODAY; COIN.bal += STREAK_COIN; coinLog('grant', STREAK_COIN, 'streak7'); track('coin', { op: 'grant', item: 'streak7', amt: STREAK_COIN, bal: COIN.bal }); render(); toast('7일 연속 도장 완성! +' + (DAYCARD_COIN + STREAK_COIN) + '코인'); break; }
+      render(); toast('오늘의 카드를 열었어요 · +' + DAYCARD_COIN + '코인'); break;
     case 'mapReward':
       if (!S.result || COIN.mapDone || mapItems().some(function (x) { return !x[1]; })) break;
       COIN.mapDone = true; COIN.bal += MAP_COIN; coinLog('grant', MAP_COIN, 'mapdone'); track('coin', { op: 'grant', item: 'mapdone', amt: MAP_COIN, bal: COIN.bal }); render(); toast('나 탐구 지도 완성! +' + MAP_COIN + '코인'); break;
@@ -11663,6 +11753,8 @@ document.addEventListener('click', function (ev) {
       var qsj; try { qsj = calcSajuSafe(); } catch (e) { if (qe) qe.textContent = '존재하지 않는 날짜예요. 다시 확인해 주세요.'; return; }
       S.taste = { stem: qsj.dayStem, at: TODAY }; qb.noticed = true; save(); track('taste', { stem: qsj.dayStem, birth: qb.y + '-' + ('0' + qb.m).slice(-2) + '-' + ('0' + qb.d).slice(-2), cal: qb.calendar === 'lunar' ? (qb.leap ? 'lunar_leap' : 'lunar') : 'solar', solar: qsj.solarDate || '', pillars: qsj.pillars.map(function (x) { return x.gz; }).join(' ') }); go('taste'); break;
     case 'tasteFull': track('taste_full'); go('birth'); break;
+    case 'd1Share': d1Out(true); break;
+    case 'd1Save': d1Out(false); break;
     case 'tasteSample': TASTE_SAMPLE = true; track('taste_sample'); go('taste'); break;
     case 'tasteMine': TASTE_SAMPLE = false; S.view = 'home'; render(); setTimeout(function () { var qy = document.getElementById('qy'); if (qy) { qy.scrollIntoView({ block: 'center', behavior: 'smooth' }); qy.focus(); } }, 50); break;
     case 'friendAgain': FRIEND = null; render(); break;
