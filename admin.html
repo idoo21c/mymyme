@@ -282,7 +282,7 @@ function brainTab() {
   return '<div class="kpis">' + kpi('퍼즐 시작', b.started, '') + kpi('퍼즐 완료', b.n, '완료율 ' + (b.started ? Math.round(b.n / b.started * 100) + '%' : '–')) + kpi('평균 점수', b.avg + ' / 20', '') + kpi('풀이 시간 중앙값', b.medSec ? Math.floor(b.medSec / 60) + '분 ' + (b.medSec % 60) + '초' : '–', '') + '</div>' +
     challengeHtml() + hist + dom + types + items + '<p class="small muted">한 사람이 여러 번 풀면 마지막 결과만 셌어요. "상위 몇 %"는 참여자가 충분히 쌓인 뒤 이용자 화면에 보여줄 예정이에요.</p>';
 }
-var ITEMN = { shopvisit: '칼렛스토어 둘러보기',  ny2027: '2027 신년운세', group: '그룹 관계 지도', consult: '추가 고민 상담', brainx: '두뇌 퍼즐 해설', level: '두뇌 챌린지 단계 열기', moneyx: '재테크 DNA 심층 리포트', aix: 'AI 활용력 심층 리포트', genx: '세대 감각 심층 리포트' };
+var ITEMN = { shopvisit: '오늘의 추천템 둘러보기',  ny2027: '2027 신년운세', group: '그룹 관계 지도', consult: '추가 고민 상담', brainx: '두뇌 퍼즐 해설', level: '두뇌 챌린지 단계 열기', moneyx: '재테크 DNA 심층 리포트', aix: 'AI 활용력 심층 리포트', genx: '세대 감각 심층 리포트' };
 function giftTo(sids, amt, memo) {
   sids = (sids || []).filter(Boolean); if (!sids.length) { alert('받을 사람의 익명번호를 넣어 주세요.'); return; }
   if (!amt) { var a = prompt(sids.length + '명에게 줄 마마미코인 개수 (1~1000)', '10'); if (a === null) return; amt = +a; }
@@ -333,7 +333,7 @@ function shopAdmin() {
   var d = SHOPA.d || { visit: [], cp: [] }, v = EVN('shop_click'), c = EVN('cp_click');
   return '<div class="card col" style="gap:10px"><h2>코인 채우기 코너 상품</h2>' +
     '<div class="kpis">' + kpi('칼렛스토어 둘러보기 클릭', v.n, v.users + '명') + kpi('쿠팡 추천템 클릭', c.n, c.users + '명') + '</div>' +
-    '<p class="small">한 줄에 하나씩 넣어 주세요. <code>이름 | 짧은 설명 | 주소</code>가 가장 좋고, 주소만 넣어도 돼요. 종류별로 12개까지, 칼렛스토어 상품은 날마다 하나씩 돌아가며 보여요.</p>' +
+    '<p class="small">한 줄에 하나씩 넣어 주세요. <code>이름 | 짧은 설명 | 주소</code>가 가장 좋고, 주소만 넣어도 돼요. 종류별로 12개까지, 칼렛스토어 상품은 하루에 5개씩 날마다 순서를 바꿔 보여요.</p>' +
     '<label class="small"><b>칼렛스토어 상품</b> · 10초 넘게 둘러보고 돌아오면 +10코인, 하루 1번 · 칼렛스토어·스마트스토어 등 https 주소<textarea id="shopVisit" rows="5" style="width:100%;font:13px/1.6 ui-monospace,monospace;padding:8px;border:1px solid var(--line);border-radius:10px" placeholder="리펄프테이프 | 박스째 재활용되는 종이테이프 | https://caretstore.co.kr/...">' + esc(SHOPA.shopVisit != null ? SHOPA.shopVisit : shopLines(d.visit)) + '</textarea></label>' +
     '<label class="small"><b>쿠팡 파트너스 추천템</b> · 보상 없음, 고지 문구 자동 표시 · link.coupang.com 또는 coupa.ng 주소만<textarea id="shopCp" rows="4" style="width:100%;font:13px/1.6 ui-monospace,monospace;padding:8px;border:1px solid var(--line);border-radius:10px" placeholder="수면 안대 | 쉬는 날 낮잠용 | https://link.coupang.com/a/...">' + esc(SHOPA.shopCp != null ? SHOPA.shopCp : shopLines(d.cp)) + '</textarea></label>' +
     '<p class="xs muted">쿠팡 링크에는 코인을 주지 않아요. 클릭에 보상을 주면 쿠팡 파트너스 정책상 부정 클릭 유도로 볼 수 있어서, 수익 몰수나 계정 해지 위험이 있어요.</p>' +
