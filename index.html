@@ -38,6 +38,7 @@ localStorage.setItem('mymyme_moved_in',String(Date.now()));}catch(e){}})();</scr
 <meta name="twitter:image" content="https://mymyme.app/og-v4.png">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="google-site-verification" content="N9ayadm9d9VFkzru9-mboGqQhWS0WaQ0bA4KczatX9s">
+<meta name="naver-site-verification" content="b2b3d9879fb160073b67aeeee7738cb367a2fb08">
 <meta name="theme-color" content="#1E2140">
 <link rel="alternate" hreflang="ko" href="https://mymyme.app/?lang=ko">
 <link rel="alternate" hreflang="en" href="https://mymyme.app/?lang=en">
@@ -9046,7 +9047,7 @@ if (DEMO) { try { Storage.prototype.setItem = function () {}; Storage.prototype.
 var PUBLIC = true;
 var ENDPOINT = "https://script.google.com/macros/s/AKfycbx2G0QG_yhq32sInKS2ScJDQsfuMxgpo4yIwiy5BEvhhK5LCy239wUOnT-Dz-FZsfGE/exec";
 var SITE_URL = "https://mymyme.app/";
-var BUILD = "1795231580";
+var BUILD = "1795231824";
 var SID = (function () { try { var v = localStorage.getItem('mymyme_sid'); if (!v) { v = Math.random().toString(36).slice(2, 12); localStorage.setItem('mymyme_sid', v); } return v; } catch (e) { return 'anon'; } })();
 function post(body) { if (!ENDPOINT || DEMO) return Promise.resolve(null); body.sid = SID; return fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(body) }).then(function (r) { return r.json(); }).catch(function () { return null; }); }
 function track(type, data) { post({ kind: 'event', type: type, data: data || {} }); if (REF_FINISH.indexOf(type) >= 0) refDone(); }
