@@ -290,7 +290,7 @@ function brainTab() {
   return '<div class="kpis">' + kpi('퍼즐 시작', b.started, '') + kpi('퍼즐 완료', b.n, '완료율 ' + (b.started ? Math.round(b.n / b.started * 100) + '%' : '–')) + kpi('평균 점수', b.avg + ' / 20', '') + kpi('풀이 시간 중앙값', b.medSec ? Math.floor(b.medSec / 60) + '분 ' + (b.medSec % 60) + '초' : '–', '') + '</div>' +
     challengeHtml() + hist + dom + types + items + '<p class="small muted">한 사람이 여러 번 풀면 마지막 결과만 셌어요. "상위 몇 %"는 참여자가 충분히 쌓인 뒤 이용자 화면에 보여줄 예정이에요.</p>';
 }
-var ITEMN = { shopvisit: '오늘의 추천템 둘러보기', streak7: '7일 연속 방문 도장',  ny2027: '2027 신년운세', group: '그룹 관계 지도', consult: '추가 고민 상담', brainx: '두뇌 퍼즐 해설', level: '두뇌 챌린지 단계 열기', moneyx: '재테크 DNA 심층 리포트', aix: 'AI 활용력 심층 리포트', genx: '세대 감각 심층 리포트' };
+var ITEMN = { adhdx: 'ADHD력 심층 리포트', shopvisit: '오늘의 추천템 둘러보기', streak7: '7일 연속 방문 도장',  palmx: '손금 도감 심층 리포트', ny2027: '2027 신년운세', group: '그룹 관계 지도', consult: '추가 고민 상담', brainx: '두뇌 퍼즐 해설', level: '두뇌 챌린지 단계 열기', moneyx: '재테크 DNA 심층 리포트', aix: 'AI 활용력 심층 리포트', genx: '세대 감각 심층 리포트' };
 function giftTo(sids, amt, memo) {
   sids = (sids || []).filter(Boolean); if (!sids.length) { alert('받을 사람의 익명번호를 넣어 주세요.'); return; }
   if (!amt) { var a = prompt(sids.length + '명에게 줄 마마미코인 개수 (1~1000)', '10'); if (a === null) return; amt = +a; }
@@ -636,15 +636,38 @@ function resultsTab() {
   return '<div class="grid2">' + dist('인기 유형 이름 TOP 12', DATA.dist.name) + dist('4글자 성격 코드', DATA.dist.code, null, 16, 'sj') + dist('일간 분포 <a href="admin-study#stems" target="_blank" rel="noopener" style="font-size:13px;font-weight:500">📖 일간 공부하기</a>', DATA.dist.dayStem, STEM_READ, 0, 'st') +
     dist('혈액형', DATA.dist.blood, { '': '미선택' }) + dist('성별', DATA.dist.gender, GENDER) + '</div>' + sajuAggCard();
 }
+var MOOD_KO = { rain: '🌧️ 지침', fire: '🔥 답답', spin: '🌀 혼란', sprout: '🌱 회복 중', calm: '😶 그냥 그래', sun: '☀️ 괜찮아짐', heart: '💗 설렘' };
+function moodTop(m) { return Object.keys(m || {}).sort(function (a, b) { return m[b] - m[a]; }).slice(0, 3).map(function (k) { return (MOOD_KO[k] || k) + ' ' + m[k]; }).join(' · ') || '–'; }
+var TRIBE_KO = { NF: '🌿 공감형', NT: '🔭 분석형', SJ: '🪨 안정형', SP: '🧭 탐험형' };
+function tribeCard() {
+  var T = DATA.tribe; if (!T) return '<div class="card"><h2>성향 숲</h2><p class="small muted">Code.gs를 최신으로 배포하면 무리별 글·답 집계가 보여요.</p></div>';
+  var rows = Object.keys(TRIBE_KO).map(function (k) { var t = T[k] || {}; return '<tr><td><b>' + TRIBE_KO[k] + '</b></td><td>' + (t.posts || 0) + '</td><td>' + (t.writers || 0) + '명</td><td>' + (t.echoes || 0) + '</td><td>' + (t.repliers || 0) + '명</td><td>' + (t.posts ? Math.round((t.answered || 0) / t.posts * 100) + '%' : '데이터 없음') + '</td><td>' + (t.posts ? ((t.echoes || 0) / t.posts).toFixed(1) : '–') + '</td><td>' + (t.echoes ? Math.round((t.sameEcho || 0) / t.echoes * 100) + '%' : '데이터 없음') + '</td><td>' + (t.empathy || 0) + '</td><td class="small">' + moodTop(t.moods) + '</td></tr>'; }).join('');
+  return '<div class="card"><h2>성향 숲 · 무리별</h2><p class="small muted">글쓴이가 \'무리 숲\'을 골라 남긴 글만 세요. 답은 같은 무리만 남길 수 있어요. 답 범위는 글쓴이가 정해요(누구나 / 같은 무리만). 1단계 관문: 답이 달린 글 비율과 글당 답 수가 꾸준히 오르는지.</p><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>무리</th><th>글</th><th>쓴 사람</th><th>답</th><th>답한 사람</th><th>답 달린 글</th><th>글당 답</th><th>같은 무리 답</th><th>공감</th><th>자주 고른 기분</th></tr></thead><tbody>' + rows + '</tbody></table></div><p class="small" style="margin-top:8px">전체 숲 기분 카드 · ' + moodTop(T._moods) + '</p></div>';
+}
+function helloCard() {
+  var H = DATA.hello; if (!H) return '<div class="card"><h2>출석 한마디</h2><p class="small muted">Code.gs를 최신으로 배포하면 메인 출석 한마디와 답을 관리할 수 있어요.</p></div>';
+  var days = (H.days || []).slice(-7).reverse(), items = (H.items || []).filter(function (x) { return FILTER === 'all' || (FILTER === 'hidden' ? x.hidden : !x.hidden); });
+  var byId = {}; items.forEach(function (x) { byId[x.id] = x; });
+  return '<div class="card"><h2>출석 한마디 · 메인</h2>' +
+    '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>날짜</th><th>한마디</th><th>쓴 사람</th><th>답</th></tr></thead><tbody>' + (days.length ? days.map(function (d) { return '<tr><td>' + d.date + '</td><td>' + d.n + '</td><td>' + d.users + '명</td><td>' + d.replies + '</td></tr>'; }).join('') : '<tr><td colspan="4" class="muted">데이터 없음</td></tr>') + '</tbody></table></div>' +
+    '<h3 style="font-size:15px;margin:14px 0 6px">최근 한마디와 답 <span class="xs muted" style="font-weight:400">아래 대나무숲 관리의 전체·공개 중·숨김 필터와 함께 바뀌어요</span></h3>' + (items.length ? items.slice(0, 80).map(function (x) {
+      var who = [TRIBE_KO[x.g] || '', x.nm || ''].filter(Boolean).join(' · ') || '익명';
+      return '<div class="row" style="gap:8px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--line,#EEE);' + (x.parent ? 'margin-left:22px' : '') + '"><div style="flex:1"><p class="small" style="margin:0;white-space:pre-wrap">' + (x.parent ? '↳ ' : '') + esc(x.text) + '</p><span class="xs muted">' + esc(who) + ' · ' + esc(x.date) + ' · 신고 ' + x.reports + (x.hidden ? ' · <b style="color:#8A3520">숨김</b>' : '') + (x.memo ? ' · ' + esc(x.memo) : '') + '</span></div>' +
+        '<button class="sec" style="min-height:32px;font-size:12px" data-emod="' + (x.hidden ? 'hello_unhide' : 'hello_hide') + '" data-id="' + esc(x.id) + '">' + (x.hidden ? '공개' : '숨김') + '</button><button class="sec" style="min-height:32px;font-size:12px" data-hdel="' + esc(x.id) + '">삭제</button></div>';
+    }).join('') : '<p class="small muted">해당하는 글이 없어요</p>') + '</div>';
+}
 function forestTab() {
   var secrets = DATA.secrets.filter(function (s) { return FILTER === 'all' || (FILTER === 'hidden' ? s.hidden : !s.hidden); });
-  return consultBox() + '<div class="card"><div class="row between" style="flex-wrap:wrap;margin-bottom:6px"><h2 style="margin:0">대나무숲 관리</h2><div class="row">' +
+  return consultBox() + tribeCard() + helloCard() + '<div class="card"><div class="row between" style="flex-wrap:wrap;margin-bottom:6px"><h2 style="margin:0">대나무숲 관리</h2><div class="row">' +
     [['all', '전체'], ['visible', '공개 중'], ['hidden', '숨김']].map(function (f) { return '<button class="sec" data-filter="' + f[0] + '" style="' + (FILTER === f[0] ? 'border-color:var(--ink);font-weight:700' : '') + '">' + f[1] + '</button>'; }).join('') + '</div></div>' +
     '<p class="small muted">위기 단어가 들어간 글과 신고 3회 이상 글은 자동으로 숨겨져요. 숨김/공개를 바꾸거나, 글을 직접 수정·삭제할 수 있어요. 삭제한 글은 되돌릴 수 없어요.</p>' +
     (secrets.length ? secrets.map(function (s) {
       var skey = 's|' + s.id, sed = EDIT === skey;
-      return '<div class="sec-item"><div style="flex:1">' + (sed ? editBox(skey, s.text) : '<p style="margin:0 0 6px;white-space:pre-wrap;line-height:1.6">' + esc(s.text) + '</p>') + '<div class="row small muted" style="flex-wrap:wrap"><span>' + esc(s.date) + '</span><span>공감 ' + s.empathy + '</span><span>신고 ' + s.reports + '</span>' +
-        (s.hidden ? '<span class="tag" style="background:#FBE9E3;color:#8A3520">숨김</span>' : '<span class="tag" style="background:var(--ok-l);color:var(--ok)">공개</span>') + (s.memo ? '<span>' + esc(s.memo) + '</span>' : '') + '</div></div>' +
+      return '<div class="sec-item"><div style="flex:1">' + (sed ? editBox(skey, s.text) : '<p style="margin:0 0 6px;white-space:pre-wrap;line-height:1.6">' + esc(s.text) + '</p>') + '<div class="row small muted" style="flex-wrap:wrap">' + (s.g ? '<span class="tag" style="background:#E7F1EA;color:#1F4A33">' + (TRIBE_KO[s.g] || s.g) + ' 숲' + (s.ro === 'tribe' ? ' · 무리만 답' : '') + '</span>' : '') + (s.mood ? '<span class="tag" style="background:#FFF4D6;color:#5A4300">' + (MOOD_KO[s.mood] || s.mood) + '</span>' : '') + (s.nm || s.st ? '<span class="tag">공개: ' + esc([s.nm, s.st].filter(Boolean).join(' · ')) + '</span>' : '') + '<span>' + esc(s.date) + '</span><span>공감 ' + s.empathy + '</span><span>신고 ' + s.reports + '</span>' +
+        (s.hidden ? '<span class="tag" style="background:#FBE9E3;color:#8A3520">숨김</span>' : '<span class="tag" style="background:var(--ok-l);color:var(--ok)">공개</span>') + (s.memo ? '<span>' + esc(s.memo) + '</span>' : '') + '</div>' + ((s.echoes || []).length ? '<div class="col" style="gap:6px;margin-top:8px;border-left:3px solid #CFE3D6;padding-left:10px">' + s.echoes.map(function (x) {
+          return '<div class="row" style="gap:8px;align-items:flex-start"><div style="flex:1"><p class="small" style="margin:0;white-space:pre-wrap">' + esc(x.text) + '</p><span class="xs muted">' + (TRIBE_KO[x.g] ? TRIBE_KO[x.g] + ' · ' : '') + esc(x.date) + ' · 신고 ' + x.reports + (x.hidden ? ' · <b style="color:#8A3520">숨김</b>' : '') + (x.memo ? ' · ' + esc(x.memo) : '') + '</span></div>' +
+            '<button class="sec" style="min-height:32px;font-size:12px" data-emod="' + (x.hidden ? 'echo_unhide' : 'echo_hide') + '" data-id="' + esc(x.id) + '">' + (x.hidden ? '공개' : '숨김') + '</button><button class="sec" style="min-height:32px;font-size:12px" data-edel="' + esc(x.id) + '">삭제</button></div>';
+        }).join('') + '</div>' : '') + '</div>' +
         '<div class="col" style="gap:6px"><button class="sec" data-mod="' + (s.hidden ? 'unhide' : 'hide') + '" data-id="' + esc(s.id) + '">' + (s.hidden ? '공개하기' : '숨기기') + '</button>' + (sed ? '' : edBtn('data-edit="' + skey + '"')) + delBtn('data-sdel="' + esc(s.id) + '"') + '</div></div>';
     }).join('') : '<p class="small muted">해당하는 글이 없어요</p>') + '</div>';
 }
@@ -740,6 +763,51 @@ function moneyTab() {
     evDaily('일자별', [['money_start', '시작'], ['money_finish', '완료']]) +
     '<p class="small muted">한 사람이 여러 번 하면 마지막 결과만 셌어요. 사주 보정이 들어간 결과 ' + m.saju + '명.</p>';
 }
+/* ---------- 손금 도감: 분석 탭 (원본 = 구글 시트 'palm' 시트, 완료 1건 1행) ---------- */
+var PM_TYPE = { vit: '🔥 불꽃 행동가', mind: '🧭 설계하는 전략가', heart: '💞 마음을 잇는 공감가', will: '🛠️ 한 길을 가는 장인', free: '🪁 바람 같은 개척자', spark: '✨ 빛을 내는 표현가' };
+var PM_TRAIT = { vit: '활력', mind: '사고', heart: '감성', will: '끈기', free: '자유', spark: '표현' };
+var PM_SHAPE = ['흙손(土)', '바람손(木)', '불손(火)', '물손(水)'];
+function palmTab() {
+  var m = DATA.palm;
+  if (!m) return '<div class="card"><p class="small muted">Code.gs를 최신 버전으로 배포하면 이 날부터 손금 도감 기록이 쌓여요. 배포 뒤 구글 시트에 <b>palm</b> 시트가 생기고 완료 1건이 1행으로 들어가요.</p></div>' + palmDict();
+  var fun = [['테스트 시작', m.started], ['8문항 완료', m.n], ['심층 리포트', m.deepUsers], ['결과·코드 공유', m.share + m.codeShare], ['손금 궁합 확인', m.compat.users], ['상담으로 이동', (m.next.sub || {}).consult || 0], ['사주×성향으로 이동', (m.next.sub || {}).saju || 0]];
+  var fmax = Math.max.apply(null, fun.map(function (f) { return f[1]; }).concat([1]));
+  var head = '<div class="kpis">' + kpi('테스트 시작', m.started, '') + kpi('완료', m.n, '완료율 ' + pct(m.n, m.started)) + kpi('중간 소요', m.medSec != null ? Math.round(m.medSec / 6) / 10 + '분' : '–', '완료자 기준') +
+    kpi('심층 리포트', m.deepUsers, '완료자의 ' + pct(m.deepUsers, m.n)) + kpi('사주×성향 연결', m.withSaju, '완료자의 ' + pct(m.withSaju, m.n)) + kpi('손금 궁합', m.compat.n, m.compat.users + '명') + '</div>';
+  var funnel = '<div class="card"><h2>연결 퍼널 (사람 수)</h2>' + fun.map(function (f, i) { return hbar(f[0], f[1], fmax, f[1] + (i ? ' · ' + pct(f[1], m.started) : '')); }).join('') + '<p class="small muted">\'공유\'와 \'궁합 확인\'은 횟수 기준일 수 있어요. 시작 대비 비율로 다른 테스트와 견줘 보세요.</p></div>';
+  var reach = '<div class="card"><h2>문항별 도달 (이탈 찾기)</h2>' + m.reach.map(function (v, i) { var prev = i ? m.reach[i - 1] : m.started; return hbar((i + 1) + '번 ' + (m.items[i] ? m.items[i].name : ''), v, Math.max(m.started, 1), v + '명' + (prev ? ' · 직전 대비 ' + pct(v, prev) : '')); }).join('') + '<p class="small muted">직전 대비 비율이 뚝 떨어지는 문항이 그림이나 설명이 어려운 곳이에요.</p></div>';
+  if (!m.n) return head + funnel + reach + palmDict();
+  var tmax = Math.max.apply(null, Object.keys(PM_TYPE).map(function (k) { return m.top[k] || 0; }).concat([1]));
+  var types = '<div class="card"><h2>결과 유형 분포</h2>' + Object.keys(PM_TYPE).map(function (k) { var v = m.top[k] || 0; return hbar(PM_TYPE[k], v, tmax, dn(v + '명', '손금 ' + PM_TYPE[k], function (p) { return p.r && p.r.pm === k; }) + ' · ' + pct(v, m.n)); }).join('') + '<p class="small muted">한 유형이 35% 넘게 몰리면 palm.json의 가중치(w)를 조정할 때예요.</p></div>';
+  var tr = '<div class="card"><h2>여섯 가지 힘 평균 (0~100)</h2>' + Object.keys(PM_TRAIT).map(function (k) { var v = m.traits[k]; return hbar(PM_TRAIT[k], v || 0, 100, v == null ? '–' : String(v)); }).join('') +
+    '<p class="small muted">손: 주로 쓰는 손 ' + (m.hand.main || 0) + ' · 반대 손 ' + (m.hand.other || 0) + '</p></div>';
+  var items = '<div class="card"><h2>문항별 보기 분포</h2><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>#</th><th>문항</th><th>보기별 응답 (명 · %)</th></tr></thead><tbody>' + m.items.map(function (it, i) {
+      var tot = it.c.reduce(function (a, b) { return a + b; }, 0), mx = Math.max.apply(null, it.c);
+      return '<tr><td>' + (i + 1) + '</td><td>' + esc(it.name) + (tot && mx / tot >= 0.7 ? ' <span class="xs" style="color:#8A3520">쏠림</span>' : '') + '</td><td class="small">' + it.labels.map(function (l, k) { return esc(l) + ' <b>' + it.c[k] + '</b> <span class="muted">' + pct(it.c[k], tot) + '</span>'; }).join(' · ') + '</td></tr>'; }).join('') +
+    '</tbody></table></div><p class="small muted">한 보기에 70% 넘게 몰린 문항(쏠림)은 그림이 헷갈리거나 변별력이 낮은 문항이에요.</p></div>';
+  var se = m.shapeEl, el = '<div class="card"><h2>손 모양 오행 × 사주 오행</h2>' + (se.n ? '<p class="small">사주 결과가 있는 ' + se.n + '명 중 손 모양 오행이 사주에 2개 이상 ' + se.same + '명(' + pct(se.same, se.n) + '), 1개 ' + se.one + '명, 없음 ' + se.none + '명</p>' +
+      '<table class="tbl"><thead><tr><th>손 모양</th><th>인원</th><th>사주에도 2개 이상</th></tr></thead><tbody>' + PM_SHAPE.map(function (nm, i) { var b = se.byShape[i] || { n: 0, same: 0 }; return '<tr><td>' + nm + '</td><td>' + b.n + '</td><td>' + pct(b.same, b.n) + '</td></tr>'; }).join('') + '</tbody></table>' +
+      '<p class="small muted">무작위라면 \'2개 이상\' 비율은 오행마다 대략 비슷하게 나와요. 특정 손 모양에서만 높으면 콘텐츠에 쓸 만한 이야깃거리예요.</p>' : '<p class="small muted">사주×성향까지 한 손금 완료자가 아직 없어요.</p>') + '</div>';
+  var stems = Object.keys(m.byStem).sort(), byStem = stems.length ? '<div class="card"><h2>일간 × 손 모양</h2><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>일간</th>' + PM_SHAPE.map(function (x) { return '<th>' + x + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      stems.map(function (st) { var b = m.byStem[st]; return '<tr><td>' + esc((STEM_READ[st] || st)) + '</td>' + b.map(function (v) { return '<td>' + v + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div></div>' : '';
+  var codes = Object.keys(m.byCode).sort(), byCode = codes.length ? '<div class="card"><h2>성향 코드 × 손금 유형</h2><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>성향</th><th>인원</th><th>손금 유형</th></tr></thead><tbody>' + codes.map(function (c) { var o = m.byCode[c], ks = Object.keys(o).sort(function (a, b) { return o[b] - o[a]; }), n = ks.reduce(function (a, k) { return a + o[k]; }, 0);
+      return '<tr><td>' + esc(c) + '</td><td>' + n + '</td><td class="small">' + ks.map(function (k) { return (PM_TYPE[k] || k) + ' ' + o[k]; }).join(' · ') + '</td></tr>'; }).join('') + '</tbody></table></div><p class="small muted">유형마다 수십 명이 쌓여야 의미가 있어요.</p></div>' : '';
+  var cb = Object.keys(m.combo).sort(function (a, b) { return m.combo[b] - m.combo[a]; }).slice(0, 10), combo = '<div class="card"><h2>1위 × 2위 조합 상위 10</h2><table class="tbl"><tbody>' + cb.map(function (k) { var p = k.split('>'); return '<tr><td>' + (PM_TYPE[p[0]] || p[0]) + ' + ' + (PM_TRAIT[p[1]] || p[1]) + '</td><td style="text-align:right"><b>' + m.combo[k] + '</b></td></tr>'; }).join('') + '</tbody></table><p class="small muted">조합별로 풀이 문장을 따로 쓸지 정할 때 봐요.</p></div>';
+  return head + '<div class="row" style="gap:8px;justify-content:flex-end;margin:-4px 0 8px"><button class="sec" data-pmcsv="1">완료 데이터 CSV (' + m.rows.length + '행)</button></div>' + funnel + reach + types + '<div class="grid2">' + tr + combo + '</div>' + items + el + byStem + byCode +
+    evDaily('일자별', [['palm_start', '시작'], ['palm_finish', '완료']]) + palmDict();
+}
+function palmDict() {
+  var cols = [['시각', '완료 시각(서울)'], ['사용자', '익명 번호(기기마다 하나, 이름·연락처 없음)'], ['손', '주로 쓰는 손 / 반대 손'], ['응답코드', '8문항 보기 번호를 이은 8자리(0부터). 앱의 손금 코드 PM-[손][응답코드]와 같아요'],
+    ['손모양 ~ 표식', '8문항 각각 고른 보기의 한국어 라벨'], ['결과유형 · 2위', '여섯 가지 힘 중 1·2위로 정한 유형'], ['활력 ~ 표현', '여섯 가지 힘 점수(0~100)'], ['일간 · 성향코드', '같은 기기에 사주×성향 결과가 있을 때만'], ['소요초', '시작부터 완료까지 초'], ['첫유입 · 캠페인', '이 기기가 처음 들어온 경로·utm 캠페인']];
+  return '<div class="card"><h2>데이터 사전 · 구글 시트 palm</h2><p class="small muted">손 사진은 받지 않아요. 고른 그림 번호와 결과만 저장해요. 같은 사람이 여러 번 하면 시트에는 모두 쌓이고, 이 탭의 집계는 사람마다 마지막 결과만 써요. 이벤트 원본: palm_start · palm_q(문항 n 답함) · palm_finish · palm_compat · palm_code · palm_next · share(via palm) · coin(item palmx).</p><table class="tbl"><tbody>' +
+    cols.map(function (c) { return '<tr><td style="white-space:nowrap"><b>' + c[0] + '</b></td><td class="small">' + c[1] + '</td></tr>'; }).join('') + '</tbody></table></div>';
+}
+document.addEventListener('click', function (ev) {
+  var b = ev.target.closest('[data-pmcsv]'); if (!b || !DATA.palm) return;
+  var head = ['완료시각', '익명번호(앞8)', '손', '응답코드', '결과유형', '2위'].concat(Object.keys(PM_TRAIT).map(function (k) { return PM_TRAIT[k]; }), ['일간', '성향코드', '소요초']);
+  var csv = '﻿' + [head].concat(DATA.palm.rows).map(function (r) { return r.map(function (v) { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(','); }).join('\n');
+  var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = 'mymyme-palm-' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
+});
 /* ---------- 나에게 맞는 우리나라의 절: 이용 집계 · 참여자 추천 검토 · 공식 목록 · 시·군·구 채움 ---------- */
 var TEMPLE_COV = {"reg": {"서울": ["종로구", "중구", "용산구", "성동구", "광진구", "동대문구", "중랑구", "성북구", "강북구", "도봉구", "노원구", "은평구", "서대문구", "마포구", "양천구", "강서구", "구로구", "금천구", "영등포구", "동작구", "관악구", "서초구", "강남구", "송파구", "강동구"], "부산": ["중구", "서구", "동구", "영도구", "부산진구", "동래구", "남구", "북구", "해운대구", "사하구", "금정구", "강서구", "연제구", "수영구", "사상구", "기장군"], "대구": ["중구", "동구", "서구", "남구", "북구", "수성구", "달서구", "달성군", "군위군"], "인천": ["중구", "동구", "미추홀구", "연수구", "남동구", "부평구", "계양구", "서구", "강화군", "옹진군"], "광주": ["동구", "서구", "남구", "북구", "광산구"], "대전": ["동구", "중구", "서구", "유성구", "대덕구"], "울산": ["중구", "남구", "동구", "북구", "울주군"], "세종": ["세종시"], "경기": ["수원시", "성남시", "의정부시", "안양시", "부천시", "광명시", "평택시", "동두천시", "안산시", "고양시", "과천시", "구리시", "남양주시", "오산시", "시흥시", "군포시", "의왕시", "하남시", "용인시", "파주시", "이천시", "안성시", "김포시", "화성시", "광주시", "양주시", "포천시", "여주시", "연천군", "가평군", "양평군"], "강원": ["춘천시", "원주시", "강릉시", "동해시", "태백시", "속초시", "삼척시", "홍천군", "횡성군", "영월군", "평창군", "정선군", "철원군", "화천군", "양구군", "인제군", "고성군", "양양군"], "충북": ["충주시", "제천시", "청주시", "보은군", "옥천군", "영동군", "진천군", "괴산군", "음성군", "단양군", "증평군"], "충남": ["천안시", "공주시", "보령시", "아산시", "서산시", "논산시", "계룡시", "당진시", "금산군", "부여군", "서천군", "청양군", "홍성군", "예산군", "태안군"], "전북": ["전주시", "군산시", "익산시", "정읍시", "남원시", "김제시", "완주군", "진안군", "무주군", "장수군", "임실군", "순창군", "고창군", "부안군"], "전남": ["목포시", "여수시", "순천시", "나주시", "광양시", "담양군", "곡성군", "구례군", "고흥군", "보성군", "화순군", "장흥군", "강진군", "해남군", "영암군", "무안군", "함평군", "영광군", "장성군", "완도군", "진도군", "신안군"], "경북": ["포항시", "경주시", "김천시", "안동시", "구미시", "영주시", "영천시", "상주시", "문경시", "경산시", "의성군", "청송군", "영양군", "영덕군", "청도군", "고령군", "성주군", "칠곡군", "예천군", "봉화군", "울진군", "울릉군"], "경남": ["진주시", "통영시", "사천시", "김해시", "밀양시", "거제시", "양산시", "창원시", "의령군", "함안군", "창녕군", "고성군", "남해군", "하동군", "산청군", "함양군", "거창군", "합천군"], "제주": ["제주시", "서귀포시"]}, "cur": ["강원|고성군", "강원|동해시", "강원|속초시", "강원|양양군", "강원|영월군", "강원|원주시", "강원|정선군", "강원|춘천시", "강원|평창군", "경기|남양주시", "경기|안성시", "경기|양평군", "경기|여주시", "경기|화성시", "경남|남해군", "경남|밀양시", "경남|산청군", "경남|양산시", "경남|창원시", "경남|하동군", "경남|합천군", "경북|경산시", "경북|경주시", "경북|김천시", "경북|안동시", "경북|영주시", "경북|영천시", "경북|울진군", "경북|청도군", "경북|포항시", "광주|동구", "광주|서구", "대구|군위군", "대구|동구", "대전|대덕구", "부산|금정구", "부산|기장군", "부산|부산진구", "서울|강남구", "서울|강북구", "서울|성북구", "서울|은평구", "서울|종로구", "세종|세종시", "울산|울주군", "인천|강화군", "전남|구례군", "전남|순천시", "전남|여수시", "전남|영광군", "전남|장성군", "전남|해남군", "전남|화순군", "전북|고창군", "전북|김제시", "전북|남원시", "전북|부안군", "전북|진안군", "제주|서귀포시", "제주|제주시", "충남|공주시", "충남|부여군", "충남|서산시", "충남|예산군", "충남|천안시", "충북|단양군", "충북|보은군"], "n": 76};   // 빌드 때 넣음: { reg: {시도: [시군구…]}, cur: ['시도|시군구', …] }
 var TADM = { items: null, busy: false, st: null, list: null, err: '', msg: '', filter: 'new' };
@@ -760,6 +828,15 @@ function templeCover() {
     var miss = all.filter(function (g) { return !have[sd + '|' + g]; });
     return '<tr><td><b>' + esc(sd) + '</b></td><td>' + c.length + ' / ' + all.length + '</td><td class="small muted">' + (miss.length ? esc(miss.slice(0, 12).join(', ')) + (miss.length > 12 ? ' 외 ' + (miss.length - 12) + '곳' : '') : '모두 채움') + '</td></tr>'; }).join('');
   return '<div class="card"><h2>시·군·구별 채움 ' + got + ' / ' + tot + '</h2><p class="small muted">대표 사찰(이야기 있음) ' + TEMPLE_COV.n + '곳(' + TEMPLE_COV.cur.length + '개 시·군·구) + 공식 목록 ' + (TADM.list || []).length + '곳 기준이에요. 자치구 중 절이 없는 곳은 같은 광역시 안의 절로 추천돼요.</p><table class="tbl"><thead><tr><th>시·도</th><th>채움</th><th>아직 없는 곳</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+}
+/* ---------- 나의 ADHD력: 점수·유형은 이용자 기기에서만 계산해서 서버에 없음. 행동(시작·완료·공유·상담 안내 클릭)만 집계 ---------- */
+function adhdTab() {
+  var s0 = EVN('adhd_start'), s1 = EVN('adhd_finish'), sh = EVN('adhd_share'), hp = EVN('adhd_help'), nx = EVN('adhd_next'), x = coinItem('adhdx');
+  var rate = function (a, b) { return b ? Math.round(a / b * 100) + '%' : '데이터 없음'; };
+  return '<div class="kpis">' + kpi('시작', s0.n, s0.users + '명') + kpi('완료', s1.n, '완료율 ' + rate(s1.n, s0.n)) + kpi('공유', sh.n, '카드 ' + (sh.sub.card || 0) + ' · 링크 ' + (sh.sub.link || 0) + ' · 완료 대비 ' + rate(sh.n, s1.n)) +
+    kpi('심층 리포트', x.spend, x.users + '명 · 코인 부족 ' + x.short + '회') + kpi('상담 안내 클릭', hp.n, 'ADHD력 65% 이상에게만 보이는 안내') + kpi('사주로 이동', nx.n, '') + '</div>' +
+    '<div class="card"><p class="small muted">점수와 유형은 이용자 기기에서만 계산하고 서버로 보내지 않아요. 그래서 유형·점수 분포는 데이터 없음이에요. 완료율·공유율로 문항과 카드의 힘을 보세요.</p></div>' +
+    evDaily('일자별', [['adhd_start', '시작'], ['adhd_finish', '완료'], ['adhd_share', '공유']]);
 }
 function templeTab() {
   if (TADM.items === null && !TADM.busy) templeAdminLoad();
@@ -801,6 +878,8 @@ var PREVIEWS = [
   ['AI 활용력', [['aiq', 'AI 활용력 결과 + 심층 리포트'], ['aiqq', '문항 화면']]],
   ['재테크 DNA', [['money', '재테크 DNA 결과 + 심층 리포트'], ['moneyq', '문항 화면']]],
   ['나에게 맞는 우리나라의 절', [['temple', '결과 + 심층 리포트'], ['templeq', '문항 화면'], ['templesug', '절 추천하기 양식']]],
+  ['손금 도감', [['palm', '결과 + 심층 리포트'], ['palmq', '문항 화면']]],
+  ['나의 ADHD력', [['adhd', '결과 + 공유 카드'], ['adhdq', '문항 화면']]],
   ['마마미코인', [['wallet', '코인 지갑']]]
 ];
 function previewTab() {
@@ -815,14 +894,14 @@ function previewTab() {
  * DATA.audience = 익명번호마다 { s, f(첫 활동 ms), l(마지막), n(활동일 수), dd(첫날 기준 활동한 날 번호), src, camp, e{이벤트:횟수}, r{서비스 결과}, cs(쓴 코인), cg(받은 코인), sh(코인 부족) }
  * 이름·연락처는 없다. 새 이벤트도 e에 자동으로 잡혀서 '전체 이벤트' 표와 퍼널 빌더에 바로 나온다 */
 var DR = [], DRV = null, AN = { steps: ['visit', 'start', 'finish', 'share'], range: 0 };
-var EVNAME = { today1: '오늘의 한 장 저장·공유', taste_sample: '맛보기 예시 결과 보기', taste_friend: '맛보기 친구 케미',  visit: '방문', start: '사주 시작', likert_done: '성향 60문항 완료', scenario_done: '상황 12문항 완료', finish: '사주 결과 확인', report: '심층 리포트 열람', share: '결과 공유', mycode: '궁합 코드 복사', compat: '궁합 보기',
+var EVNAME = { adhd_start: 'ADHD력 시작', adhd_finish: 'ADHD력 완료', adhd_share: 'ADHD력 공유', adhd_help: 'ADHD력 상담 안내 클릭', adhd_next: 'ADHD력 → 사주', hello_post: '출석 한마디', hello_reply: '출석 한마디 답', forest_mood: '대나무숲 기분 카드', echo_post: '성향 숲 답 남김', forest_tab: '대나무숲 메아리 탭 전환', today1: '오늘의 한 장 저장·공유', taste_sample: '맛보기 예시 결과 보기', taste_friend: '맛보기 친구 케미',  visit: '방문', start: '사주 시작', likert_done: '성향 60문항 완료', scenario_done: '상황 12문항 완료', finish: '사주 결과 확인', report: '심층 리포트 열람', share: '결과 공유', mycode: '궁합 코드 복사', compat: '궁합 보기',
   consult: '고민 상담', secret_post: '대나무숲 글', secret_release: '대나무숲 날려 보냄', invite_open: '궁합 초대 열기', taste: '30초 맛보기', result_update: '결과 갱신', resume: '이어서 하기',
   brain_start: '두뇌 퍼즐 시작', brain_finish: '두뇌 퍼즐 완료', challenge_start: '두뇌 챌린지 도전', challenge_finish: '두뇌 챌린지 완료', money_start: '재테크 DNA 시작', money_finish: '재테크 DNA 완료',
   aiq_start: 'AI 활용력 시작', aiq_finish: 'AI 활용력 완료', gen_start: '세대 감각 시작', gen_finish: '세대 감각 완료', temple_start: '절 테스트 시작', temple_finish: '절 테스트 완료', temple_pick: '절 추천 확인', temple_suggest: '절 추천 보냄',
   coin: '코인 기록', push_on: '알림 켬', push_off: '알림 끔', push_err: '알림 오류', pwa_click: '앱 설치 버튼', pwa_installed: '앱 설치 완료', pwa_hide: '설치 안내 닫음', pwa_choice: '설치 창 응답',
-  shop_click: '추천템 둘러보기', cp_click: '쿠팡 추천템 클릭', ref_open: '초대 링크로 방문', ref_share: '초대 링크 공유', match_on: '귀인 찾기 등록', match_like: '귀인 좋아요', ny_open: '신년운세', ny_next: '신년운세 다음 한 걸음', forest_bridge: '대나무숲→상담 다리', lang: '언어 변경' };
+  shop_click: '추천템 둘러보기', cp_click: '쿠팡 추천템 클릭', ref_open: '초대 링크로 방문', ref_share: '초대 링크 공유', match_on: '귀인 찾기 등록', match_like: '귀인 좋아요', palm_start: '손금 시작', palm_q: '손금 문항 답함', palm_finish: '손금 완료', palm_compat: '손금 궁합', palm_code: '손금 코드 보냄', palm_next: '손금 다음 한 걸음', ny_open: '신년운세', ny_next: '신년운세 다음 한 걸음', forest_bridge: '대나무숲→상담 다리', lang: '언어 변경' };
 function evName(k) { return EVNAME[k] || k; }
-var SVC = [['finish', '사주×성향'], ['brain_finish', '두뇌 퍼즐'], ['money_finish', '재테크 DNA'], ['aiq_finish', 'AI 활용력'], ['gen_finish', '세대 감각'], ['temple_finish', '나에게 맞는 절'], ['taste', '30초 맛보기']];
+var SVC = [['finish', '사주×성향'], ['brain_finish', '두뇌 퍼즐'], ['money_finish', '재테크 DNA'], ['aiq_finish', 'AI 활용력'], ['gen_finish', '세대 감각'], ['temple_finish', '나에게 맞는 절'], ['palm_finish', '손금 도감'], ['taste', '30초 맛보기']];
 function aud() { return (DATA && DATA.audience) || null; }
 function has(t) { return function (p) { return (p.e[t] || 0) > 0; }; }
 function svcN(p) { return SVC.slice(0, 6).filter(function (x) { return p.e[x[0]]; }).length; }
@@ -1002,6 +1081,7 @@ var KPI_DRILL = {
   '*|푸시 구독': function (p) { return p.r && p.r.push; }, '*|알림 켠 사람': function (p) { return p.r && p.r.push; },
   '*|오늘 방문자': function (p) { return new Date(p.l + 9 * 3600e3).toISOString().slice(0, 10) === kstToday(); }, '*|지금 접속 중': function (p) { return Date.now() - p.l < 10 * 60000; },
   '*|오늘 결과 확인': function (p) { return p.e.finish && new Date(p.l + 9 * 3600e3).toISOString().slice(0, 10) === kstToday(); },
+  'palm|테스트 시작': has('palm_start'), 'palm|완료': has('palm_finish'), 'palm|손금 궁합': has('palm_compat'),
   '*|고민 상담': has('consult'), '*|대나무숲': has('secret_post'), '*|초대 링크로 방문': has('ref_open'), '*|궁합 본 횟수': has('compat'), '*|코드 복사·보내기': has('mycode'),
   '*|칼렛스토어 둘러보기 클릭': has('shop_click'), '*|쿠팡 추천템 클릭': has('cp_click'), '*|지급한 코인': function (p) { return p.cg > 0; }, '*|사용한 코인': function (p) { return p.cs > 0; },
   'brain|퍼즐 시작': has('brain_start'), 'brain|퍼즐 완료': has('brain_finish'), 'brain|도전한 사람(1단계)': has('challenge_start'),
@@ -1068,6 +1148,8 @@ var SERVICES = [
   { id: 'aiq', name: 'AI 활용력', tab: function () { return aiqTab(); } },
   { id: 'gen', name: '세대 감각', tab: function () { return genTab(); } },
   { id: 'money', name: '재테크 DNA', tab: function () { return moneyTab(); } },
+  { id: 'palm', name: '손금 도감', tab: function () { return palmTab(); } },
+  { id: 'adhd', name: '나의 ADHD력', tab: function () { return adhdTab(); } },
   { id: 'temple', name: '나에게 맞는 절', tab: function () { return templeTab(); } },
   { id: 'forest', name: '대나무숲·상담', tab: function () { return forestTab(); } }
 ];
@@ -1145,6 +1227,9 @@ document.addEventListener('click', function (e) {
     b.disabled = true; b.textContent = '등록 중…'; apost({ kind: 'admin_reply', id: b.dataset.reply, text: t }).then(load, load);
   }
   else if (b.dataset.cdone || b.dataset.creopen) { b.disabled = true; apost({ kind: 'admin_status', id: b.dataset.cdone || b.dataset.creopen, status: b.dataset.cdone ? '답변 완료' : '대기' }).then(load, load); }
+  else if (b.dataset.emod) { b.disabled = true; fetch(ENDPOINT + '?action=' + b.dataset.emod + '&id=' + encodeURIComponent(b.dataset.id) + '&key=' + encodeURIComponent(KEY)).then(function () { load(); }); }
+  else if (b.dataset.hdel) { if (confirm('이 한마디를 삭제할까요? 한마디를 지우면 달린 답도 함께 지워져요.')) { b.disabled = true; apost({ kind: 'admin_edit', op: 'hello_delete', id: b.dataset.hdel }).then(load, load); } }
+  else if (b.dataset.edel) { if (confirm('이 답을 삭제할까요? 되돌릴 수 없어요.')) { b.disabled = true; apost({ kind: 'admin_edit', op: 'echo_delete', id: b.dataset.edel }).then(load, load); } }
   else if (b.dataset.mod) {
     b.disabled = true;
     fetch(ENDPOINT + '?action=' + b.dataset.mod + '&id=' + encodeURIComponent(b.dataset.id) + '&key=' + encodeURIComponent(KEY)).then(function () { load(); });
