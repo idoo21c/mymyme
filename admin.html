@@ -539,7 +539,7 @@ function homeCard() {
   return '<div class="card"><h2>새 메인화면 · 30초 맛보기</h2><div class="kpis">' +
     kpi('30초 맛보기', h.taste + '명', '생년월일 입력 후 일간 확인') + kpi('→ 정밀 분석 시작', h.tasteToStart + '명', '맛보기 대비 ' + pct(h.tasteToStart, h.taste)) +
     kpi('→ 결과 확인', h.tasteToFinish + '명', '맛보기 대비 ' + pct(h.tasteToFinish, h.taste)) + kpi('오늘의 카드 열기', h.dayCard + '회', h.dayCardUsers + '명 · 회당 코인 지급') +
-    kpi('탐구 지도 완성', h.mapDone + '명', '10코인 보상') + kpi('푸시 구독', h.push + '명', '알림 허용 기준') + '</div>' +
+    kpi('지도 보상 받음', h.mapDone + '명', '5칸마다 +5코인') + kpi('푸시 구독', h.push + '명', '알림 허용 기준') + '</div>' +
     '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:12px"><div><h3 class="small">맛보기 일간 분포</h3><div class="col" style="gap:6px">' + bars + '</div><p class="xs muted">양력 ' + (cal.solar || 0) + ' · 음력 ' + (cal.lunar || 0) + ' · 윤달 ' + (cal.lunar_leap || 0) + '명</p></div>' +
     '<div><h3 class="small">최근 7일</h3>' + trend + '</div></div><p class="xs muted">맛보기만 하고 떠난 사람은 참여자 탭의 \'30초 맛보기만\' 필터에서 볼 수 있어요.</p></div>';
 }
