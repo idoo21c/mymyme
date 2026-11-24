@@ -639,6 +639,15 @@ function resultsTab() {
 var MOOD_KO = { rain: '🌧️ 지침', fire: '🔥 답답', spin: '🌀 혼란', sprout: '🌱 회복 중', calm: '😶 그냥 그래', sun: '☀️ 괜찮아짐', heart: '💗 설렘' };
 function moodTop(m) { return Object.keys(m || {}).sort(function (a, b) { return m[b] - m[a]; }).slice(0, 3).map(function (k) { return (MOOD_KO[k] || k) + ' ' + m[k]; }).join(' · ') || '–'; }
 var TRIBE_KO = { NF: '🌿 공감형', NT: '🔭 분석형', SJ: '🪨 안정형', SP: '🧭 탐험형' };
+/* 비밀상담소 입구: 메인·지도에서 들어온 횟수와 고른 문. 글 내용·작성자는 여기서 다루지 않음(집계만) */
+function roomAdminCard() {
+  var o = EVN('room_open'), dr = EVN('room_door'), VIA = { home: '메인 카드', map: '나의 지도' }, DOOR = { shout: '🌬️ 털어놓기', echo: '🎋 메아리', consult: '🕯️ 상담', lobby: '로비로' };
+  var mx = Math.max.apply(null, Object.keys(DOOR).map(function (k) { return dr.sub[k] || 0; }).concat([1]));
+  return '<div class="card"><h2>비밀상담소 입구</h2><div class="kpis">' + kpi('메인에서 들어옴', o.n, o.users + '명') + kpi('문 고름', dr.n, dr.users + '명') +
+    kpi('털어놓기 → 남김', EVN('secret_post').n, '날려 보냄 ' + EVN('secret_release').n) + kpi('상담 시작', EVN('consult').n, '') + '</div>' +
+    (dr.n ? Object.keys(DOOR).map(function (k) { return hbar(DOOR[k], dr.sub[k] || 0, mx, (dr.sub[k] || 0) + '회'); }).join('') : '<p class="small muted">데이터 없음</p>') +
+    '<p class="xs muted">입구 수는 배포 이후부터 쌓여요. 글 내용과 작성자는 이 카드에 나오지 않아요.</p></div>';
+}
 function tribeCard() {
   var T = DATA.tribe; if (!T) return '<div class="card"><h2>성향 숲</h2><p class="small muted">Code.gs를 최신으로 배포하면 무리별 글·답 집계가 보여요.</p></div>';
   var rows = Object.keys(TRIBE_KO).map(function (k) { var t = T[k] || {}; return '<tr><td><b>' + TRIBE_KO[k] + '</b></td><td>' + (t.posts || 0) + '</td><td>' + (t.writers || 0) + '명</td><td>' + (t.echoes || 0) + '</td><td>' + (t.repliers || 0) + '명</td><td>' + (t.posts ? Math.round((t.answered || 0) / t.posts * 100) + '%' : '데이터 없음') + '</td><td>' + (t.posts ? ((t.echoes || 0) / t.posts).toFixed(1) : '–') + '</td><td>' + (t.echoes ? Math.round((t.sameEcho || 0) / t.echoes * 100) + '%' : '데이터 없음') + '</td><td>' + (t.empathy || 0) + '</td><td class="small">' + moodTop(t.moods) + '</td></tr>'; }).join('');
@@ -659,7 +668,7 @@ function helloCard() {
 }
 function forestTab() {
   var secrets = DATA.secrets.filter(function (s) { return FILTER === 'all' || (FILTER === 'hidden' ? s.hidden : !s.hidden); });
-  return consultBox() + tribeCard() + helloCard() + '<div class="card"><div class="row between" style="flex-wrap:wrap;margin-bottom:6px"><h2 style="margin:0">대나무숲 관리</h2><div class="row">' +
+  return consultBox() + roomAdminCard() + tribeCard() + helloCard() + '<div class="card"><div class="row between" style="flex-wrap:wrap;margin-bottom:6px"><h2 style="margin:0">대나무숲 관리</h2><div class="row">' +
     [['all', '전체'], ['visible', '공개 중'], ['hidden', '숨김']].map(function (f) { return '<button class="sec" data-filter="' + f[0] + '" style="' + (FILTER === f[0] ? 'border-color:var(--ink);font-weight:700' : '') + '">' + f[1] + '</button>'; }).join('') + '</div></div>' +
     '<p class="small muted">위기 단어가 들어간 글과 신고 3회 이상 글은 자동으로 숨겨져요. 숨김/공개를 바꾸거나, 글을 직접 수정·삭제할 수 있어요. 삭제한 글은 되돌릴 수 없어요.</p>' +
     (secrets.length ? secrets.map(function (s) {
@@ -928,7 +937,7 @@ function previewTab() {
  * DATA.audience = 익명번호마다 { s, f(첫 활동 ms), l(마지막), n(활동일 수), dd(첫날 기준 활동한 날 번호), src, camp, e{이벤트:횟수}, r{서비스 결과}, cs(쓴 코인), cg(받은 코인), sh(코인 부족) }
  * 이름·연락처는 없다. 새 이벤트도 e에 자동으로 잡혀서 '전체 이벤트' 표와 퍼널 빌더에 바로 나온다 */
 var DR = [], DRV = null, AN = { steps: ['visit', 'start', 'finish', 'share'], range: 0 };
-var EVNAME = { celeb_open: '유명인 마마미 열람', celeb_mood: '유명인 감정 버튼', celeb_post: '유명인 한마디 남김', celeb_share: '유명인 마마미 공유', adhd_start: 'ADHD력 시작', adhd_finish: 'ADHD력 완료', adhd_share: 'ADHD력 공유', adhd_help: 'ADHD력 상담 안내 클릭', adhd_next: 'ADHD력 → 사주', hello_post: '출석 한마디', hello_reply: '출석 한마디 답', forest_mood: '대나무숲 기분 카드', echo_post: '성향 숲 답 남김', forest_tab: '대나무숲 메아리 탭 전환', today1: '오늘의 한 장 저장·공유', taste_sample: '맛보기 예시 결과 보기', taste_friend: '맛보기 친구 케미',  visit: '방문', start: '사주 시작', likert_done: '성향 60문항 완료', scenario_done: '상황 12문항 완료', finish: '사주 결과 확인', report: '심층 리포트 열람', share: '결과 공유', mycode: '궁합 코드 복사', compat: '궁합 보기',
+var EVNAME = { room_open: '비밀상담소 들어옴', room_door: '비밀상담소 문 선택', celeb_open: '유명인 마마미 열람', celeb_mood: '유명인 감정 버튼', celeb_post: '유명인 한마디 남김', celeb_share: '유명인 마마미 공유', adhd_start: 'ADHD력 시작', adhd_finish: 'ADHD력 완료', adhd_share: 'ADHD력 공유', adhd_help: 'ADHD력 상담 안내 클릭', adhd_next: 'ADHD력 → 사주', hello_post: '출석 한마디', hello_reply: '출석 한마디 답', forest_mood: '대나무숲 기분 카드', echo_post: '성향 숲 답 남김', forest_tab: '대나무숲 메아리 탭 전환', today1: '오늘의 한 장 저장·공유', taste_sample: '맛보기 예시 결과 보기', taste_friend: '맛보기 친구 케미',  visit: '방문', start: '사주 시작', likert_done: '성향 60문항 완료', scenario_done: '상황 12문항 완료', finish: '사주 결과 확인', report: '심층 리포트 열람', share: '결과 공유', mycode: '궁합 코드 복사', compat: '궁합 보기',
   consult: '고민 상담', secret_post: '대나무숲 글', secret_release: '대나무숲 날려 보냄', invite_open: '궁합 초대 열기', taste: '30초 맛보기', result_update: '결과 갱신', resume: '이어서 하기',
   brain_start: '두뇌 퍼즐 시작', brain_finish: '두뇌 퍼즐 완료', challenge_start: '두뇌 챌린지 도전', challenge_finish: '두뇌 챌린지 완료', money_start: '재테크 DNA 시작', money_finish: '재테크 DNA 완료',
   aiq_start: 'AI 활용력 시작', aiq_finish: 'AI 활용력 완료', gen_start: '세대 감각 시작', gen_finish: '세대 감각 완료', temple_start: '절 테스트 시작', temple_finish: '절 테스트 완료', temple_pick: '절 추천 확인', temple_suggest: '절 추천 보냄',
