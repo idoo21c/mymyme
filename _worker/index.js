@@ -105,6 +105,24 @@ async function api(req, env, path) {
   return json({ ok: false, reason: 'notfound' }, 404);
 }
 
+/* 궁합 코드 공유(/c/XXXXXX): /s/compat 페이지를 가져와 카톡 미리보기 제목·설명에 코드(와 선택한 이름)를 넣어 준다.
+   사람이 열면 페이지 안 스크립트가 /?with=MM-XXXXXX 로 넘겨 바로 궁합을 연다 */
+async function compatShare(req, env, url) {
+  const m = url.pathname.match(/^\/c\/([2-9A-HJKMNP-Za-hjkmnp-z]{6})$/);
+  const page = await env.ASSETS.fetch(new Request(new URL('/s/compat', url.origin), req));
+  if (!m) return page;
+  const code = 'MM-' + m[1].toUpperCase();
+  const nick = (url.searchParams.get('n') || '').replace(/[<>"'&]/g, '').trim().slice(0, 20);
+  const title = (nick ? nick + '님의 ' : '친구의 ') + '궁합 코드 ' + code;
+  const desc = '누르면 바로 나랑 궁합을 볼 수 있어요. 직접 넣을 땐 궁합 보기에 ' + code + ' 를 붙여넣으면 돼요.';
+  const set = (v) => ({ element(e) { e.setAttribute('content', v); } });
+  return new HTMLRewriter()
+    .on('meta[property="og:title"]', set(title)).on('meta[name="twitter:title"]', set(title))
+    .on('meta[property="og:description"]', set(desc)).on('meta[name="twitter:description"]', set(desc)).on('meta[name="description"]', set(desc))
+    .on('meta[property="og:url"]', set(url.origin + url.pathname))
+    .on('title', { element(e) { e.setInnerContent(title + ' | MyMyMe'); } })
+    .transform(new Response(page.body, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=300' } }));
+}
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
@@ -125,6 +143,7 @@ export default {
       if (!env.PUSH) return json({ ok: false, reason: 'no-kv' }, 503);
       try { return await api(req, env, url.pathname); } catch (err) { return json({ ok: false, reason: 'error' }, 500); }
     }
+    if (url.pathname.startsWith('/c/')) return compatShare(req, env, url);
     return env.ASSETS.fetch(req);
   }
 };
