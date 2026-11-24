@@ -71,7 +71,8 @@ html,body{margin:0;background:#ECE9E2;color:var(--ink);font-family:'Noto Sans KR
 button,input,select{font-family:inherit;color:inherit}
 .app{max-width:440px;min-height:100vh;margin:0 auto;background:var(--bg);display:flex;flex-direction:column}
 .screen{flex:1;display:flex;flex-direction:column;gap:20px;padding:20px 24px 28px}
-.mapgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.maptile{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 9px;border-radius:14px;border:1px dashed #CFCBE4;background:repeating-linear-gradient(135deg,#F4F2FA 0 6px,#EFEDF7 6px 12px);text-align:left;cursor:pointer;min-height:96px;font-family:inherit;color:var(--ink)}.maptile.lit{border:1.5px solid #CFC9F5;background:#fff}.maptile.fog{cursor:default;opacity:.7;border-style:dotted;background:linear-gradient(160deg,#ECEBF2,#F7F6FB)}.mt-ico{font-size:22px;line-height:1.1}.mt-area{font-size:11px;color:var(--sub)}.mt-name{font-size:13px;line-height:1.3}.mt-meta{font-size:11px;color:var(--acc-d);margin-top:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}.maptile.lit .mt-meta{color:var(--ok)}
+.mapgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.hrb{background:#F6F4EE;border:1px solid #ECE7DB;border-radius:14px;min-height:30px;padding:0 9px;cursor:pointer;color:#3A3D55;line-height:1}.hrb.on,.hrb[aria-pressed=true]{background:#FDECE6;border-color:#F2B9A6}.hrpick{gap:3px;flex-wrap:nowrap;max-width:100%;padding:4px;background:#fff;border:1px solid #ECE7DB;border-radius:16px;align-self:flex-start;box-shadow:0 4px 14px rgba(20,20,40,.08)}
+.maptile{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 9px;border-radius:14px;border:1px dashed #CFCBE4;background:repeating-linear-gradient(135deg,#F4F2FA 0 6px,#EFEDF7 6px 12px);text-align:left;cursor:pointer;min-height:96px;font-family:inherit;color:var(--ink)}.maptile.lit{border:1.5px solid #CFC9F5;background:#fff}.maptile.fog{cursor:default;opacity:.7;border-style:dotted;background:linear-gradient(160deg,#ECEBF2,#F7F6FB)}.mt-ico{font-size:22px;line-height:1.1}.mt-area{font-size:11px;color:var(--sub)}.mt-name{font-size:13px;line-height:1.3}.mt-meta{font-size:11px;color:var(--acc-d);margin-top:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}.maptile.lit .mt-meta{color:var(--ok)}
 .serif{font-family:'Noto Serif KR',serif}
 h1,h2,h3{margin:0}
 h1{font-family:'Noto Serif KR',serif;font-weight:700;font-size:28px;line-height:1.35;letter-spacing:-.4px}
@@ -9037,7 +9038,7 @@ if (DEMO) { try { Storage.prototype.setItem = function () {}; Storage.prototype.
 var PUBLIC = true;
 var ENDPOINT = "https://script.google.com/macros/s/AKfycbx2G0QG_yhq32sInKS2ScJDQsfuMxgpo4yIwiy5BEvhhK5LCy239wUOnT-Dz-FZsfGE/exec";
 var SITE_URL = "https://mymyme.app/";
-var BUILD = "1795484281";
+var BUILD = "1795485050";
 var SID = (function () { try { var v = localStorage.getItem('mymyme_sid'); if (!v) { v = Math.random().toString(36).slice(2, 12); localStorage.setItem('mymyme_sid', v); } return v; } catch (e) { return 'anon'; } })();
 function post(body) { if (!ENDPOINT || DEMO) return Promise.resolve(null); body.sid = SID; return fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(body) }).then(function (r) { return r.json(); }).catch(function () { return null; }); }
 function track(type, data) { post({ kind: 'event', type: type, data: data || {} }); if (REF_FINISH.indexOf(type) >= 0) refDone(); }
@@ -9537,8 +9538,34 @@ function streakLine() {
   return '<div class="row between" style="gap:8px;align-items:center"><span class="xs" style="color:#E4E2EE">🔥 ' + n + '일 연속 · ' + (n % 7 === 0 ? (got ? '7일 도장 보너스 받음' : '오늘 카드 열면 +' + STREAK_COIN + ' 보너스') : left + '일 더 오면 +' + STREAK_COIN + '코인') + '</span><span class="row" style="gap:4px" role="img" aria-label="연속 방문 ' + n + '일">' + dots + '</span></div>';
 }
 /* ---------- 출석 한마디: 메인에 남기는 한 줄 인사와 답(대댓글). 무엇을 보여 줄지는 쓰는 사람이 고른다 ---------- */
-var HELLO = { items: null, loading: false, open: {}, busy: '', g: false, n: false, more: false, today: 0, mine: {} };
+var HELLO = { items: null, loading: false, open: {}, busy: '', g: false, n: false, more: false, today: 0, mine: {}, pick: '' };
 var HELLO_KEY = 'mymyme_hello';
+/* 한마디 반응: 인스타 좋아요처럼 한 번 탭(❤️), 😊+ 로 다른 감정. 한 글에 하나, 다시 누르면 취소. 내가 누른 건 이 기기에만 기억한다 */
+var HREACT = [{ k: 'heart', e: '❤️', n: '좋아요' }, { k: 'laugh', e: '😂', n: '웃겨요' }, { k: 'cheer', e: '👏', n: '응원해요' }, { k: 'hug', e: '🫂', n: '토닥토닥' }, { k: 'wow', e: '😮', n: '놀라워요' }, { k: 'fire', e: '🔥', n: '최고예요' }];
+var HREACT_KEY = 'mymyme_hreact', HR_MINE = (function () { try { return JSON.parse(localStorage.getItem(HREACT_KEY) || '{}') || {}; } catch (e) { return {}; } })();
+function hrEmoji(k) { for (var i = 0; i < HREACT.length; i++) if (HREACT[i].k === k) return HREACT[i]; return null; }
+function hrFind(id) { var L = HELLO.items || []; for (var i = 0; i < L.length; i++) { if (L[i].id === id) return L[i]; var rp = L[i].replies || []; for (var j = 0; j < rp.length; j++) if (rp[j].id === id) return rp[j]; } return null; }
+function hrRow(x, sm) {
+  var c = x.reacts || {}, me = HR_MINE[x.id] || '', fs = sm ? '12px' : '13px', btn = 'class="hrb" style="font-size:' + fs + '"';
+  var total = HREACT.reduce(function (a, r) { return a + (c[r.k] || 0); }, 0);
+  var heart = '<button ' + btn + ' data-hreact="' + esc(x.id) + '" data-rk="heart" aria-pressed="' + (me === 'heart') + '" aria-label="좋아요' + (c.heart ? ' ' + c.heart + '개' : '') + '">' + (me === 'heart' ? '❤️' : '🤍') + (c.heart ? ' ' + c.heart : '') + '</button>';
+  var others = HREACT.slice(1).filter(function (r) { return c[r.k] > 0; }).map(function (r) {
+    return '<button ' + btn.replace('class="hrb"', 'class="hrb' + (me === r.k ? ' on' : '') + '"') + ' data-hreact="' + esc(x.id) + '" data-rk="' + r.k + '" aria-pressed="' + (me === r.k) + '" aria-label="' + r.n + ' ' + c[r.k] + '개">' + r.e + ' ' + c[r.k] + '</button>';
+  }).join('');
+  var pick = HELLO.pick === x.id ? '<div class="row hrpick" role="group" aria-label="감정 고르기">' + HREACT.map(function (r) {
+    return '<button class="hrb' + (me === r.k ? ' on' : '') + '" style="font-size:18px;min-width:0;padding:0 7px;min-height:36px" data-hreact="' + esc(x.id) + '" data-rk="' + r.k + '" aria-label="' + r.n + '" title="' + r.n + '">' + r.e + '</button>'; }).join('') + '</div>' : '';
+  return '<div class="col" style="gap:4px"><div class="row" style="gap:4px;flex-wrap:wrap;align-items:center">' + heart + others +
+    '<button ' + btn + ' data-hpick="' + esc(x.id) + '" aria-expanded="' + (HELLO.pick === x.id) + '" aria-label="다른 감정으로 반응하기">😊+</button>' + (total >= 3 && !sm ? '<span class="xs muted">' + total + '명이 반응</span>' : '') + '</div>' + pick + '</div>';
+}
+function hrToggle(id, k) {
+  var x = hrFind(id); if (!x) return;
+  var c = x.reacts || (x.reacts = {}), me = HR_MINE[id] || '', nk = me === k ? '' : k;
+  if (me) c[me] = Math.max(0, (c[me] || 1) - 1);
+  if (nk) { c[nk] = (c[nk] || 0) + 1; HR_MINE[id] = nk; } else delete HR_MINE[id];
+  try { localStorage.setItem(HREACT_KEY, JSON.stringify(HR_MINE)); } catch (e) {}
+  HELLO.pick = ''; render();
+  post({ kind: 'hello_react', id: id, r: nk }); track('hello_react', { r: nk || 'off' });
+}
 function helloDays() { try { return JSON.parse(localStorage.getItem(HELLO_KEY) || '[]'); } catch (e) { return []; } }
 function helloStreak() {
   var l = helloDays(), n = 0, t = new Date(TODAY + 'T00:00:00').getTime();
@@ -9563,11 +9590,11 @@ function helloCard() {
   var list = !HELLO.items ? '<p class="xs muted" style="margin:0">한마디를 불러오는 중이에요…</p>' : !HELLO.items.length ? '<p class="xs muted" style="margin:0">아직 오늘 첫 출석이 없어요. 첫 한마디를 남겨 보세요.</p>' :
     HELLO.items.slice(0, HELLO.more ? 30 : 2).map(function (it) {
       var op = HELLO.open[it.id], rp = it.replies || [];
-      return '<div class="col" style="gap:4px;padding:10px 0;border-top:1px solid #EEE9DF"><p style="margin:0;font-size:15px;color:#33364F;white-space:pre-wrap">' + esc(it.text) + '</p>' +
+      return '<div class="col" style="gap:4px;padding:10px 0;border-top:1px solid #EEE9DF"><p style="margin:0;font-size:15px;color:#33364F;white-space:pre-wrap">' + esc(it.text) + '</p>' + hrRow(it) +
         '<div class="row" style="gap:10px;align-items:center"><span class="xs muted">' + helloWho(it) + ' · ' + helloAgo(it.at) + (HELLO.mine[it.id] ? ' · 내 한마디' : '') + '</span><button class="xs" style="background:none;border:0;color:var(--acc-d);cursor:pointer;padding:4px 0;font-weight:600" data-hopen="' + esc(it.id) + '" aria-expanded="' + !!op + '">💬 답 ' + rp.length + '</button>' +
         '<button class="xs" style="background:none;border:0;color:var(--muted);cursor:pointer;padding:4px 0" data-hreport="' + esc(it.id) + '"' + (HELLO.mine[it.id] ? ' disabled' : '') + '>' + (HELLO.mine[it.id] === 'r' ? '신고됨' : '신고') + '</button></div>' +
         (op ? '<div class="col" style="gap:6px;margin-left:10px;border-left:3px solid var(--acc-ll);padding-left:10px">' + rp.map(function (x) {
-          return '<div class="col" style="gap:1px"><p class="small" style="margin:0;white-space:pre-wrap;color:#33364F">' + esc(x.text) + '</p><div class="row" style="gap:8px"><span class="xs muted">' + helloWho(x) + ' · ' + helloAgo(x.at) + '</span><button class="xs" style="background:none;border:0;color:var(--muted);cursor:pointer;padding:2px 0" data-hreport="' + esc(x.id) + '"' + (HELLO.mine[x.id] ? ' disabled' : '') + '>' + (HELLO.mine[x.id] === 'r' ? '신고됨' : '신고') + '</button></div></div>';
+          return '<div class="col" style="gap:2px"><p class="small" style="margin:0;white-space:pre-wrap;color:#33364F">' + esc(x.text) + '</p>' + hrRow(x, true) + '<div class="row" style="gap:8px"><span class="xs muted">' + helloWho(x) + ' · ' + helloAgo(x.at) + '</span><button class="xs" style="background:none;border:0;color:var(--muted);cursor:pointer;padding:2px 0" data-hreport="' + esc(x.id) + '"' + (HELLO.mine[x.id] ? ' disabled' : '') + '>' + (HELLO.mine[x.id] === 'r' ? '신고됨' : '신고') + '</button></div></div>';
         }).join('') + '<div class="row" style="gap:6px"><label class="sr" for="hr_' + esc(it.id) + '" style="position:absolute;left:-9999px">답 쓰기</label><input id="hr_' + esc(it.id) + '" class="inp" maxlength="100" placeholder="답 남기기 (최대 100자)" style="flex:1;font-size:14px;min-height:40px"><button class="btn btn-sec" style="flex:none;min-height:40px;padding:0 12px;width:auto" data-hreply="' + esc(it.id) + '"' + (HELLO.busy === it.id ? ' disabled' : '') + '>' + (HELLO.busy === it.id ? '…' : '남기기') + '</button></div></div>' : '') + '</div>';
     }).join('') + (HELLO.items.length > 2 && !HELLO.more ? '<button class="btn btn-ghost" data-act="helloMore">한마디 더 보기</button>' : '');
   return '<div class="card col" style="gap:10px">' + head + write + list + '</div>';
@@ -11781,6 +11808,8 @@ document.addEventListener('click', function (ev) {
   if (d.fmode) { FOREST_MODE = d.fmode; CONSULT.err = ''; render(); return; }
   if (d.copen) { var pp = d.copen.split('-'); openConsult(pp[0], pp[1]); return; }
   if (d.hshow) { var hk = (document.getElementById('hl_in') || {}).value || ''; HELLO[d.hshow] = !HELLO[d.hshow]; render(); var hi = document.getElementById('hl_in'); if (hi) hi.value = hk; return; }
+  if (d.hreact) { hrToggle(d.hreact, d.rk); return; }
+  if (d.hpick) { HELLO.pick = HELLO.pick === d.hpick ? '' : d.hpick; render(); return; }
   if (d.hopen) { HELLO.open[d.hopen] = !HELLO.open[d.hopen]; render(); return; }
   if (d.hreply) { helloPost(d.hreply); return; }
   if (d.hreport) { HELLO.mine[d.hreport] = 'r'; post({ kind: 'hello_report', id: d.hreport }); toast('신고했어요. 쌓이면 숨겨져요'); render(); return; }
