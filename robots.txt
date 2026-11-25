@@ -83,3 +83,4 @@ Disallow: /admin
 Disallow: /api/
 
 Sitemap: https://mymyme.app/sitemap.xml
+#DaumWebMasterTool:ed75d2f243b9e18d58b37222e6a312e280646d12595f04a883334f1fb7ee0ec0:O++XJBLIZbSwCRTbPGXamQ==
