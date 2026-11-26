@@ -64,6 +64,13 @@ body.dopen{overflow:hidden}#drawer .dbg{position:fixed;inset:0;background:rgba(3
 .dtbl tbody tr{cursor:pointer}.dtbl tbody tr:hover{background:var(--acc-l)}
 .seg{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}.segc{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;background:#fff}.segc span{font-size:12.5px;font-weight:700}.segc b{font-size:22px}.segc em{font-style:normal;font-size:11.5px;color:var(--muted)}
 table.heat{border-collapse:separate;border-spacing:2px;font-size:10.5px}table.heat td{width:18px;height:18px;border-radius:3px;background:#F0EEF7}table.heat th{font-weight:500;color:var(--muted);padding:0 3px}
+.reflection-status{margin:8px 0 18px}
+.reflection-progress{width:100%;height:10px;accent-color:var(--acc)}
+.reflection-list{list-style:none;margin:0;padding:0}
+.reflection-day{padding:12px;border-top:1px solid var(--line);scroll-margin-top:12px}
+.reflection-day[aria-current="date"]{background:var(--ok-l);border-radius:8px}
+.reflection-day p{margin:6px 0 0}
+.reflection-jump{color:var(--acc);font-size:13px}
 </style>
 </head>
 <body>
@@ -1196,8 +1203,34 @@ var SERVICES = [
   { id: 'adhd', name: '나의 ADHD력', tab: function () { return adhdTab(); } },
   { id: 'celeb', name: '유명인 마마미', tab: function () { return celebTab(); } },
   { id: 'temple', name: '나에게 맞는 절', tab: function () { return templeTab(); } },
-  { id: 'forest', name: '대나무숲·상담', tab: function () { return forestTab(); } }
+  { id: 'forest', name: '대나무숲·상담', tab: function () { return forestTab(); } },
+  { id: 'reflections', name: '오늘의 한 장', tab: function () { return reflectionsTab(); } }
 ];
+function reflectionsTab() {
+  if (typeof DailyReflections === 'undefined' || !DailyReflections.schedule)
+    return '<section class="card"><h2>오늘의 한 장</h2><p class="small muted">글귀 목록을 불러오지 못했어요. 페이지를 새로고침해 주세요.</p></section>';
+  var today = DailyReflections.date(), schedule = DailyReflections.schedule(), total = schedule.length;
+  var remaining = DailyReflections.daysUntilLastCard(today);
+  var day = Math.max(0, Math.min(total, total - remaining));
+  var status = day === 0 ? schedule[0].date + ' 첫 공개 예정' :
+    remaining > 0 ? '마지막 공개까지 ' + remaining + '일' :
+    remaining === 0 ? '오늘 마지막 글귀 공개' : '전체 공개 완료';
+  var rows = schedule.map(function (entry) {
+    var current = entry.date === today;
+    return '<li id="reflection-day-' + entry.day + '" class="reflection-day"' + (current ? ' aria-current="date"' : '') + '>' +
+      '<div class="row" style="flex-wrap:wrap"><b>Day ' + entry.day + '</b><time class="small muted" datetime="' + entry.date + '">' + entry.date + '</time>' +
+      '<span class="tag" style="background:' + (current ? 'var(--ok-l);color:var(--ok)' : 'var(--bg);color:var(--muted)') + '">' +
+      (current ? '오늘 공개' : entry.date < today ? '공개됨' : '공개 예정') + '</span></div>' +
+      '<p>' + esc(entry.card.quote) + '</p><p class="small muted">쉼 · ' + esc(entry.card.question) + '</p>' +
+      (entry.card.source ? '<p class="small muted">영감을 준 글 · ' + esc(entry.card.source) + '</p>' : '') + '</li>';
+  });
+  return '<section class="card" id="reflection-schedule" data-date="' + today + '"><h2>오늘의 한 장 · 글귀 일정</h2>' +
+    '<div class="reflection-status"><div class="row between" style="flex-wrap:wrap"><b id="reflection-day-count">Day ' + day + ' / ' + total + '</b>' +
+    (day && remaining >= 0 ? '<a class="reflection-jump" href="#reflection-day-' + day + '">오늘 글귀로 이동</a>' : '') + '</div>' +
+    '<progress class="reflection-progress" aria-labelledby="reflection-day-count" value="' + day + '" max="' + total + '"></progress>' +
+    '<p class="small muted">' + status + ' · 한국시간 자정 기준</p></div>' +
+    '<ol class="reflection-list" aria-label="글귀 공개 일정">' + rows.join('') + '</ol></section>';
+}
 function reflectionRenewalNotice() {
   if (typeof DailyReflections === 'undefined') return '';
   var remaining = DailyReflections.daysUntilLastCard(DailyReflections.date());
@@ -1227,6 +1260,10 @@ function render() {
   if (uc) uc.addEventListener('input', function () { UTM_CAMP = uc.value.trim().replace(/\s+/g, '_'); var base = location.origin + location.pathname.replace(/admin(\.html)?\/?$/, ''); document.getElementById('utmLink').textContent = base + '?utm_source=' + encodeURIComponent(UTM_SRC) + (UTM_CAMP ? '&utm_campaign=' + encodeURIComponent(UTM_CAMP) : ''); });
   if (pq) pq.addEventListener('input', function () { PQ = pq.value; var pos = pq.selectionStart; render(); var n = document.getElementById('pq'); n.focus(); n.setSelectionRange(pos, pos); });
 }
+document.addEventListener('visibilitychange', function () {
+  var schedule = document.getElementById('reflection-schedule');
+  if (document.visibilityState === 'visible' && schedule && schedule.dataset.date !== DailyReflections.date()) render();
+});
 document.addEventListener('change', function (e) {
   var t = e.target;
   if (t.id === 'utmSrc') { UTM_SRC = t.value; render(); return; }
