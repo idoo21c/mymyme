@@ -123,5 +123,13 @@ var DailyReflections = (function () {
     return cards.length - 1 - dayIndex(dateStr);
   }
 
-  return { date: date, cardOn: cardOn, daysUntilLastCard: daysUntilLastCard };
+  function schedule() {
+    var firstDay = Date.parse(start);
+    return cards.map(function (_, index) {
+      var releaseDate = new Date(firstDay + index * dayMs).toISOString().slice(0, 10);
+      return { day: index + 1, date: releaseDate, card: cardOn(releaseDate) };
+    });
+  }
+
+  return { date: date, cardOn: cardOn, daysUntilLastCard: daysUntilLastCard, schedule: schedule };
 })();
