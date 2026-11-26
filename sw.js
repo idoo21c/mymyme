@@ -2,7 +2,7 @@
  * 화면(같은 사이트의 GET 요청)은 '네트워크 먼저': 온라인이면 항상 최신 버전을 받고, 받은 것을 저장해 두었다가 오프라인일 때만 꺼내 쓴다.
  * 매주 요즘 말 업데이트처럼 자주 바뀌는 내용이 오래된 캐시에 묶이지 않게 하려는 것. 서버(Apps Script)·폰트 등 다른 사이트 요청은 건드리지 않는다 */
 var CACHE = 'mymyme-v2';
-var SHELL = ['./', './index.html', './icon-192.png', './icon-512.png', './manifest.webmanifest'];
+var SHELL = ['./', './index.html', './daily-reflections.js', './icon-192.png', './icon-512.png', './manifest.webmanifest'];
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));
 });

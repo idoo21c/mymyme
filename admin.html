@@ -68,6 +68,7 @@ table.heat{border-collapse:separate;border-spacing:2px;font-size:10.5px}table.he
 </head>
 <body>
 <div class="wrap" id="app"></div>
+<script src="./daily-reflections.js"></script>
 <script>
 var ENDPOINT = "https://script.google.com/macros/s/AKfycbx2G0QG_yhq32sInKS2ScJDQsfuMxgpo4yIwiy5BEvhhK5LCy239wUOnT-Dz-FZsfGE/exec";
 var KEY = ''; try { KEY = sessionStorage.getItem('mm_admin') || ''; } catch (e) {}
@@ -1197,6 +1198,15 @@ var SERVICES = [
   { id: 'temple', name: '나에게 맞는 절', tab: function () { return templeTab(); } },
   { id: 'forest', name: '대나무숲·상담', tab: function () { return forestTab(); } }
 ];
+function reflectionRenewalNotice() {
+  if (typeof DailyReflections === 'undefined') return '';
+  var remaining = DailyReflections.daysUntilLastCard(DailyReflections.date());
+  if (remaining > 14) return '';
+  var when = remaining > 0 ? '현재 원고의 마지막 글이 ' + remaining + '일 뒤에 공개돼요.' :
+    remaining === 0 ? '오늘 현재 원고의 마지막 글이 공개됐어요.' : '준비한 글귀의 공개가 끝났어요.';
+  return '<section class="card"><h2>오늘의 한 장 · 다음 100일 제안</h2><p class="small">' + when +
+    ' 이번에 반응이 좋았던 주제를 살펴보고, 회복·변화·관계를 담은 새 글귀와 쉼 질문 100일치를 준비해 보세요.</p></section>';
+}
 function render() {
   CHARTS = {}; DR = [];
   var waiting = CONS.filter(function (c) { return c.status !== '답변 완료'; }).length;
@@ -1207,6 +1217,7 @@ function render() {
   var svcHit = SERVICES.filter(function (x) { return x.id === TAB; })[0];
   var body = svcHit ? svcHit.tab() : TAB === 'analysis' ? analysisTab() : TAB === 'preview' ? previewTab() : TAB === 'trends' ? trendsTab() : TAB === 'ai' ? aiTab() : TAB === 'coin' ? coinTab() : TAB === 'push' ? pushTab() : TAB === 'match' ? matchTab() : TAB === 'traffic' ? trafficTab() : TAB === 'people' ? peopleTab() : TAB === 'results' ? resultsTab() : TAB === 'forest' ? forestTab() : overviewTab();
   app.innerHTML = '<div class="row between" style="flex-wrap:wrap"><h1>MyMyMe 관리자</h1><div class="row"><span class="small muted">갱신 ' + new Date(DATA.updated).toLocaleString('ko-KR') + '</span><button class="sec" data-since="open">지난번 이후</button><a class="sec" href="admin-study" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center;padding:0 12px;border:1px solid var(--line,#DDD);border-radius:10px;font-size:14px;color:inherit">📖 사주 공부 노트</a><button class="sec" id="re">새로고침</button><button class="sec" id="out">로그아웃</button></div></div>' +
+    reflectionRenewalNotice() +
     '<nav class="tabs" role="tablist"><span class="small muted" style="align-self:center;margin-right:4px">공통</span>' + common.map(tabBtn).join('') + '</nav>' +
     '<nav class="tabs" role="tablist" style="margin-top:-6px"><span class="small muted" style="align-self:center;margin-right:4px">서비스</span>' + svc.map(tabBtn).join('') + '</nav>' +
     body + '<p class="small muted">원본 데이터는 구글 시트 "MyMyMe 운영 데이터"에서 볼 수 있어요. 이름·생년월일시는 "사주 통계 연구"에 동의한 참여자만 기록돼요. 연락처는 수집하지 않아요.</p>';
