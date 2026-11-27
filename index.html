@@ -9040,7 +9040,7 @@ if (DEMO) { try { Storage.prototype.setItem = function () {}; Storage.prototype.
 var PUBLIC = true;
 var ENDPOINT = "https://script.google.com/macros/s/AKfycbx2G0QG_yhq32sInKS2ScJDQsfuMxgpo4yIwiy5BEvhhK5LCy239wUOnT-Dz-FZsfGE/exec";
 var SITE_URL = "https://mymyme.app/";
-var BUILD = "1795738750";
+var BUILD = "1795740058";
 var SID = (function () { try { var v = localStorage.getItem('mymyme_sid'); if (!v) { v = Math.random().toString(36).slice(2, 12); localStorage.setItem('mymyme_sid', v); } return v; } catch (e) { return 'anon'; } })();
 function post(body) { if (!ENDPOINT || DEMO) return Promise.resolve(null); body.sid = SID; return fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(body) }).then(function (r) { return r.json(); }).catch(function () { return null; }); }
 function track(type, data) { post({ kind: 'event', type: type, data: data || {} }); if (REF_FINISH.indexOf(type) >= 0) refDone(); }
@@ -9479,79 +9479,85 @@ function dayOne(dateStr) {
 }
 function dayOneTile() {
   if (!homeNew()) return ''; var o = dayOne(); if (!o) return '';
-  return '<button class="ttile wide" data-go="today1" style="background:#FFF8E8;border:1.5px solid ' + EL_HEX[o.el] + '"><span aria-hidden="true" style="width:40px;height:56px;border-radius:8px;background:' + EL_HEX[o.el] + ';display:flex;align-items:center;justify-content:center;font-weight:700;color:#1E2140;flex:none">' + o.stem + '</span>' +
-    '<span class="col" style="gap:3px;flex:1;align-items:flex-start"><b>오늘의 한 장 · ' + esc(o.word) + '</b><span class="tsub" style="word-break:keep-all">' + esc(o.reflection ? o.reflection.quote : o.act) + '</span></span><b style="color:var(--acc-d);font-size:13px;flex:none">열기</b></button>';
+  return '<button class="ttile wide" data-go="today1" style="background:#FBF6EA;border:1.5px solid #EFE6CF"><span aria-hidden="true" style="width:40px;height:56px;border-radius:8px;background:#FBF6EA;border:1px solid #EFE6CF;position:relative;overflow:hidden;flex:none"><i style="position:absolute;right:-12px;top:-12px;width:34px;height:34px;border-radius:50%;background:' + EL_HEX[o.el] + '"></i><i style="position:absolute;left:7px;right:7px;top:24px;height:3px;border-radius:2px;background:#1E2140;box-shadow:0 6px 0 #1E2140,0 12px 0 #C9C5BA"></i></span>' +
+    '<span class="col" style="gap:3px;flex:1;align-items:flex-start"><b>오늘의 쉼</b><span class="tsub" style="word-break:keep-all">' + esc(o.reflection ? o.reflection.quote : o.act) + '</span></span><b style="color:var(--acc-d);font-size:13px;flex:none">열기</b></button>';
 }
-function reflectionCard(card, inRest) {
+/* 오늘의 글귀 상자(오늘의 쉼 화면) */
+function reflectionCard(card, inRest, o) {
   if (!card) return '';
-  var next = tpDone() && TP.sd ? 'templeResult' : 'templeIntro';
-  return '<section class="card col" aria-labelledby="daily-reflection-title" style="gap:10px;background:#F1F8F4;border-color:#BFDCCB">' +
-    '<h2 id="daily-reflection-title" style="font-size:16px;color:#2E6B4A">' + (inRest ? '쉼 · 나에게 묻기' : '오늘의 글귀') + '</h2>' +
-    '<p class="serif" style="margin:0;font-size:19px;line-height:1.65;word-break:keep-all">' + esc(card.quote) + '</p>' +
-    (card.source ? '<p class="xs muted" style="margin:0;line-height:1.6">영감을 준 글 · ' + esc(card.source) + '</p>' : '') +
-    (inRest ? '<p class="small" style="margin:0;color:var(--sub);line-height:1.65">' + esc(card.question) + '</p>' :
-      '<button class="btn btn-ghost" data-go="' + next + '">쉼에서 오늘의 질문 보기</button>') + '</section>';
+  o = o || dayOne();
+  return '<section class="col" aria-labelledby="daily-reflection-title" style="gap:10px;background:#FBF6EA;border:1px solid #EFE6CF;border-radius:22px;padding:24px 20px 20px;position:relative;overflow:hidden">' +
+    (o ? '<i aria-hidden="true" style="position:absolute;right:-50px;top:-50px;width:150px;height:150px;border-radius:50%;background:' + EL_HEX[o.el] + ';opacity:.28"></i>' : '') +
+    '<span id="daily-reflection-title" class="xs" style="color:var(--sub);font-weight:500;position:relative">' + (o ? esc(o.date) + ' · ' : '') + '오늘의 글귀</span>' +
+    '<p class="serif" style="margin:0;font-size:21px;line-height:1.6;font-weight:700;word-break:keep-all;position:relative">' + esc(card.quote) + '</p>' +
+    (card.source ? '<p class="xs" style="margin:0;line-height:1.6;color:#7A7C8E;position:relative">영감을 준 글 · ' + esc(card.source) + '</p>' : '') + '</section>';
 }
+/* 절 화면(쉼 지역) 위 한 줄 띠: 오늘의 쉼으로 연결 */
 function restReflectionCard() {
-  return homeNew() && typeof DailyReflections !== 'undefined' ? reflectionCard(DailyReflections.cardOn(DailyReflections.date()), true) : '';
+  if (!homeNew() || typeof DailyReflections === 'undefined') return '';
+  var card = DailyReflections.cardOn(DailyReflections.date()); if (!card) return '';
+  return '<button data-go="today1" style="display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:#FBF6EA;border:1px solid #EFE6CF;border-radius:14px;padding:11px 13px;font:inherit;color:inherit;cursor:pointer">' +
+    '<span class="small" style="flex:1;min-width:0;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">🌿 오늘의 글귀 · ' + esc(card.quote) + '</span><b class="small" style="color:var(--acc-d);white-space:nowrap">오늘의 쉼 ›</b></button>';
 }
+/* 나에게 묻기 한 줄 메모: 이 기기에만 저장(서버로 보내지 않음) */
+var REST_NOTE_KEY = 'mymyme_rest_note';
+function restNote(iso, v) {
+  var m = {}; try { m = JSON.parse(localStorage.getItem(REST_NOTE_KEY) || '{}') || {}; } catch (e) {}
+  if (v === undefined) return m[iso] || '';
+  if (v) m[iso] = String(v).slice(0, 300); else delete m[iso];
+  var ks = Object.keys(m).sort(); while (ks.length > 60) delete m[ks.shift()];
+  try { localStorage.setItem(REST_NOTE_KEY, JSON.stringify(m)); } catch (e) {}
+}
+document.addEventListener('input', function (e) { var t = e.target; if (t && t.id === 'restNote') restNote(t.dataset.date, t.value); });
 V.today1 = function () {
   var o = dayOne(); if (!o) { S.view = 'home'; return V.home(); }
   var mine = S.result ? S.result.saju.dayStem : (S.taste && S.taste.stem), md = mine && SJ.dayMasters[mine], hint = '';
   if (md) { var me = md.element, de = o.el, c = me === de ? '나와 같은 기운의 날 · 하던 대로 밀고 가기 좋아요' : EL_GEN[de] === me ? '오늘이 나를 채워 주는 날 · 부탁하고 도움받기 좋아요' : EL_GEN[me] === de ? '내가 오늘에 힘을 보태는 날 · 남을 챙기면 돌아와요' : EL_CTL[me] === de ? '내가 오늘을 다루는 날 · 미뤄 둔 결정하기 좋아요' : '오늘이 나를 다듬는 날 · 서두르지 말고 한 템포 쉬어 가요';
     hint = '<div class="card col" style="gap:6px"><span class="xs muted">내 일간 ' + esc(md.read) + ' × 오늘 ' + esc(SJ.dayMasters[o.stem].read) + '의 날</span><b>' + esc(c) + '</b><span class="small muted" style="line-height:1.6">오늘 기운과 나의 관계예요. 가볍게 참고만 하세요.</span></div>'; }
-  return '<div class="screen"><div class="row" style="gap:6px"><button class="iconbtn" data-go="home" aria-label="처음으로">' + ICON.back + '</button><span class="small muted">오늘의 한 장</span></div>' +
-    reflectionCard(o.reflection, false) +
-    '<canvas id="d1c" data-date="' + o.iso + '" width="1080" height="1920" style="width:min(100%,320px);aspect-ratio:9/16;align-self:center;border-radius:18px;box-shadow:0 6px 24px rgba(30,33,64,.16)" role="img" aria-label="오늘의 한 장: ' + esc(o.word) + ', ' + esc(o.act) + '"></canvas>' +
-    '<div class="row" style="gap:8px"><button class="btn btn-pri" data-act="d1Share" style="flex:1">스토리에 올리기</button><button class="btn btn-sec" data-act="d1Save" style="flex:1">이미지 저장</button></div>' +
-    '<span class="xs muted" style="text-align:center">오늘 날짜로 만든 카드예요 · 한국시간 자정에 바뀌어요</span>' + hint +
-    (md ? '' : '<button class="btn btn-ghost" data-act="tasteMine">내 일간이랑 오늘은 어떤 사이일까? · 30초</button>') + '</div>';
+  var r = o.reflection, next = tpDone() && TP.sd ? 'templeResult' : 'templeIntro';
+  var top = r ? reflectionCard(r, true, o) :
+    '<section class="col" style="gap:8px;background:#FBF6EA;border:1px solid #EFE6CF;border-radius:22px;padding:24px 20px 20px"><span class="xs" style="color:var(--sub)">' + esc(o.date) + ' · 오늘의 기운</span><p class="serif" style="margin:0;font-size:24px;font-weight:700">' + esc(o.stem + ' · ' + o.word) + '</p><p class="small" style="margin:0;color:var(--sub)">' + esc(o.image) + '</p></section>';
+  var ask = r && r.question ? '<div class="card col" style="gap:10px"><b class="small" style="color:var(--sub)">잠깐, 나에게 묻기</b><p style="margin:0;font-size:16px;line-height:1.65;word-break:keep-all">' + esc(r.question) + '</p>' +
+    '<textarea id="restNote" data-date="' + o.iso + '" rows="2" maxlength="300" placeholder="떠오르는 대로 한 줄 (이 기기에만 저장돼요)" style="width:100%;box-sizing:border-box;border:1px solid var(--line2);border-radius:12px;padding:10px 12px;font:inherit;font-size:15px;resize:none;background:#FCFBF8">' + esc(restNote(o.iso)) + '</textarea></div>' : '';
+  return '<div class="screen"><div class="row" style="gap:6px"><button class="iconbtn" data-go="home" aria-label="처음으로">' + ICON.back + '</button><span class="small muted">오늘의 쉼</span></div>' +
+    top + ask +
+    '<div class="card row" style="gap:12px;align-items:center;padding:12px"><canvas id="d1c" data-date="' + o.iso + '" width="1080" height="1920" style="width:64px;aspect-ratio:9/16;border-radius:10px;border:1px solid #EFE6CF;flex:none" role="img" aria-label="오늘의 쉼 카드"></canvas>' +
+      '<div class="col" style="gap:4px;flex:1;min-width:0"><b>오늘의 한 장</b><span class="xs muted" style="word-break:keep-all">' + esc(o.stem + ' · ' + o.word + ' · ' + o.act) + '</span>' +
+      '<div class="row" style="gap:6px;margin-top:6px"><button class="btn btn-pri" data-act="d1Share" style="flex:1;min-height:42px;font-size:14px;white-space:nowrap;padding:0 8px">스토리 올리기</button><button class="btn btn-sec" data-act="d1Save" style="flex:1;min-height:42px;font-size:14px;white-space:nowrap;padding:0 8px">저장</button></div></div></div>' +
+    '<button data-go="' + next + '" class="row" style="justify-content:space-between;align-items:center;width:100%;text-align:left;background:#F1F8F4;border:1px solid #CFE5D7;border-radius:16px;padding:14px 16px;font:inherit;color:inherit;cursor:pointer"><span class="col" style="gap:2px"><b>더 깊이 쉬고 싶다면</b><span class="xs muted">' + (next === 'templeResult' ? '나에게 맞는 절 다시 보기' : '나에게 맞는 절 찾기 · 18문항') + '</span></span><b style="color:#2E6B4A">›</b></button>' +
+    hint + (md ? '' : '<button class="btn btn-ghost" data-act="tasteMine">내 일간이랑 오늘은 어떤 사이일까? · 30초</button>') +
+    '<span class="xs muted" style="text-align:center">한국시간 자정에 새 글귀로 바뀌어요</span></div>';
 };
 function d1Draw() {
   var cv = document.getElementById('d1c'); if (!cv) return; var o = dayOne(cv.dataset.date); if (!o) return;
-  var g = cv.getContext('2d'), W = 1080, H = 1920, col = EL_HEX[o.el];
-  function drawLines(text, x, y, width, step) {
-    var line = '';
-    text.split(' ').forEach(function (word) {
-      var next = line ? line + ' ' + word : word;
-      if (line && g.measureText(next).width > width) {
-        g.fillText(line, x, y);
-        y += step;
-        line = word;
-      } else line = next;
-    });
-    g.fillText(line, x, y);
-    return y + step;
+  var g = cv.getContext('2d'), W = 1080, H = 1920, col = EL_HEX[o.el], r = o.reflection;
+  function wrap(text, width) {   // 띄어쓰기 단위로 줄바꿈
+    var lines = [], line = '';
+    String(text).split(' ').forEach(function (w) { var t = line ? line + ' ' + w : w; if (line && g.measureText(t).width > width) { lines.push(line); line = w; } else line = t; });
+    if (line) lines.push(line); return lines;
   }
   var draw = function () {
     g.fillStyle = '#FBF6EA'; g.fillRect(0, 0, W, H);
-    g.fillStyle = col; g.globalAlpha = .9; g.beginPath(); g.arc(W - 120, 260, 300, 0, 7); g.fill(); g.beginPath(); g.arc(40, H - 80, 180, 0, 7); g.fill(); g.globalAlpha = 1;
-    g.fillStyle = '#1E2140'; g.textBaseline = 'alphabetic';
-    g.font = '700 44px "Noto Sans KR"'; g.fillText('오늘의 한 장', 96, 180);
+    g.fillStyle = col; g.globalAlpha = .9; g.beginPath(); g.arc(W - 120, 230, 290, 0, 7); g.fill();
+    g.globalAlpha = .5; g.beginPath(); g.arc(30, H - 60, 170, 0, 7); g.fill(); g.globalAlpha = 1;
+    g.textBaseline = 'alphabetic'; g.fillStyle = '#1E2140'; g.font = '700 44px "Noto Sans KR"'; g.fillText('오늘의 쉼', 96, 180);
     g.font = '500 40px "Noto Sans KR"'; g.fillStyle = '#4A4D63'; g.fillText(o.date + ' · ' + o.gz + '일', 96, 246);
-    g.fillStyle = '#1E2140'; g.font = '700 120px "Noto Serif KR"'; g.fillText(o.stem, 96, 620);
-    g.font = '700 200px "Noto Sans KR"'; g.fillText(o.word, 96, 900);
-    g.font = '500 44px "Noto Sans KR"'; g.fillStyle = '#4A4D63'; g.fillText('오늘의 기운 · ' + o.image, 96, 990);
-    /* 행동 박스 */
-    g.fillStyle = '#fff'; var bx = 72, by = 1080, bw = W - 144, bh = 300; if (g.roundRect) { g.beginPath(); g.roundRect(bx, by, bw, bh, 40); g.fill(); } else g.fillRect(bx, by, bw, bh);
-    g.fillStyle = col; g.fillRect(bx, by + 40, 14, bh - 80);
-    g.fillStyle = '#4A4D63'; g.font = '500 40px "Noto Sans KR"'; g.fillText('오늘 해 볼 것 하나', 132, by + 100);
-    g.fillStyle = '#1E2140'; g.font = '700 58px "Noto Sans KR"';
-    drawLines(o.act, 132, by + 190, bw - 120, 76);
-    if (o.reflection) {
-      g.fillStyle = '#1E2140'; g.font = '700 42px "Noto Sans KR"';
-      var nextY = drawLines(o.reflection.quote, 96, 1470, W - 192, 58);
-      if (o.reflection.source) {
-        g.fillStyle = '#4A4D63'; g.font = '500 30px "Noto Sans KR"';
-        drawLines('영감을 준 글 · ' + o.reflection.source, 96, nextY, W - 192, 40);
-      }
-    } else {
-      g.fillStyle = '#1E2140'; g.font = '700 50px "Noto Sans KR"'; g.fillText('너는 오늘 어떤 날?', 96, 1600);
-      g.font = '500 40px "Noto Sans KR"'; g.fillStyle = '#4A4D63'; g.fillText('생일만 넣으면 30초 · 회원가입 없이', 96, 1664);
-    }
+    /* 글귀가 주인공: 가운데쯤 크게 */
+    var q = r ? r.quote : '오늘은 ' + o.word + '의 날', size = 78, lines, step;
+    do { g.font = '700 ' + size + 'px "Noto Serif KR"'; lines = wrap(q, W - 192); size -= 4; } while (lines.length > 6 && size > 52);
+    step = Math.round((size + 4) * 1.5);
+    var srcH = r && r.source ? 70 : 0, blockH = lines.length * step + srcH, y = Math.max(470, 900 - blockH / 2);
+    g.fillStyle = '#1E2140'; lines.forEach(function (ln, i) { g.fillText(ln, 96, y + i * step); });
+    if (srcH) { g.fillStyle = '#7A7C8E'; g.font = '500 34px "Noto Sans KR"'; g.fillText(wrap(r.source, W - 192)[0], 96, y + lines.length * step + 20); }
+    /* 오늘의 기운 상자 */
+    var bx = 72, by = 1400, bw = W - 144, bh = 260; g.fillStyle = '#fff';
+    if (g.roundRect) { g.beginPath(); g.roundRect(bx, by, bw, bh, 36); g.fill(); } else g.fillRect(bx, by, bw, bh);
+    g.fillStyle = col; g.fillRect(bx, by + 40, 12, bh - 80);
+    g.fillStyle = '#4A4D63'; g.font = '500 36px "Noto Sans KR"'; g.fillText('오늘의 기운 · ' + o.stem + ' ' + o.word, 128, by + 92);
+    g.fillStyle = '#1E2140'; g.font = '700 52px "Noto Sans KR"'; var al = wrap(o.act, bw - 110); al.slice(0, 2).forEach(function (ln, i) { g.fillText(ln, 128, by + 172 + i * 64); });
     g.fillStyle = '#4B3FC7'; g.font = '700 48px "Noto Sans KR"'; g.fillText('mymyme.app', 96, 1800);
   };
-  if (document.fonts && document.fonts.load) Promise.all(['700 200px "Noto Sans KR"', '500 40px "Noto Sans KR"', '700 120px "Noto Serif KR"'].map(function (f) { return document.fonts.load(f, '오늘甲'); })).then(draw, draw); else draw();
+  if (document.fonts && document.fonts.load) Promise.all(['700 78px "Noto Serif KR"', '500 40px "Noto Sans KR"', '700 52px "Noto Sans KR"'].map(function (f) { return document.fonts.load(f, '오늘甲'); })).then(draw, draw); else draw();
 }
 /* 이미지 저장: 카톡·인스타 등 앱 안 브라우저는 파일 다운로드를 막아서, 이미지를 크게 띄우고 길게 눌러 저장하게 한다 */
 function saveImage(blob, name, okMsg) {
@@ -9584,7 +9590,7 @@ function d1Out(share) {
   cv.toBlob(function (b) {
     if (!b) return; var name = 'mymyme-' + o.iso + '.png';
     var f = null; try { f = new File([b], name, { type: 'image/png' }); } catch (e) {}
-    if (share && f && navigator.canShare && navigator.canShare({ files: [f] })) { navigator.share({ files: [f], title: 'MyMyMe 오늘의 한 장', text: '오늘의 한 장 · ' + o.word + ' — 너는 오늘 어떤 날? mymyme.app' }).catch(function () {}); return; }
+    if (share && f && navigator.canShare && navigator.canShare({ files: [f] })) { navigator.share({ files: [f], title: 'MyMyMe 오늘의 쉼', text: '오늘의 쉼 · ' + (o.reflection ? o.reflection.quote : o.word) + ' mymyme.app' }).catch(function () {}); return; }
     saveImage(b, name, share ? '이미지를 저장했어요. 인스타 스토리에서 불러와 올려 주세요' : '이미지를 저장했어요');
   }, 'image/png');
 }
