@@ -9041,7 +9041,7 @@ if (DEMO) { try { Storage.prototype.setItem = function () {}; Storage.prototype.
 var PUBLIC = true;
 var ENDPOINT = "https://script.google.com/macros/s/AKfycbx2G0QG_yhq32sInKS2ScJDQsfuMxgpo4yIwiy5BEvhhK5LCy239wUOnT-Dz-FZsfGE/exec";
 var SITE_URL = "https://mymyme.app/";
-var BUILD = "1795757157";
+var BUILD = "1795776012";
 var SID = (function () { try { var v = localStorage.getItem('mymyme_sid'); if (!v) { v = Math.random().toString(36).slice(2, 12); localStorage.setItem('mymyme_sid', v); } return v; } catch (e) { return 'anon'; } })();
 function post(body) { if (!ENDPOINT || DEMO) return Promise.resolve(null); body.sid = SID; return fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(body) }).then(function (r) { return r.json(); }).catch(function () { return null; }); }
 function track(type, data) { post({ kind: 'event', type: type, data: data || {} }); if (REF_FINISH.indexOf(type) >= 0) refDone(); }
@@ -9297,8 +9297,11 @@ function homeFirst() {
   var resume = S.startedAt && !S.result, b = S.birth;
   var hero = resume
     ? '<div class="card col" style="gap:10px;border:1.5px solid var(--acc)"><b style="font-size:17px">하던 테스트가 있어요</b><span class="small muted">' + answeredCount() + ' / 82문항 완료 · ' + leftLine() + '</span><button class="btn btn-pri" data-act="resume">이어서 하기 · ' + overall() + '% 진행</button><button class="btn btn-ghost" style="min-height:44px" data-act="restart">처음부터 다시</button></div>'
-    : '<section class="hero" style="gap:12px"><span class="pill" style="align-self:flex-start;background:rgba(247,245,240,.12);color:#F2C9BC">생년월일만 · 30초 · 무료</span>' +
-      '<h1 class="serif" style="font-size:28px;line-height:1.3;color:var(--bg)">타고난 나는<br>어떤 나무, 어떤 불일까?</h1>' +
+    : '<section class="hero" style="gap:12px;position:relative;overflow:visible;margin-top:22px">' +
+      (typeof sokSvg === 'function' ? '<button data-act="sokTap" id="sokTop" aria-label="소크" style="position:absolute;right:2px;top:-30px;background:none;border:0;padding:0;cursor:pointer">' + sokSvg('hello', 92) + '</button>' +
+        '<span id="sokSay" aria-live="polite" style="position:absolute;right:92px;top:-20px;background:#fff;color:var(--ink);font-size:13px;font-weight:700;border-radius:14px 14px 4px 14px;padding:7px 11px;box-shadow:0 4px 12px rgba(0,0,0,.16);white-space:nowrap">너 자신을 알라! 👋</span>' : '') +
+      '<span class="pill" style="align-self:flex-start;background:rgba(247,245,240,.12);color:#F2C9BC">생년월일만 · 30초 · 무료</span>' +
+      '<h1 class="serif" style="font-size:28px;line-height:1.3;color:var(--bg);padding-right:' + (typeof sokSvg === 'function' ? '84px' : '0') + '">타고난 나는<br>어떤 나무, 어떤 불일까?</h1>' +
       '<p style="font-size:14px;line-height:1.6;color:#C9C7D6;margin:0">생일을 넣으면 사주의 중심인 일간과 내 기질 키워드를 바로 보여드려요. 회원가입은 없어요.</p>' +
       '<div class="seg" role="group" aria-label="달력 종류" style="background:rgba(247,245,240,.1)">' + [['solar', '양력', b.calendar !== 'lunar'], ['lunar', '음력', b.calendar === 'lunar' && !b.leap], ['leap', '음력 윤달', b.calendar === 'lunar' && !!b.leap]].map(function (x) { return '<button class="' + (x[2] ? 'on' : '') + '" data-qcal="' + x[0] + '" aria-pressed="' + x[2] + '" style="' + (x[2] ? '' : 'color:#C9C7D6') + '">' + x[1] + '</button>'; }).join('') + '</div>' + (b.calendar === 'lunar' && b.leap ? '<p class="xs" style="color:#C9C7D6;margin:-4px 0 0">윤달(閏月)에 태어났다면 이 칸을 고르세요. 그 해에 윤달이 있는지 확인해 드려요.</p>' : '') +
       '<div class="grid3"><label class="f" style="color:#C9C7D6">년<input class="inp" id="qy" inputmode="numeric" maxlength="4" placeholder="1990" value="' + esc(b.y) + '"></label><label class="f" style="color:#C9C7D6">월<input class="inp" id="qm" inputmode="numeric" maxlength="2" placeholder="5" value="' + esc(b.m) + '"></label><label class="f" style="color:#C9C7D6">일<input class="inp" id="qd" inputmode="numeric" maxlength="2" placeholder="19" value="' + esc(b.d) + '"></label></div>' +
@@ -9820,9 +9823,37 @@ function meMap() {
       '아직 안개 낀 곳이 <b style="color:var(--acc-d)">' + (n - done) + '곳</b> 있어. ' + (done ? '오늘은 ' : '먼저 ') + '<b style="color:var(--acc-d)">' + esc(next.area) + '</b> 지역부터 밝혀 볼까?') : '') +
     (next ? '<button class="btn btn-sec" ' + (next.act ? 'data-act="' + next.go + '"' : 'data-go="' + next.go + '"') + '>다음으로 밝힐 곳 · ' + esc(next.area) + ' (' + esc(next.name) + ')</button>' : '') + '</section>';
 }
+/* 메인 상단 소크: 시간대 인사 + 오늘의 쉼 한 줄. 소크를 누르면 동작과 한마디가 바뀐다(하루 5번째엔 특별한 말) */
+function sokTopLine() {
+  if (typeof sokSvg !== 'function' || !homeNew()) return '';
+  var h = new Date().getHours(), o = dayOne(), q = o && o.reflection ? o.reflection.quote : '';
+  var t = h >= 5 && h < 11 ? ['hello', '좋은 아침이야'] : h >= 11 && h < 17 ? ['ask', '오늘 하루 어때'] : h >= 17 && h < 23 ? ['tea', '좋은 저녁이야'] : ['night', '늦었네, 오늘은 푹 쉬어'];
+  var nm = S.result ? typeName(S.result.saju.dayStem, S.result.per.code) : '';
+  return '<div class="row" style="gap:8px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:18px;padding:6px 12px 6px 4px">' +
+    '<button data-act="sokTap" id="sokTop" aria-label="소크" style="background:none;border:0;padding:0;cursor:pointer;flex:none">' + sokSvg(t[0], 54) + '</button>' +
+    '<button data-go="today1" style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;background:none;border:0;padding:0;text-align:left;font:inherit;color:inherit;cursor:pointer">' +
+      '<span id="sokSay" aria-live="polite" class="col" style="gap:2px;flex:1;min-width:0"><span class="small" style="line-height:1.45">' + esc(t[1]) + (nm ? ', <b style="color:var(--acc-d)">' + esc(nm) + '</b>' : '') + '!' + (q ? ' 오늘 소크가 고른 한 줄이야.' : '') + '</span>' +
+      (q ? '<span class="xs muted" style="line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">“' + esc(q) + '”</span>' : '') + '</span>' +
+      '<b class="small" style="color:var(--acc-d);white-space:nowrap;flex:none">오늘의 쉼 ›</b></button></div>';
+}
+var SOK_TAP = [['think', '흠… 너 생각보다 재밌는 사람이야'], ['shrug', '나도 날 다 몰라. 그래서 묻는 거지'], ['love', '오늘도 와 줘서 고마워'], ['wink', '쉿, 오늘 너 좀 괜찮아 보여'], ['fight', '할 수 있어. 나는 알아'],
+  ['bulb', '알았다! 너는 생각보다 단단해'], ['breath', '숨 한 번 크게. 같이 쉬자'], ['thumb', '이만하면 멋져'], ['comfort', '오늘 많이 애썼어'], ['book', '너라는 책, 아직 읽는 중이야']];
+var SOK_TAPS = { d: '', n: 0, i: -1 };
+function sokTap() {
+  var b = document.getElementById('sokTop'), say = document.getElementById('sokSay'); if (!b || typeof sokSvg !== 'function') return;
+  if (SOK_TAPS.d !== TODAY) SOK_TAPS = { d: TODAY, n: 0, i: -1 };
+  SOK_TAPS.n++; var k, line;
+  if (SOK_TAPS.n === 5) { k = 'cheer'; line = '오늘 나랑 친해졌네! 🎉'; }
+  else { var i; do { i = Math.floor(Math.random() * SOK_TAP.length); } while (i === SOK_TAPS.i && SOK_TAP.length > 1); SOK_TAPS.i = i; k = SOK_TAP[i][0]; line = SOK_TAP[i][1]; }
+  var sz = +(b.querySelector('svg') || {}).getAttribute && +b.querySelector('svg').getAttribute('width') || 54;
+  b.innerHTML = sokSvg(k === 'wink' ? 'shh' : k, sz);
+  if (say) { if (say.tagName === 'SPAN' && say.className.indexOf('col') >= 0) say.innerHTML = '<span class="small" style="line-height:1.45">' + esc(line) + '</span>'; else say.textContent = line; }
+  if (SOK_TAPS.n === 1) track('sok_tap');
+}
 function homeBack() {
   var r = S.result, sj = r.saju, today = EX.tarot.cards[r.tarot.today];
   return topBanner() + '<div class="screen"><div class="row between"><div class="col" style="gap:2px"><span class="small muted">다시 오셨네요</span><b class="serif" style="font-size:22px">' + esc(typeName(sj.dayStem, r.per.code)) + '님</b></div><div class="row" style="gap:8px">' + coinChip() + '<button class="btn btn-sec" style="min-height:36px;width:36px;padding:0;border-radius:18px" data-go="lang" aria-label="언어 선택">' + ICON.globe + '</button></div></div>' + inviteBanner() +
+    sokTopLine() +
     '<section class="hero" style="gap:14px"><div class="row between"><b>오늘의 카드</b><span class="xs" style="color:#C9C7D6">' + TODAY.replace(/-/g, '.') + '</span></div>' +
     (COIN.dayCard === TODAY ? '<div class="row" style="gap:14px;align-items:center">' + tarotCard(r.tarot.today, '', true) + '<div class="col" style="gap:6px;flex:1"><span class="xs" style="color:#F2C9BC">오늘의 타로 · +' + DAYCARD_COIN + '코인 받음</span><b style="line-height:1.5">' + esc(today.ko) + ' · ' + esc(today.keyword) + '</b><span class="small" style="color:#E4E2EE;line-height:1.6">' + esc(today.today) + '</span></div></div>'
       : '<div class="row" style="gap:14px;align-items:center"><div aria-hidden="true" style="width:96px;height:150px;border-radius:12px;border:1.5px solid #E8876A;background:repeating-linear-gradient(45deg,rgba(232,135,106,.08) 0 8px,transparent 8px 16px);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="34" height="34" viewBox="0 0 34 34"><path d="M17 4l3.5 9 9.5.6-7.3 6 2.4 9.4L17 23.8 8.9 29l2.4-9.4-7.3-6 9.5-.6z" fill="none" stroke="#E8876A" stroke-width="1.6" stroke-linejoin="round"/></svg></div><div class="col" style="gap:8px;flex:1"><b style="line-height:1.5">오늘의 카드가 도착했어요</b><span class="small" style="color:#E4E2EE;line-height:1.6">하루 한 번 열면 마마미코인 ' + DAYCARD_COIN + '개를 드려요.</span><button class="btn" style="min-height:44px;background:var(--coral);color:var(--ink);font-weight:700" data-act="dayCard">카드 열고 +' + DAYCARD_COIN + '코인</button></div></div>') + weekStrip() + streakLine() + '</section>' + meMap() + roomCard() + betaCard() + dayOneTile() + helloCard() +
@@ -12224,6 +12255,7 @@ document.addEventListener('click', function (ev) {
     case 'd1Share': d1Out(true); break;
     case 'd1Save': d1Out(false); break;
     case 'restShare': restShare(); break;
+    case 'sokTap': sokTap(); break;
     case 'sokMap': closeModal(); setTimeout(function () { var m = document.getElementById('mymap'); if (m) m.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60); break;
     case 'tasteSample': TASTE_SAMPLE = true; track('taste_sample'); go('taste'); break;
     case 'tasteMine': TASTE_SAMPLE = false; S.view = 'home'; render(); setTimeout(function () { var qy = document.getElementById('qy'); if (qy) { qy.scrollIntoView({ block: 'center', behavior: 'smooth' }); qy.focus(); } }, 50); break;
