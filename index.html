@@ -9041,7 +9041,7 @@ if (DEMO) { try { Storage.prototype.setItem = function () {}; Storage.prototype.
 var PUBLIC = true;
 var ENDPOINT = "https://script.google.com/macros/s/AKfycbx2G0QG_yhq32sInKS2ScJDQsfuMxgpo4yIwiy5BEvhhK5LCy239wUOnT-Dz-FZsfGE/exec";
 var SITE_URL = "https://mymyme.app/";
-var BUILD = "1795755660";
+var BUILD = "1795757157";
 var SID = (function () { try { var v = localStorage.getItem('mymyme_sid'); if (!v) { v = Math.random().toString(36).slice(2, 12); localStorage.setItem('mymyme_sid', v); } return v; } catch (e) { return 'anon'; } })();
 function post(body) { if (!ENDPOINT || DEMO) return Promise.resolve(null); body.sid = SID; return fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(body) }).then(function (r) { return r.json(); }).catch(function () { return null; }); }
 function track(type, data) { post({ kind: 'event', type: type, data: data || {} }); if (REF_FINISH.indexOf(type) >= 0) refDone(); }
@@ -9447,7 +9447,7 @@ V.taste = function () {
   var quick = testTiles().match(/<button class="ttile" data-go="(\w+)">(?:<span class="tbadge">[^<]*<\/span>)?<b>([^<]*)<\/b><span class="tsub">([^<]*)<\/span><span class="tmeta"[^>]*>([^<]*)<\/span>/);
   var step2 = quick ? '<button class="ttile wide" data-go="' + quick[1] + '" style="background:#fff"><span class="col" style="gap:3px;flex:1;align-items:flex-start"><b>' + quick[2] + '</b><span class="tsub">' + quick[3] + ' · ' + quick[4] + '</span></span><b style="color:var(--acc-d);font-size:13px">하기</b></button>' : '';
   return '<div class="screen"><div class="row" style="gap:6px"><button class="iconbtn" data-go="home" aria-label="처음으로">' + ICON.back + '</button><span class="small muted">30초 맛보기 결과</span></div>' + hero +
-    '<h2 style="font-size:18px;margin-top:4px">다음 한 걸음</h2>' +
+    '<h2 style="font-size:18px;margin-top:4px">다음 한 걸음</h2>' + sokK('guide', '다음은 이쪽이야. 가볍게 하나만 더 해 볼까?') +
     '<div class="card col" style="gap:10px;border:1.5px solid var(--acc)"><span class="pill pill-acc" style="align-self:flex-start">① 가장 가벼워요</span><b style="font-size:16px">친구 생일 넣고 우리 둘 케미 보기</b>' + friendBox + '</div>' +
     (step2 ? '<div class="col" style="gap:8px"><span class="pill pill-acc" style="align-self:flex-start">② 짧은 테스트 하나</span>' + step2 + '</div>' : '') +
     '<div class="card col" style="gap:12px"><span class="pill pill-acc" style="align-self:flex-start">③ 제대로 알아보기</span><b style="font-size:16px">여기까지는 \'타고난 나\'예요</b><p class="small" style="color:#4A4D63;margin:0;line-height:1.7">같은 ' + esc(dm.read) + '이라도 지금의 성향에 따라 전혀 다른 사람이 돼요. 82문항을 마치면 320가지 중 내 유형 이름이 나와요.</p>' +
@@ -9702,10 +9702,10 @@ function helloCard() {
   var done = helloDays().indexOf(TODAY) >= 0, sk = helloStreak(), hasR = !!(S.result && S.result.per);
   if (!HELLO.items) loadHello();
   var head = '<div class="row between" style="align-items:baseline"><b style="font-size:16px">오늘의 한마디 · 출석</b><span class="xs muted">' + (HELLO.today ? '오늘 ' + HELLO.today + '명 출석' : '') + (sk ? ' · 🔥 ' + sk + '일째' : '') + '</span></div>';
-  var write = done ? '<p class="small" style="margin:0;color:#2E6B4A">✓ 오늘 출석했어요. 다른 사람 한마디에 답을 남겨 보세요.</p>'
+  var write = done ? '<div class="row" style="gap:8px;align-items:center">' + (typeof sokSvg === 'function' ? sokSvg('night', 40) : '') + '<p class="small" style="margin:0;color:#2E6B4A">✓ 오늘 출석했어요. 다른 사람 한마디에 답을 남겨 보세요.</p></div>'
     : '<div class="row" style="gap:8px"><label class="sr" for="hl_in" style="position:absolute;left:-9999px">오늘의 한마디</label><input id="hl_in" class="inp" maxlength="60" placeholder="한 줄로 출석! 예) 월요일 버티는 중" style="flex:1;font-size:15px;min-height:46px"><button class="btn btn-pri" style="flex:none;min-height:46px;padding:0 16px;width:auto" data-act="helloGo"' + (HELLO.busy === 'top' ? ' disabled' : '') + '>' + (HELLO.busy === 'top' ? '…' : '출석') + '</button></div>' +
       (hasR ? '<div class="row" style="gap:6px;flex-wrap:wrap"><span class="xs muted" style="align-self:center">함께 보여 줄 것</span><button class="chip' + (HELLO.g ? ' on' : '') + '" aria-pressed="' + HELLO.g + '" data-hshow="g" style="flex:none;padding:0 10px;min-height:32px;font-size:12px">' + TRIBE[myTribe()].i + ' ' + TRIBE[myTribe()].n + '</button><button class="chip' + (HELLO.n ? ' on' : '') + '" aria-pressed="' + HELLO.n + '" data-hshow="n" style="flex:none;padding:0 10px;min-height:32px;font-size:12px">' + esc(typeName(S.result.saju.dayStem, S.result.per.code)) + '</button></div>' : '');
-  var list = !HELLO.items ? '<p class="xs muted" style="margin:0">한마디를 불러오는 중이에요…</p>' : !HELLO.items.length ? '<p class="xs muted" style="margin:0">아직 오늘 첫 출석이 없어요. 첫 한마디를 남겨 보세요.</p>' :
+  var list = !HELLO.items ? '<p class="xs muted" style="margin:0">한마디를 불러오는 중이에요…</p>' : !HELLO.items.length ? '<div class="row" style="gap:8px;align-items:center">' + (typeof sokSvg === 'function' ? sokSvg('ask', 40) : '') + '<p class="xs muted" style="margin:0">아직 오늘 첫 출석이 없어요. 첫 한마디를 남겨 볼래?</p></div>' :
     HELLO.items.slice(0, HELLO.more ? 30 : 2).map(function (it) {
       var op = HELLO.open[it.id], rp = it.replies || [];
       return '<div class="col" style="gap:4px;padding:10px 0;border-top:1px solid #EEE9DF"><p style="margin:0;font-size:15px;color:#33364F;white-space:pre-wrap">' + esc(it.text) + '</p>' + restCap(it) + hrRow(it) +
@@ -9797,6 +9797,7 @@ function sokZoneCheck() {
       '<button class="btn btn-pri" data-act="sokMap" style="align-self:stretch;margin-top:6px">지도 보기</button></div>');
   }, 350);
 }
+function sokK(k, html, size) { return homeNew() && typeof sokSay === 'function' ? sokSay(k, html, size) : ''; }
 function meMap() {
   var R = mapRegions(), done = R.filter(function (r) { return r.done; }).length, n = R.length, pct = Math.round(done / n * 100), all = done === n, due = mapMsDue(done);
   var next = R.filter(function (r) { return !r.done; })[0];
@@ -9985,7 +9986,7 @@ V.interlude1 = function () {
   return '<div class="screen"><div class="col" style="gap:10px">' + topbar(null, T('2 / 4 단계')) + progress(overall()) + '</div>' +
     T('<div class="col" style="gap:16px;margin-top:40px"><span class="pill pill-acc">중간 인사이트</span><h1>') + esc(il.title) + '</h1><p class="muted" style="font-size:15px">' + esc(il.body) + '</p>' +
     T('<div class="card"><span class="small muted">지금까지 보인 첫 번째 축</span><p style="font-size:17px;font-weight:700;margin-top:6px">에너지가 ') + a + T(' 쪽에 가까워요</p></div></div>') +
-    checkpoint() + T('<button class="btn btn-pri" style="margin-top:auto" data-act="likContinue">계속하기 · 남은 ') + (60 - S.li) + T('문항</button></div>');
+    sokK('fight', '벌써 2단계까지 왔어! 남은 것도 같이 가 보자.') + checkpoint() + T('<button class="btn btn-pri" style="margin-top:auto" data-act="likContinue">계속하기 · 남은 ') + (60 - S.li) + T('문항</button></div>');
 };
 V.scenario = function () {
   var it = SC_ITEMS[S.si], cur = S.answers.scenario[it.id];
@@ -10002,7 +10003,7 @@ V.interlude2 = function () {
   return '<div class="screen"><div class="col" style="gap:10px">' + topbar(null, T('3 / 4 단계 완료')) + progress(overall()) + '</div>' +
     T('<div class="col" style="gap:16px;margin-top:40px"><span class="pill pill-acc">중간 인사이트</span><h1>') + esc(il.title) + '</h1><p class="muted" style="font-size:15px">' + esc(il.body) + '</p>' +
     T('<div class="hero" style="gap:8px"><span class="small" style="color:#C9C7E8">나의 일간</span><span class="serif" style="font-size:44px;font-weight:700;line-height:1.1">') + sj.dayStem + '</span><b style="font-size:17px">' + dm.read + ' · ' + esc(dm.image) + '</b></div></div>' +
-    checkpoint() + T('<button class="btn btn-pri" style="margin-top:auto" data-go="introElement">마지막 단계로</button></div>');
+    sokK('think', '음… 너라는 사람, 점점 보이기 시작해. 마지막 단계만 남았어.') + checkpoint() + T('<button class="btn btn-pri" style="margin-top:auto" data-go="introElement">마지막 단계로</button></div>');
 };
 V.element = function () {
   var it = EL_ITEMS[S.ei];
@@ -10456,6 +10457,7 @@ V.result = function () {
   var locked = [[T('인생 그래프 · 10년 대운'), T('내 인생의 전성기는 몇 살일까')], [T('나의 신살'), nsal ? T('당신의 사주에 특별한 신살 ') + nsal + T('개가 있어요') : T('도화살 · 역마살 · 천을귀인 확인')], [T('사주 원국 ') + sj.total + T('글자 풀이'), T('타고난 오행의 균형과 나의 강점')], [T('연애 스타일과 끌리는 사람'), T('잘 맞는 유형 · 부딪히는 유형')], [T('돈이 모이는 방식 · 직업'), T('재물의 기운 · 일하는 방식')], [T('타로 인생 카드 · ') + YEAR + T('년 카드'), T('생년월일로 정해진 나만의 두 장')], [YEAR + T('년 월별 흐름'), T('좋은 달과 조심할 달')], [T('숨은 성향 · 행운 요소'), T('나와 맞는 컬러·음식·여행지·장소·음악')], [T('친구와 심층 궁합'), T('둘 다 리포트가 있으면 열려요')], [T('대나무숲 · 고민 상담'), T('비밀 외치기 · 유형 맞춤 고민 상담 무료 3회')]];
   return T('<div class="screen"><div class="row between"><span class="serif" style="font-weight:700;font-size:18px">나의 결과</span><button class="btn btn-ghost" style="min-height:40px" data-go="home">처음으로</button></div>') + '<div class="row between" style="margin-top:-8px">' + coinChip() + editBirthBtn() + '</div>' +
     heroHtml(r) +
+    sokK('bulb', '알았다! 이게 지금의 너야. 아래로 내려가며 하나씩 맞춰 봐.') +
     '<button class="deepmini" data-act="' + deepAct() + '"><span style="font-size:26px" aria-hidden="true">🔓</span><span class="col" style="gap:2px"><b>' + (S.paid ? T('심층 리포트 보기') : PUBLIC ? T('심층 리포트 무료로 열기') : T('심층 리포트 열기')) + '</b><span>' + T('인생 그래프 · 연애 · 재물 · 라이프스타일 등 12가지') + '</span></span><span class="arr" aria-hidden="true">›</span></button>' +
     (FRIENDS.length ? '<button class="card row" data-act="friendsCompat" style="gap:12px;cursor:pointer;border:1.5px solid var(--coral);text-align:left;width:100%">' + ICON.people + '<span class="col" style="flex:1"><b>' + (FRIENDS.length === 1 ? T('링크를 보낸 친구와 궁합 보기') : T('친구 ') + Math.min(5, FRIENDS.length) + T('명과 한 번에 궁합 보기')) + '</b><span class="xs muted">' + esc(FRIENDS.slice(0, 5).map(friendLabel).join(' · ')) + '</span></span></button>' : '') +
     nyTeaser(r) + (brDone() ? comboCard() : brainCard(false)) + moneyCard() + resultCards(r) + peersCard(r) +
@@ -10505,6 +10507,7 @@ V.pair = function () {
   var a = PAIR.a, b = PAIR.b, an = a.nick || a.name, bn = b.nick || b.name;
   return '<div class="screen"><div class="row between"><span class="serif" style="font-weight:700;font-size:18px">' + esc(an) + ' × ' + esc(bn) + '</span><button class="btn btn-ghost" style="min-height:40px" data-act="viewClose">MyMyMe</button></div>' +
     compatHtml(a, b, true) +
+    sokK('love', '둘이 이런 사이구나! 궁합은 정답이 아니라 서로를 더 알게 해 주는 힌트야.') +
     T('<div class="card col" style="gap:10px;border:1.5px solid var(--acc);background:#F6F5FE"><b style="font-size:17px">나도 궁합 보기</b><span class="small" style="color:#33364F">사주 × 성향 82문항(무료 · 약 13분)을 마치면 가족·친구·연인과 테마별 궁합을 볼 수 있어요.</span><button class="btn btn-pri" data-act="viewClose">나도 무료로 해보기</button></div>') +
     '<p class="xs muted" style="text-align:center">' + esc(SJ.disclaimer) + '</p></div>';
 };
@@ -10565,7 +10568,7 @@ function roomLobby() {
   if (!FEED.items && !FEED.loading) loadFeed();
   var door = function (m, i, t, sub, badge, strong) { return '<button data-fmode="' + m + '" class="row" style="gap:12px;align-items:center;background:#fff;border:' + (strong ? '1.5px solid #2E6B4A' : '1px solid #D7E6DB') + ';border-radius:16px;padding:12px 14px;text-align:left;cursor:pointer;font:inherit;color:inherit;width:100%"><span aria-hidden="true" style="flex:none;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:21px;background:#E7F1EA">' + i + '</span><span class="col" style="gap:1px;flex:1"><b style="font-size:15.5px">' + t + '</b><span class="xs" style="color:#5E6B63;line-height:1.5">' + sub + '</span></span>' + (badge ? '<span class="xs" style="flex:none;font-weight:700;color:#1F4A33;background:#E7F1EA;border-radius:999px;padding:3px 9px;white-space:nowrap">' + badge + '</span>' : '') + '</button>'; };
   var ex = (FEED.items || []).slice(0, 2);
-  return '<div class="col" style="gap:12px">' +
+  return '<div class="col" style="gap:12px">' + sokK('shh', '쉿, 여긴 이름도 연락처도 묻지 않아. 편하게 꺼내 놔도 돼.') +
     '<div class="col" style="gap:6px;background:linear-gradient(180deg,#1F4A33,#2E6B4A);color:#EAF4EC;border-radius:20px;padding:16px">' +
       '<span style="align-self:flex-start;background:rgba(255,255,255,.15);border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700">🔒 익명 약속</span>' +
       '<b class="serif" style="font-size:19px">' + esc(B.lead) + '</b><p class="small" style="margin:0;line-height:1.65;opacity:.95">' + esc(B.intro) + ' ' + esc(B.rule) + '</p></div>' +
@@ -10608,7 +10611,7 @@ function forestTab(sj) {
       T('<button class="btn btn-ghost" data-act="forestAgain">처음으로</button></div>');
   } else if (FOREST.phase === 'heard') {
     out += '<div class="card col" style="gap:10px;background:#F4FAF6;border-color:#CFE3D6"><span class="pill" style="background:#D7EBDD;color:#1F4A33">' + esc(B.heard) + '</span><p class="serif" style="font-size:18px;line-height:1.65;color:#1F4A33">' + esc(sj ? B.replies[sj.dayEl] : ROOM_HEARD) + '</p>' +
-      (FOREST.note ? '<p class="xs muted">' + esc(FOREST.note) + '</p>' : '') + T('<button class="btn btn-sec" data-act="forestAgain">또 외치기</button></div>') + forestBridge();
+      (FOREST.note ? '<p class="xs muted">' + esc(FOREST.note) + '</p>' : '') + T('<button class="btn btn-sec" data-act="forestAgain">또 외치기</button></div>') + sokK('comfort', '잘 꺼내 놨어. 이름 없이 숲에 남았으니 마음 편히 가도 돼.') + forestBridge();
   } else {
     out += T('<div class="col" style="gap:10px"><label class="sr" for="secret" style="position:absolute;left:-9999px">비밀 입력</label><textarea id="secret" class="inp" maxlength="300" placeholder="') + esc(B.placeholder) + '" style="height:140px;padding:14px;font-size:16px;line-height:1.6;resize:vertical"></textarea>' +
       '<p class="xs muted">' + esc(B.rule) + '</p><p id="ferr" class="small" style="color:#B3261E" role="alert"></p>' +
@@ -11074,7 +11077,7 @@ function nyTeaser(r) {
 function nyChain(d) {
   var best = monthName(d.best[0] + 1);
   var row = function (to, title, sub) { return '<button class="card row between" data-act="nyNext" data-to="' + to + '" style="gap:10px;text-align:left;width:100%;cursor:pointer"><span class="col" style="gap:2px"><b>' + title + '</b><span class="small muted">' + sub + '</span></span><span aria-hidden="true" style="font-size:20px;color:var(--acc)">›</span></button>'; };
-  return '<h2 style="margin-top:10px">' + T('2027, 이어서 보기') + '</h2>' +
+  return '<h2 style="margin-top:10px">' + T('2027, 이어서 보기') + '</h2>' + sokK('thumb', '2027 흐름 잘 봤어! 궁금한 쪽을 골라 더 깊이 가 보자.') +
     row('love', T('2027 연애 깊이 보기'), T('내 연애 패턴과 끌리는 사람 · ') + best + T('을 어떻게 쓸지')) +
     row('money', T('2027 재물 깊이 보기'), T('돈이 들어오고 새는 길 · 올해 지킬 규칙')) +
     row('career', T('2027 일 · 직업 깊이 보기'), T('잘 맞는 일 방식과 올해 움직일 타이밍')) +
@@ -11750,6 +11753,7 @@ V.report = function () {
   var r = S.result, sj = r.saju, body = reportBody(S.tab);
   return T('<div class="screen"><div class="row between"><div class="row" style="gap:4px"><button class="iconbtn" data-go="result" aria-label="결과로">') + ICON.back + T('</button><span class="serif" style="font-weight:700;font-size:18px">심층 리포트</span></div>') +
     '<span class="xs" style="font-weight:700;color:var(--ok);background:var(--ok-l);padding:5px 10px;border-radius:12px">' + (PUBLIC ? T('베타 무료') : T('결제 완료')) + '</span></div>' +
+    sokK('book', '천천히 읽어 봐. 마음에 걸리는 문장이 있다면 그게 오늘의 단서야.') +
     '<div class="card" style="background:var(--ink);color:var(--bg);border:0"><span class="xs" style="color:#C9C7E8">' + esc(typeName(sj.dayStem, r.per.code)) + '</span></div>' +
     '<div class="row" style="gap:8px"><button class="btn btn-sec" style="flex:1;font-size:14px" data-act="sendMsg">' + ICON.share + T(' 리포트 공유하기') + '</button><button class="btn btn-sec" style="flex:1;font-size:14px" data-act="compat">' + ICON.people + T(' 궁합 보기') + '</button></div>' +
     (S.tab !== 'forest' ? forestCta() : '') +
@@ -11951,6 +11955,7 @@ function render() {
     try { track('js_error', { view: S.view, msg: String(err && err.message || err).slice(0, 120) }); } catch (e2) {}
     if (S.view === 'home') throw err;
     S.view = 'home'; save(); html = V.home();
+    if (typeof sokSvg === 'function') setTimeout(function () { openModal('<div class="col" style="gap:8px;align-items:center;text-align:center;padding:6px 0">' + sokSvg('oops', 110) + '<b style="font-size:18px">앗, 미안!</b><span class="small muted" style="line-height:1.6">화면을 여는 중에 문제가 생겨서 처음 화면으로 돌아왔어. 다시 한번 눌러 줄래?</span><button class="btn btn-pri" data-act="closeModal" style="align-self:stretch;margin-top:6px">알겠어</button></div>'); }, 300);
   }
   document.getElementById('root').innerHTML = html;
   svcInfoAttach();
@@ -12699,6 +12704,7 @@ V.templeIntro = function () {
   var X = TEMPLE_DATA;
   return '<div class="screen">' + topbar('home') +
     restReflectionCard() +
+    (typeof sokK === 'function' ? sokK('breath', '천천히 숨 한번 쉬고 시작해 볼까? 18문항이면 돼.') : '') +
     '<div class="col" style="gap:10px;margin-top:6px"><span class="pill" style="align-self:flex-start;background:#E6F4EC;color:#2E7D5B">🪷 ' + esc(X.sub) + '</span><h1 style="font-size:28px;line-height:1.35">' + esc(X.title) + '</h1><p class="muted" style="font-size:15px">' + esc(X.intro) + '</p></div>' +
     '<div class="card col" style="gap:10px"><b class="small">이런 6가지 쉼터 유형 중에서 찾아드려요</b><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">' + X.typeOrder.map(function (t) { var ty = X.types[t];
       return '<div class="col" style="gap:3px;padding:10px;border:1px solid var(--line);border-radius:12px"><b class="small">' + ty.emoji + ' ' + esc(ty.name) + '</b><span class="xs muted">' + esc(ty.line) + '</span></div>'; }).join('') + '</div></div>' +
@@ -13346,7 +13352,7 @@ V.celeb = function () {
     '<section class="hero" style="gap:8px"><span class="xs" style="color:#C9C7E8">유명인 마마미 · 공개된 정보로 보는 재미용 비교</span><b class="serif" style="font-size:22px;line-height:1.3">나와 같은 유형의 유명인은?</b>' +
     '<span class="small" style="color:#E4E2EE">나는 <b style="color:#fff">' + esc(myType) + '</b>' + (me.m ? ' (' + esc(dm.read) + ' · ' + me.m + ')' : '') + '</span></section>' +
     '<div class="row" style="gap:6px">' + ['전체', '국내', '해외'].map(function (f) { return '<button class="chip' + (CEV.reg === f ? ' on' : '') + '" aria-pressed="' + (CEV.reg === f) + '" data-ce="reg" data-v="' + f + '" style="flex:none;padding:0 14px">' + f + '</button>'; }).join('') + '</div>' +
-    (me.m ? sec('① 나와 똑같은 유형 · ' + esc(myType), G.twin.length ? G.twin.map(ceCard).join('') : '<p class="small muted" style="margin:0">아직 일간과 MBTI가 모두 같은 유명인은 없어요. 아래 같은 MBTI·같은 일간에서 찾아보세요.</p>') +
+    (me.m ? sec('① 나와 똑같은 유형 · ' + esc(myType), G.twin.length ? G.twin.map(ceCard).join('') : '<div class="row" style="gap:8px;align-items:center">' + (typeof sokSvg === 'function' ? sokSvg('shrug', 40) : '') + '<p class="small muted" style="margin:0;flex:1">아직 일간과 MBTI가 모두 같은 유명인은 없어요. 아래 같은 MBTI·같은 일간에서 찾아보세요.</p></div>') +
       sec('② 나와 같은 MBTI · ' + me.m + ' (' + G.sameM.length + '명)', G.sameM.length ? G.sameM.map(ceCard).join('') : '<p class="small muted" style="margin:0">아직 이 MBTI를 직접 밝힌 유명인이 없어요.</p>')
       : '<div class="card col" style="gap:8px"><b class="small">사주 × 성향 82문항을 하면</b><span class="small muted">MBTI가 같은 유명인, 일간과 MBTI까지 똑같은 유명인도 찾아 드려요.</span><button class="btn btn-sec" data-go="birth">사주 × 성향 하러 가기</button></div>') +
     sec('③ 나와 같은 일간 · ' + esc(dm.read) + ' · ' + esc(dm.image) + ' (' + G.sameS.length + '명)', ceNames(CEV.more ? G.sameS : G.sameS.slice(0, 16)) +
