@@ -9040,7 +9040,7 @@ if (DEMO) { try { Storage.prototype.setItem = function () {}; Storage.prototype.
 var PUBLIC = true;
 var ENDPOINT = "https://script.google.com/macros/s/AKfycbx2G0QG_yhq32sInKS2ScJDQsfuMxgpo4yIwiy5BEvhhK5LCy239wUOnT-Dz-FZsfGE/exec";
 var SITE_URL = "https://mymyme.app/";
-var BUILD = "1795740058";
+var BUILD = "1795752808";
 var SID = (function () { try { var v = localStorage.getItem('mymyme_sid'); if (!v) { v = Math.random().toString(36).slice(2, 12); localStorage.setItem('mymyme_sid', v); } return v; } catch (e) { return 'anon'; } })();
 function post(body) { if (!ENDPOINT || DEMO) return Promise.resolve(null); body.sid = SID; return fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(body) }).then(function (r) { return r.json(); }).catch(function () { return null; }); }
 function track(type, data) { post({ kind: 'event', type: type, data: data || {} }); if (REF_FINISH.indexOf(type) >= 0) refDone(); }
@@ -9509,6 +9509,50 @@ function restNote(iso, v) {
   try { localStorage.setItem(REST_NOTE_KEY, JSON.stringify(m)); } catch (e) {}
 }
 document.addEventListener('input', function (e) { var t = e.target; if (t && t.id === 'restNote') restNote(t.dataset.date, t.value); });
+var REST_SHARED_KEY = 'mymyme_rest_shared';
+function restShared(iso, mark) {
+  var m = {}; try { m = JSON.parse(localStorage.getItem(REST_SHARED_KEY) || '{}') || {}; } catch (e) {}
+  if (!mark) return !!m[iso];
+  m[iso] = 1; var ks = Object.keys(m).sort(); while (ks.length > 60) delete m[ks.shift()];
+  try { localStorage.setItem(REST_SHARED_KEY, JSON.stringify(m)); } catch (e) {}
+}
+/* 오늘의 한마디 피드에서 🌿 글 아래: 그날의 질문(글이 올라온 날짜로 찾음, 서버엔 질문을 따로 보내지 않음) */
+function restCap(it) {
+  if (!it || String(it.text).indexOf('🌿 ') !== 0 || typeof DailyReflections === 'undefined') return '';
+  var c = null; try { c = DailyReflections.cardOn(DailyReflections.date(+it.at || Date.parse(it.at))); } catch (e) {}
+  return '<span class="xs muted" style="line-height:1.5">오늘의 쉼' + (c && c.question ? ' · ' + esc(c.question) : '에서 나눈 한 줄') + '</span>';
+}
+var REST = { busy: false };
+function restShare() {
+  var inp = document.getElementById('restNote'), t = (inp ? inp.value : '').trim(), iso = inp && inp.dataset.date;
+  if (!t) { toast('나눌 한 줄을 먼저 적어 주세요'); return; }
+  if (restShared(iso)) { toast('오늘은 이미 나눴어요'); return; }
+  if (CRISIS_WORDS.some(function (w) { return t.indexOf(w) >= 0; })) { FOREST = { phase: 'crisis', text: '', note: '' }; FOREST_MODE = 'shout'; go('forest'); return; }
+  var hasR = !!(S.result && S.result.per);
+  REST.busy = true; render();
+  post({ kind: 'hello', text: '🌿 ' + t, parent: '', g: hasR && HELLO.g ? myTribe() : '', showName: '' }).then(function (j) {
+    REST.busy = false;
+    if (j && j.ok) {
+      track('rest_share'); HELLO.mine[j.id] = 1; restShared(iso, true);
+      var l = helloDays(); if (l.indexOf(TODAY) < 0) { l.push(TODAY); try { localStorage.setItem(HELLO_KEY, JSON.stringify(l.slice(-400))); } catch (e) {} }
+      HELLO.items = null; HELLO.loading = false; toast(j.held ? '검토 후 보여요' : '오늘의 한마디에 나눴어요 🌿'); render();
+    } else { render(); toast(j && j.reason === 'limit' ? '오늘은 한마디를 더 남길 수 없어요' : '나누지 못했어요. 잠시 후 다시 시도해 주세요'); }
+  });
+}
+/* 지난 나의 답 (이 기기에만) */
+function restHistory() {
+  var m = {}; try { m = JSON.parse(localStorage.getItem(REST_NOTE_KEY) || '{}') || {}; } catch (e) {}
+  var ks = Object.keys(m).filter(function (k) { return m[k] && String(m[k]).trim(); }).sort().reverse();
+  if (!ks.length || typeof DailyReflections === 'undefined') return '';
+  return '<div class="card col" style="gap:10px"><b>지난 나의 답 <span class="xs muted" style="font-weight:400">· 이 기기에만</span></b>' +
+    ks.slice(0, 30).map(function (k) {
+      var c = null; try { c = DailyReflections.cardOn(k); } catch (e) {} var p = k.split('-');
+      return '<div class="col" style="gap:3px;border-top:1px solid var(--line);padding-top:9px"><span class="xs muted">' + (+p[1]) + '월 ' + (+p[2]) + '일' +
+        (restShared(k) ? ' <span style="font-weight:700;color:#2E6B4A;background:#E6F2EA;border-radius:6px;padding:1px 6px">나눔</span>' : '') + '</span>' +
+        (c && c.question ? '<span class="small" style="color:var(--sub);line-height:1.5">' + esc(c.question) + '</span>' : '') +
+        '<span style="font-size:15px;line-height:1.55;white-space:pre-wrap;word-break:keep-all">' + esc(m[k]) + '</span></div>';
+    }).join('') + '<span class="xs muted" style="text-align:center">최근 60일까지 보관돼요</span></div>';
+}
 V.today1 = function () {
   var o = dayOne(); if (!o) { S.view = 'home'; return V.home(); }
   var mine = S.result ? S.result.saju.dayStem : (S.taste && S.taste.stem), md = mine && SJ.dayMasters[mine], hint = '';
@@ -9518,7 +9562,10 @@ V.today1 = function () {
   var top = r ? reflectionCard(r, true, o) :
     '<section class="col" style="gap:8px;background:#FBF6EA;border:1px solid #EFE6CF;border-radius:22px;padding:24px 20px 20px"><span class="xs" style="color:var(--sub)">' + esc(o.date) + ' · 오늘의 기운</span><p class="serif" style="margin:0;font-size:24px;font-weight:700">' + esc(o.stem + ' · ' + o.word) + '</p><p class="small" style="margin:0;color:var(--sub)">' + esc(o.image) + '</p></section>';
   var ask = r && r.question ? '<div class="card col" style="gap:10px"><b class="small" style="color:var(--sub)">잠깐, 나에게 묻기</b><p style="margin:0;font-size:16px;line-height:1.65;word-break:keep-all">' + esc(r.question) + '</p>' +
-    '<textarea id="restNote" data-date="' + o.iso + '" rows="2" maxlength="300" placeholder="떠오르는 대로 한 줄 (이 기기에만 저장돼요)" style="width:100%;box-sizing:border-box;border:1px solid var(--line2);border-radius:12px;padding:10px 12px;font:inherit;font-size:15px;resize:none;background:#FCFBF8">' + esc(restNote(o.iso)) + '</textarea></div>' : '';
+    '<textarea id="restNote" data-date="' + o.iso + '" rows="2" maxlength="300" placeholder="떠오르는 대로 한 줄 (이 기기에만 저장돼요)" style="width:100%;box-sizing:border-box;border:1px solid var(--line2);border-radius:12px;padding:10px 12px;font:inherit;font-size:15px;resize:none;background:#FCFBF8">' + esc(restNote(o.iso)) + '</textarea>' +
+    '<span class="xs muted" style="line-height:1.5">🔒 이 기기에만 저장돼요 · 나누고 싶을 때만 한마디로 올라가요</span>' +
+    (restShared(o.iso) ? '<div class="small" style="background:#EEF6F0;border-radius:12px;padding:10px 12px;color:#2E6B4A">✓ 오늘의 한마디에 나눴어요 · 홈에서 볼 수 있어요</div>' :
+      '<button class="btn btn-sec" data-act="restShare" style="color:var(--acc-d);font-weight:700"' + (REST.busy ? ' disabled' : '') + '>' + (REST.busy ? '나누는 중…' : '🌿 오늘의 한마디로 나누기') + '</button>') + '</div>' : '';
   return '<div class="screen"><div class="row" style="gap:6px"><button class="iconbtn" data-go="home" aria-label="처음으로">' + ICON.back + '</button><span class="small muted">오늘의 쉼</span></div>' +
     top + ask +
     '<div class="card row" style="gap:12px;align-items:center;padding:12px"><canvas id="d1c" data-date="' + o.iso + '" width="1080" height="1920" style="width:64px;aspect-ratio:9/16;border-radius:10px;border:1px solid #EFE6CF;flex:none" role="img" aria-label="오늘의 쉼 카드"></canvas>' +
@@ -9526,6 +9573,7 @@ V.today1 = function () {
       '<div class="row" style="gap:6px;margin-top:6px"><button class="btn btn-pri" data-act="d1Share" style="flex:1;min-height:42px;font-size:14px;white-space:nowrap;padding:0 8px">스토리 올리기</button><button class="btn btn-sec" data-act="d1Save" style="flex:1;min-height:42px;font-size:14px;white-space:nowrap;padding:0 8px">저장</button></div></div></div>' +
     '<button data-go="' + next + '" class="row" style="justify-content:space-between;align-items:center;width:100%;text-align:left;background:#F1F8F4;border:1px solid #CFE5D7;border-radius:16px;padding:14px 16px;font:inherit;color:inherit;cursor:pointer"><span class="col" style="gap:2px"><b>더 깊이 쉬고 싶다면</b><span class="xs muted">' + (next === 'templeResult' ? '나에게 맞는 절 다시 보기' : '나에게 맞는 절 찾기 · 18문항') + '</span></span><b style="color:#2E6B4A">›</b></button>' +
     hint + (md ? '' : '<button class="btn btn-ghost" data-act="tasteMine">내 일간이랑 오늘은 어떤 사이일까? · 30초</button>') +
+    restHistory() +
     '<span class="xs muted" style="text-align:center">한국시간 자정에 새 글귀로 바뀌어요</span></div>';
 };
 function d1Draw() {
@@ -9659,7 +9707,7 @@ function helloCard() {
   var list = !HELLO.items ? '<p class="xs muted" style="margin:0">한마디를 불러오는 중이에요…</p>' : !HELLO.items.length ? '<p class="xs muted" style="margin:0">아직 오늘 첫 출석이 없어요. 첫 한마디를 남겨 보세요.</p>' :
     HELLO.items.slice(0, HELLO.more ? 30 : 2).map(function (it) {
       var op = HELLO.open[it.id], rp = it.replies || [];
-      return '<div class="col" style="gap:4px;padding:10px 0;border-top:1px solid #EEE9DF"><p style="margin:0;font-size:15px;color:#33364F;white-space:pre-wrap">' + esc(it.text) + '</p>' + hrRow(it) +
+      return '<div class="col" style="gap:4px;padding:10px 0;border-top:1px solid #EEE9DF"><p style="margin:0;font-size:15px;color:#33364F;white-space:pre-wrap">' + esc(it.text) + '</p>' + restCap(it) + hrRow(it) +
         '<div class="row" style="gap:10px;align-items:center"><span class="xs muted">' + helloWho(it) + ' · ' + helloAgo(it.at) + (HELLO.mine[it.id] ? ' · 내 한마디' : '') + '</span><button class="xs" style="background:none;border:0;color:var(--acc-d);cursor:pointer;padding:4px 0;font-weight:600" data-hopen="' + esc(it.id) + '" aria-expanded="' + !!op + '">💬 답 ' + rp.length + '</button>' +
         '<button class="xs" style="background:none;border:0;color:var(--muted);cursor:pointer;padding:4px 0" data-hreport="' + esc(it.id) + '"' + (HELLO.mine[it.id] ? ' disabled' : '') + '>' + (HELLO.mine[it.id] === 'r' ? '신고됨' : '신고') + '</button></div>' +
         (op ? '<div class="col" style="gap:6px;margin-left:10px;border-left:3px solid var(--acc-ll);padding-left:10px">' + rp.map(function (x) {
@@ -12144,6 +12192,7 @@ document.addEventListener('click', function (ev) {
       fq.scrollIntoView({ block: 'center', behavior: 'smooth' }); fq.focus(); break;
     case 'd1Share': d1Out(true); break;
     case 'd1Save': d1Out(false); break;
+    case 'restShare': restShare(); break;
     case 'tasteSample': TASTE_SAMPLE = true; track('taste_sample'); go('taste'); break;
     case 'tasteMine': TASTE_SAMPLE = false; S.view = 'home'; render(); setTimeout(function () { var qy = document.getElementById('qy'); if (qy) { qy.scrollIntoView({ block: 'center', behavior: 'smooth' }); qy.focus(); } }, 50); break;
     case 'friendAgain': FRIEND = null; render(); break;
